@@ -1,0 +1,75 @@
+--- tz_mcm: MCM configuration for TestZone
+defaults = {
+    watcher_enabled = false,
+    periodic_stats_enabled = false,
+    periodic_stats_interval = 300,
+    log_payload_enabled = true,
+    deep_introspect_enabled = true,
+    introspect_depth = 3,
+    rate_limit_enabled = true,
+    rate_limit_interval = 500,
+    profiler_enabled = false,
+    profiler_report_interval = 30,
+    profiler_spike_threshold = 1000,
+}
+
+local path_builder = function(key)
+    local tab = key:sub(1, 9) == "profiler_" and "profiler" or "main"
+    return "tz/" .. tab .. "/" .. key
+end
+get_config = xmcm.create_getter("tz", defaults, path_builder)
+cfg = setmetatable({}, { __index = function(_, k) return get_config(k) end })
+
+function on_mcm_load()
+    return {
+        id = "tz",
+        text = "ui_mcm_tz_title",
+        gr = {
+            {
+                id = "main",
+                text = "ui_mcm_menu_tz_main",
+                sh = true,
+                gr = {
+                    { id = "title", type = "slide", link = "ui_options_slider_player",
+                        text = "ui_mcm_tz_title", size = {512, 50}, spacing = 20 },
+                    { id = "desc", type = "desc", text = "ui_mcm_tz_main_desc" },
+                    { id = "watcher_enabled", type = "check", val = 1, def = false },
+
+                    { id = "div_periodic", type = "line" },
+                    { id = "periodic_stats_enabled", type = "check", val = 1, def = false },
+                    { id = "periodic_stats_interval", type = "track", val = 2, min = 10, max = 3600, step = 10, def = 300 },
+                    { id = "log_payload_enabled", type = "check", val = 1, def = false },
+
+                    { id = "div_introspect", type = "line" },
+                    { id = "deep_introspect_enabled", type = "check", val = 1, def = false },
+                    { id = "introspect_depth", type = "track", val = 2, min = 1, max = 4, step = 1, def = 2 },
+
+                    { id = "div_ratelimit", type = "line" },
+                    { id = "rate_limit_enabled", type = "check", val = 1, def = false },
+                    { id = "rate_limit_interval", type = "track", val = 2, min = 100, max = 10000, step = 100, def = 1000 },
+
+                    { id = "div_info", type = "line" },
+                    { id = "info", type = "desc", text = "ui_mcm_tz_main_info", clr = {200, 200, 200, 100} },
+                    { id = "div_version", type = "line" },
+                    { id = "version", type = "desc", text = "ui_mcm_tz_version", clr = {255, 0, 206, 209} },
+                },
+            },
+            {
+                id = "profiler",
+                text = "ui_mcm_menu_tz_profiler",
+                sh = true,
+                gr = {
+                    { id = "title", type = "slide", link = "ui_options_slider_player",
+                        text = "ui_mcm_tz_profiler_title", size = {512, 50}, spacing = 20 },
+                    { id = "desc", type = "desc", text = "ui_mcm_tz_profiler_desc" },
+                    { id = "profiler_enabled", type = "check", val = 1, def = false },
+                    { id = "profiler_report_interval", type = "track", val = 2, min = 10, max = 300, step = 5, def = 30 },
+                    { id = "profiler_spike_threshold", type = "track", val = 2, min = 100, max = 10000, step = 100, def = 1000 },
+
+                    { id = "div_info", type = "line" },
+                    { id = "info", type = "desc", text = "ui_mcm_tz_profiler_info", clr = {200, 200, 200, 100} },
+                },
+            },
+        },
+    }
+end

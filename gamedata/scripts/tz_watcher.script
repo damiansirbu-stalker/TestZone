@@ -1,0 +1,381 @@
+--- tz_watcher: A-Life callback monitoring with fire counts and payload logging
+
+local pairs, ipairs, tostring, pcall, type, time_global = pairs, ipairs, tostring, pcall, type, time_global
+local math_floor, string_format, table_concat, table_sort = math.floor, string.format, table.concat, table.sort
+
+local log = xlog.get_logger("TestZone.watcher", { outfile = "testzone.log" })
+
+-- Rate limiting state
+local last_log_time = {}
+
+-- Use xinspect for formatting (with local aliases for performance)
+local format_table = xinspect.format_table
+local format_userdata_deep = xinspect.userdata
+
+-- All 162 callbacks from callbacks-reference.md
+local ALL_CALLBACKS = {
+    -- Player - Core (16)
+    "actor_on_first_update", "actor_on_update", "actor_on_net_destroy",
+    "actor_on_init", "actor_on_reinit", "actor_on_before_death",
+    "actor_on_info_callback", "actor_on_sleep", "actor_on_leave_dialog",
+    "actor_on_achievement_earned", "actor_on_movement_changed",
+    "actor_on_jump", "actor_on_land", "actor_on_interaction",
+    "on_before_level_changing", "on_level_changing",
+
+    -- Player - Movement and Animation (5)
+    "actor_on_foot_step", "actor_on_footstep", "actor_on_hud_animation_play",
+    "actor_on_hud_animation_end", "actor_on_hud_animation_mark",
+
+    -- Player - Weapons (10)
+    "actor_on_weapon_fired", "actor_on_weapon_jammed", "actor_on_weapon_no_ammo",
+    "actor_on_weapon_lower", "actor_on_weapon_raise", "actor_on_weapon_reload",
+    "actor_on_weapon_zoom_in", "actor_on_weapon_zoom_out",
+    "actor_on_weapon_before_fire", "actor_on_weapon_zoom_type_changed",
+
+    -- Player - Items and Inventory (11)
+    "actor_on_item_take", "actor_on_item_take_from_box", "actor_on_item_put_in_box",
+    "actor_on_item_drop", "actor_on_item_use", "actor_on_item_before_use",
+    "actor_on_item_before_pickup", "actor_item_to_belt", "actor_item_to_ruck",
+    "actor_item_to_slot", "actor_on_changed_slot",
+
+    -- Player - Combat and Hit (4)
+    "actor_on_hit_callback", "actor_on_before_hit",
+    "actor_on_before_hit_belt", "actor_on_feeling_anomaly",
+
+    -- Player - Trade and Economy (1)
+    "actor_on_trade",
+
+    -- Player - Vehicles (3)
+    "actor_on_attach_vehicle", "actor_on_detach_vehicle", "actor_on_use_vehicle",
+
+    -- Player - Stashes (2)
+    "actor_on_stash_create", "actor_on_stash_remove",
+
+    -- Player - Misc (2)
+    "actor_on_frequency_change", "actor_on_death",
+
+    -- NPCs - Core (5)
+    "npc_on_net_spawn", "npc_on_net_destroy", "npc_on_update",
+    "npc_on_death_callback", "npc_on_use",
+
+    -- NPCs - Combat (5)
+    "npc_on_before_hit", "npc_on_hit_callback", "npc_on_fighting_actor",
+    "npc_on_hear_callback", "npc_on_eval_danger",
+
+    -- NPCs - Items and Weapons (8)
+    "npc_on_item_take", "npc_on_item_take_from_box", "npc_on_item_drop",
+    "npc_on_weapon_strapped", "npc_on_weapon_unstrapped", "npc_on_weapon_drop",
+    "npc_on_choose_weapon", "npc_on_get_all_from_corpse",
+
+    -- NPCs - Advanced (5)
+    "npc_on_item_before_pickup", "npc_set_body_state", "npc_on_combat_set_body_state",
+    "npc_on_before_look_at_actor", "npc_on_game_path_build_fail",
+
+    -- Monsters (9)
+    "monster_on_update", "monster_on_before_hit", "monster_on_hit_callback",
+    "monster_on_net_spawn", "monster_on_net_destroy", "monster_on_death_callback",
+    "monster_on_actor_use_callback", "monster_on_loot_init", "burer_on_before_weapon_drop",
+
+    -- Pseudogiant (3)
+    "pseudogiant_on_start_stomp_animation", "pseudogiant_before_stomp", "pseudogiant_on_stomp",
+
+    -- Anomalies (1)
+    "anomaly_on_before_activate",
+
+    -- Squads - Core (5)
+    "squad_on_npc_creation", "squad_on_update", "squad_on_first_update",
+    "squad_on_npc_death", "squad_on_add_npc",
+
+    -- Squads - Smart Terrain (2)
+    "squad_on_enter_smart", "squad_on_leave_smart",
+
+    -- Squads - Movement (2)
+    "squad_on_after_game_vertex_change", "squad_on_after_level_change",
+
+    -- Smart Terrains (2)
+    "smart_terrain_on_update", "on_try_respawn",
+
+    -- Physical Objects (2)
+    "physic_object_on_hit_callback", "physic_object_on_use_callback",
+
+    -- Vehicles (2)
+    "heli_on_hit_callback", "vehicle_on_death_callback",
+
+    -- GUI - Actor Menu (9)
+    "ActorMenu_on_before_init_mode", "ActorMenu_on_mode_changed",
+    "ActorMenu_on_item_drag_drop", "ActorMenu_on_item_focus_receive",
+    "ActorMenu_on_item_focus_lost", "ActorMenu_on_item_before_move",
+    "ActorMenu_on_item_after_move", "ActorMenu_on_trade_started",
+    "ActorMenu_on_trade_closed",
+
+    -- GUI - General (5)
+    "GUI_on_show", "GUI_on_hide", "map_spot_menu_add_property",
+    "map_spot_menu_property_clicked", "on_screen_resolution_changed",
+
+    -- GUI - Main Menu (3)
+    "main_menu_on_keyboard", "main_menu_on_init", "main_menu_on_quit",
+
+    -- Technical - Lifecycle (6)
+    "on_game_load", "on_game_end", "save_state", "load_state",
+    "on_pstor_save_all", "on_pstor_load_all",
+
+    -- Technical - Input (8)
+    "on_key_press", "on_key_release", "on_key_hold",
+    "on_before_key_press", "on_before_save_input", "on_before_load_input",
+    "on_mouse_wheel", "on_before_mouse_move",
+
+    -- Technical - Configuration (3)
+    "on_option_change", "on_localization_change", "on_console_execute",
+
+    -- Server Objects (6)
+    "server_entity_on_register", "server_entity_on_unregister",
+    "fill_start_position", "se_stalker_on_spawn", "se_actor_on_STATE_Write",
+    "se_actor_on_STATE_Read",
+
+    -- AI and Evaluation (2)
+    "on_enemy_eval", "on_get_item_cost",
+
+    -- Environment (2)
+    "on_before_surge", "on_before_psi_storm",
+
+    -- Bullet Physics (4)
+    "bullet_on_init", "bullet_on_update", "bullet_on_impact", "bullet_on_remove",
+
+    -- Loading Screen (2)
+    "on_loading_screen_key_prompt", "on_loading_screen_dismissed",
+
+    -- Game Objects (2)
+    "game_object_on_net_spawn", "game_object_on_net_destroy",
+
+    -- HUD (1)
+    "actor_hud_on_nearwall",
+
+    -- Outfits and Artifacts (2)
+    "on_artefact_count_get", "on_belt_size_get",
+
+    -- Hit System (1)
+    "on_before_hit_after_calcs",
+
+    -- Map and PDA (2)
+    "on_map_right_click", "on_news_received",
+
+    -- Tasks and Dialog (2)
+    "actor_on_task_callback", "on_phrase_callback",
+
+    -- Explosives (1)
+    "explosive_item_on_explode",
+
+    -- Pickup System (1)
+    "actor_on_update_pickup",
+
+    -- Sound System (1)
+    "on_before_play_hud_sound",
+
+    -- ImGui (1)
+    "imgui_on_render",
+
+    -- DXML (3)
+    "on_specific_character_dialog_list", "on_specific_character_init", "on_xml_read",
+}
+
+-- Event counters (fire counts)
+local stats = {}
+for _, cb in pairs(ALL_CALLBACKS) do
+    stats[cb] = 0
+end
+
+-- Config state
+local config = {
+    enabled = false,
+    periodic_stats_enabled = false,
+    periodic_stats_interval_sec = 300,
+    log_payload_enabled = true,
+    deep_introspect_enabled = true,
+    introspect_depth = 3,
+    rate_limit_enabled = true,
+    rate_limit_interval_ms = 500,
+}
+
+--- Format dispatch table (reduces if/elseif chain)
+local format_dispatch = {
+    userdata = function(arg, deep)
+        if deep then return format_userdata_deep(arg) end
+        local id = arg.id and arg:id()
+        return (id and id ~= 65535) and ("obj#" .. id) or "userdata"
+    end,
+    table = function(arg, deep)
+        if deep then return format_table(arg, 1, config.introspect_depth or 2) end
+        local size = 0
+        for _ in pairs(arg) do size = size + 1 end
+        return "table[" .. size .. "]"
+    end,
+    string = function(arg)
+        local truncated = arg:sub(1, 64)
+        return "\"" .. truncated .. (arg:len() > 64 and "..." or "") .. "\""
+    end,
+    boolean = function(arg) return arg and "true" or "false" end,
+    number = function(arg)
+        return arg == math_floor(arg) and tostring(arg) or string_format("%.4f", arg)
+    end,
+    ["nil"] = function() return "nil" end,
+    ["function"] = function() return "function" end,
+}
+
+--- Format single argument (shallow or deep based on config)
+local function format_arg(arg, deep)
+    local formatter = format_dispatch[type(arg)]
+    return formatter and formatter(arg, deep) or tostring(arg)
+end
+
+--- Format all arguments with positional labels
+--- Output: arg1=value, arg2=value, ...
+local function format_args(deep, ...)
+    local args = {...}
+    local parts = {}
+    for i = 1, #args do
+        parts[#parts + 1] = "arg" .. i .. "=" .. format_arg(args[i], deep)
+    end
+    return table_concat(parts, ", ")
+end
+
+--- Check rate limit for callback
+local function should_log(callback_name)
+    if not config.rate_limit_enabled then return true end
+    local now = time_global()
+    local last = last_log_time[callback_name] or 0
+    local interval = config.rate_limit_interval_ms or 1000
+    if now - last < interval then return false end
+    last_log_time[callback_name] = now
+    return true
+end
+
+local function create_handler(callback_name)
+    return function(...)
+        if not config.enabled then return end
+        stats[callback_name] = stats[callback_name] + 1
+        if config.log_payload_enabled and should_log(callback_name) then
+            local deep = config.deep_introspect_enabled
+            local arg_str = format_args(deep, ...)
+            log.info("[%s] %s", callback_name, arg_str)
+        end
+    end
+end
+
+--- @export console: tz_watcher.get_stats()
+function get_stats()
+    local result = {}
+    for callback, count in pairs(stats) do
+        if count > 0 then
+            result[callback] = count
+        end
+    end
+    return result
+end
+
+--- @export console: tz_watcher.print_fired()
+function print_fired()
+    local fired = {}
+    for callback, count in pairs(stats) do
+        if count > 0 then
+            fired[#fired + 1] = {name = callback, count = count}
+        end
+    end
+    table_sort(fired, function(a, b) return a.count > b.count end)
+
+    log.info("=== CALLBACKS FIRED (%d total) ===", #fired)
+    for _, item in ipairs(fired) do
+        log.info("  %6d  %s", item.count, item.name)
+    end
+    log.info("=== END ===")
+end
+
+--- @export console: tz_watcher.print_never_fired()
+function print_never_fired()
+    local never = {}
+    for _, cb in pairs(ALL_CALLBACKS) do
+        if stats[cb] == 0 then
+            never[#never + 1] = cb
+        end
+    end
+
+    log.info("=== NEVER FIRED (%d callbacks) ===", #never)
+    for _, cb in ipairs(never) do
+        log.info("  %s", cb)
+    end
+    log.info("=== END ===")
+end
+
+--- Log periodic statistics
+local function log_periodic_stats()
+    if not config.periodic_stats_enabled then return end
+
+    local fired = {}
+    for callback, count in pairs(stats) do
+        if count > 0 then
+            fired[#fired + 1] = {name = callback, count = count}
+        end
+    end
+    table_sort(fired, function(a, b) return a.count > b.count end)
+
+    log.info("=== PERIODIC STATS (%d active) ===", #fired)
+    for _, item in ipairs(fired) do
+        log.info("  %10d  %s", item.count, item.name)
+    end
+    log.info("=== END STATS ===")
+end
+
+--- @safety pcall: some callbacks may not exist in engine
+function on_game_start()
+    log.info("TestZone Watcher initialized (162 callbacks)")
+
+    -- Register all callbacks
+    local registered = 0
+    local failed = 0
+    for _, callback_name in pairs(ALL_CALLBACKS) do
+        local handler = create_handler(callback_name)
+        local ok, _ = pcall(RegisterScriptCallback, callback_name, handler)
+        if ok then
+            registered = registered + 1
+        else
+            failed = failed + 1
+        end
+    end
+
+    log.info("Registered %d callbacks (%d failed)", registered, failed)
+
+    -- Periodic stats timer
+    local function timer_periodic_stats()
+        log_periodic_stats()
+        ResetTimeEvent("tz_watcher", "periodic_stats", config.periodic_stats_interval_sec)
+    end
+
+    CreateTimeEvent("tz_watcher", "periodic_stats", config.periodic_stats_interval_sec, timer_periodic_stats)
+
+    -- Config loader
+    local cfg = tz_mcm and tz_mcm.cfg
+    local function load_config()
+        if not cfg then return end
+        config.enabled = cfg.watcher_enabled
+        config.periodic_stats_enabled = cfg.periodic_stats_enabled
+        config.periodic_stats_interval_sec = cfg.periodic_stats_interval
+        config.log_payload_enabled = cfg.log_payload_enabled
+        config.deep_introspect_enabled = cfg.deep_introspect_enabled
+        config.introspect_depth = cfg.introspect_depth
+        config.rate_limit_enabled = cfg.rate_limit_enabled
+        config.rate_limit_interval_ms = cfg.rate_limit_interval
+    end
+
+    -- Reload config on MCM change
+    RegisterScriptCallback("on_option_change", function()
+        load_config()
+        -- Reschedule timer if interval changed
+        RemoveTimeEvent("tz_watcher", "periodic_stats")
+        CreateTimeEvent("tz_watcher", "periodic_stats", config.periodic_stats_interval_sec, function()
+            log_periodic_stats()
+            return true
+        end)
+    end)
+
+    -- Load initial config
+    load_config()
+end

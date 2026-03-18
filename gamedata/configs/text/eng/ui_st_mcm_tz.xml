@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<string_table>
+    <!-- ==================== TAB NAMES ==================== -->
+    <string id="ui_mcm_menu_tz_main">
+        <text>Main</text>
+    </string>
+
+    <!-- ==================== MAIN TAB ==================== -->
+    <string id="ui_mcm_tz_title">
+        <text>TestZone</text>
+    </string>
+    <string id="ui_mcm_tz_version">
+        <text>%c[d_cyan]1.0.0</text>
+    </string>
+    <string id="ui_mcm_tz_main_desc">
+        <text>Callback monitoring, performance profiling, and testing.</text>
+    </string>
+    <string id="ui_mcm_tz_main_watcher_enabled">
+        <text>Enable watcher</text>
+    </string>
+    <string id="ui_mcm_tz_main_watcher_enabled_desc">
+        <text>Enable all callback logging (162 callbacks).</text>
+    </string>
+    <string id="ui_mcm_tz_main_periodic_stats_enabled">
+        <text>Periodic statistics</text>
+    </string>
+    <string id="ui_mcm_tz_main_periodic_stats_enabled_desc">
+        <text>Log top-firing callbacks at regular intervals.</text>
+    </string>
+    <string id="ui_mcm_tz_main_periodic_stats_interval">
+        <text>Stats interval (seconds)</text>
+    </string>
+    <string id="ui_mcm_tz_main_periodic_stats_interval_desc">
+        <text>How often to log periodic statistics (10-3600).</text>
+    </string>
+    <string id="ui_mcm_tz_main_log_payload_enabled">
+        <text>Log payload (arguments)</text>
+    </string>
+    <string id="ui_mcm_tz_main_log_payload_enabled_desc">
+        <text>Log callback arguments/parameters. Can create large log files.</text>
+    </string>
+    <string id="ui_mcm_tz_main_deep_introspect_enabled">
+        <text>Deep introspection</text>
+    </string>
+    <string id="ui_mcm_tz_main_deep_introspect_enabled_desc">
+        <text>Extract detailed info from objects (type, name, section, community).</text>
+    </string>
+    <string id="ui_mcm_tz_main_introspect_depth">
+        <text>Table depth</text>
+    </string>
+    <string id="ui_mcm_tz_main_introspect_depth_desc">
+        <text>Maximum depth for table introspection (1-4). Higher = more detail but larger logs.</text>
+    </string>
+    <string id="ui_mcm_tz_main_rate_limit_enabled">
+        <text>Rate limiting</text>
+    </string>
+    <string id="ui_mcm_tz_main_rate_limit_enabled_desc">
+        <text>Limit log frequency per callback type. Prevents log spam from high-frequency callbacks.</text>
+    </string>
+    <string id="ui_mcm_tz_main_rate_limit_interval">
+        <text>Rate limit interval (ms)</text>
+    </string>
+    <string id="ui_mcm_tz_main_rate_limit_interval_desc">
+        <text>Minimum milliseconds between logs for same callback type (100-10000).</text>
+    </string>
+    <string id="ui_mcm_tz_main_info">
+        <text>Watcher logs all 162 engine callbacks. Log output: logs/testzone.log</text>
+    </string>
+
+    <!-- ==================== PROFILER TAB ==================== -->
+    <string id="ui_mcm_menu_tz_profiler">
+        <text>Profiler</text>
+    </string>
+    <string id="ui_mcm_tz_profiler_title">
+        <text>TestZone Profiler</text>
+    </string>
+    <string id="ui_mcm_tz_profiler_desc">
+        <text>Wraps suspect GAMMA mod functions with timing to measure actual frame cost.</text>
+    </string>
+    <string id="ui_mcm_tz_profiler_profiler_enabled">
+        <text>Enable profiler</text>
+    </string>
+    <string id="ui_mcm_tz_profiler_profiler_enabled_desc">
+        <text>Start recording timing data for wrapped functions. Functions are always wrapped, this controls measurement.</text>
+    </string>
+    <string id="ui_mcm_tz_profiler_profiler_report_interval">
+        <text>Report interval (seconds)</text>
+    </string>
+    <string id="ui_mcm_tz_profiler_profiler_report_interval_desc">
+        <text>How often to log profiler report (10-300).</text>
+    </string>
+    <string id="ui_mcm_tz_profiler_profiler_spike_threshold">
+        <text>Spike threshold (microseconds)</text>
+    </string>
+    <string id="ui_mcm_tz_profiler_profiler_spike_threshold_desc">
+        <text>Single call exceeding this value counts as a spike (100-10000).</text>
+    </string>
+    <string id="ui_mcm_tz_profiler_info">
+        <text>Profiler wraps 22 suspect functions identified from GAMMA review. Log output: logs/testzone.log</text>
+    </string>
+</string_table>

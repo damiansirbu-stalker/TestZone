@@ -1,0 +1,179 @@
+--- tz_profiler: wrap suspect GAMMA mod functions with xprofiler timing
+
+local pairs, ipairs, tostring = pairs, ipairs, tostring
+local string_format, table_sort = string.format, table.sort
+
+local log = xlog.get_logger("TestZone.profiler", { outfile = "testzone.log" })
+
+-- Profiler targets: { module, func, category }
+-- Discovered from gamma-review Phase 1 (471 mods)
+local TARGETS = {
+    -- frame * heavy (KILLERS)
+    { "drx_da_main", "actor_on_update", "killer" },
+    { "demonized_concurrent_queues", "process_queue", "killer" },
+    { "perk_based_artefacts", "actor_on_update", "killer" },
+
+    -- frame * medium (ACCUMULATING)
+    { "bind_anomaly_field", "actor_on_update", "accumulating" },
+    { "ssfx_lut", "actor_on_update", "accumulating" },
+    { "ssfx_rain_hud_raindrops", "actor_on_update", "accumulating" },
+    { "ssfx_weapons_dof", "actor_on_update", "accumulating" },
+    { "ssfx_wetness", "update_rain", "accumulating" },
+    { "weapon_cover_tilt", "actor_on_update", "accumulating" },
+    { "demonized_ledge_grabbing", "checkLedgeGrabbing", "accumulating" },
+    { "demonized_ledge_grabbing", "speedSaver", "accumulating" },
+    { "zzz_player_injuries", "actor_on_update", "accumulating" },
+
+    -- frame * light (THOUSAND CUTS)
+    { "liz_inertia_expanded", "actor_on_update", "thousand_cuts" },
+    { "liz_inertia_expanded_crawl", "actor_on_update", "thousand_cuts" },
+    { "liz_inertia_expanded_crawl_state_tracker", "actor_on_update", "thousand_cuts" },
+    { "haru_skills", "update_stats", "thousand_cuts" },
+    { "grok_bleed_icon", "actor_on_update", "thousand_cuts" },
+    { "arti_jamming", "actor_on_update", "thousand_cuts" },
+    { "enhanced_animations", "actor_on_update", "thousand_cuts" },
+    { "light_gem_mcm", "light_gem", "thousand_cuts" },
+    { "demonized_time_events", "process_queue", "thousand_cuts" },
+
+    -- second * heavy (STUTTER SPIKES)
+    { "ag_population", "actor_on_update", "stutter_spike" },
+
+    -- event * medium (SPIKE RISK)
+    { "zzz_dynamic_emission_cover", "actor_on_update", "spike_risk" },
+}
+
+-- Per-target stats: { call_count, total_us, max_us, spike_count }
+local data = {}
+
+-- Config (loaded from MCM)
+local config = {
+    enabled = false,
+    report_interval = 30,
+    spike_threshold_us = 1000,
+}
+
+-- Last report timestamp for calls/sec calculation
+local last_report_time = 0
+
+local function record(key, us)
+    local stats = data[key]
+    stats.call_count = stats.call_count + 1
+    stats.total_us = stats.total_us + us
+    if us > stats.max_us then stats.max_us = us end
+    if us > config.spike_threshold_us then stats.spike_count = stats.spike_count + 1 end
+end
+
+local function reset_data()
+    for _, target in ipairs(TARGETS) do
+        local key = target[1] .. "." .. target[2]
+        data[key] = { call_count = 0, total_us = 0, max_us = 0, spike_count = 0 }
+    end
+end
+
+local function wrap_target(module_name, func_name)
+    local mod = _G[module_name]
+    if not mod then return false end
+    local original = mod[func_name]
+    if not original then return false end
+
+    local key = module_name .. "." .. func_name
+    mod[func_name] = function(...)
+        if not config.enabled then return original(...) end
+        local timer = xprofiler.new()
+        timer:start()
+        local r1, r2, r3, r4 = original(...)
+        timer:stop()
+        record(key, timer:get_us())
+        return r1, r2, r3, r4
+    end
+    return true
+end
+
+local function log_report()
+    if not config.enabled then return end
+
+    local now = time_global()
+    local elapsed_sec = (now - last_report_time) / 1000
+    if elapsed_sec < 1 then elapsed_sec = 1 end
+    last_report_time = now
+
+    local total_us = 0
+    local active = {}
+    for key, stats in pairs(data) do
+        if stats.call_count > 0 then
+            active[#active + 1] = { key = key, stats = stats }
+            total_us = total_us + stats.total_us
+        end
+    end
+
+    if #active == 0 then
+        log.info("[PROFILER] No activity since last report")
+        reset_data()
+        return
+    end
+
+    table_sort(active, function(a, b) return a.stats.total_us > b.stats.total_us end)
+
+    local frame_budget_us = 16600
+    log.info("=== PROFILER REPORT (%.0fs window) ===", elapsed_sec)
+    log.info("  %-50s %8s %8s %8s %7s %6s", "target", "avg_us", "max_us", "calls", "c/sec", "budget")
+
+    for _, entry in ipairs(active) do
+        local st = entry.stats
+        local avg = st.total_us / st.call_count
+        local calls_sec = st.call_count / elapsed_sec
+        local budget_pct = (avg * calls_sec) / frame_budget_us * 100
+        local spike_str = st.spike_count > 0 and string_format(" [%d spikes]", st.spike_count) or ""
+        log.info("  %-50s %8.1f %8.1f %8d %7.1f %5.1f%%%s",
+            entry.key, avg, st.max_us, st.call_count, calls_sec, budget_pct, spike_str)
+    end
+
+    local total_budget_pct = total_us / (elapsed_sec * 1000 * frame_budget_us) * 100
+    log.info("  TOTAL: %.0f us measured, %.1f%% of frame budget", total_us, total_budget_pct)
+    log.info("=== END PROFILER ===")
+
+    reset_data()
+end
+
+function on_game_start()
+    reset_data()
+
+    local wrapped = 0
+    local skipped = 0
+    for _, target in ipairs(TARGETS) do
+        if wrap_target(target[1], target[2]) then
+            wrapped = wrapped + 1
+        else
+            skipped = skipped + 1
+            log.info("[PROFILER] skip: %s.%s (not found)", target[1], target[2])
+        end
+    end
+    log.info("[PROFILER] Wrapped %d targets (%d skipped)", wrapped, skipped)
+
+    -- Periodic report timer
+    local function timer_report()
+        log_report()
+        ResetTimeEvent("tz_profiler", "report", config.report_interval)
+    end
+    CreateTimeEvent("tz_profiler", "report", config.report_interval, timer_report)
+
+    -- Config loader
+    local cfg = tz_mcm and tz_mcm.cfg
+    local function load_config()
+        if not cfg then return end
+        config.enabled = cfg.profiler_enabled
+        config.report_interval = cfg.profiler_report_interval
+        config.spike_threshold_us = cfg.profiler_spike_threshold
+    end
+
+    RegisterScriptCallback("on_option_change", function()
+        load_config()
+        RemoveTimeEvent("tz_profiler", "report")
+        CreateTimeEvent("tz_profiler", "report", config.report_interval, function()
+            log_report()
+            return true
+        end)
+    end)
+
+    load_config()
+end
