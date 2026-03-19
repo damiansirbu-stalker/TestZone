@@ -1,5 +1,5 @@
 TestZone: Callback monitoring and profiling for STALKER Anomaly, by Damian
-Latest: 1.0.0 (xlibs 1.0.5)
+Latest: 1.0.1 (xlibs 1.0.5)
 
 Features:
 Watcher - monitors all 162 engine callbacks with fire counts and payload logging
@@ -50,6 +50,9 @@ The code is validated in real time by a multi-stage pipeline: luacheck, selene, 
 Full report in doc/test-report.log.
 
 Versions:
+
+1.0.1
+  Added: dependency gate for xlibs version check
 
 1.0.0
   Renamed from AlifeLogger. Multi-feature test lab.
