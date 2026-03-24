@@ -2,6 +2,7 @@
 
 local pairs, ipairs, tostring, pcall, type, time_global = pairs, ipairs, tostring, pcall, type, time_global
 local math_floor, string_format, table_concat, table_sort = math.floor, string.format, table.concat, table.sort
+local INVALID_ENTITY_ID = xconst.INVALID_ENTITY_ID
 
 local log = xlog.get_logger("TestZone.watcher", { outfile = "testzone.log" })
 
@@ -201,7 +202,7 @@ local format_dispatch = {
     userdata = function(arg, deep)
         if deep then return format_userdata_deep(arg) end
         local id = arg.id and arg:id()
-        return (id and id ~= 65535) and ("obj#" .. id) or "userdata"
+        return (id and id ~= INVALID_ENTITY_ID) and ("obj#" .. id) or "userdata"
     end,
     table = function(arg, deep)
         if deep then return format_table(arg, 1, config.introspect_depth or 2) end
