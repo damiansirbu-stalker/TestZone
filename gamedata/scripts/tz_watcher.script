@@ -2,6 +2,8 @@
 
 local pairs, ipairs, tostring, pcall, type, time_global = pairs, ipairs, tostring, pcall, type, time_global
 local math_floor, string_format, table_concat, table_sort = math.floor, string.format, table.concat, table.sort
+local RegisterScriptCallback, ResetTimeEvent = RegisterScriptCallback, ResetTimeEvent
+local CreateTimeEvent, RemoveTimeEvent = CreateTimeEvent, RemoveTimeEvent
 local INVALID_ENTITY_ID = xconst.INVALID_ENTITY_ID
 
 local log = xlog.get_logger("TestZone.watcher", { outfile = "testzone.log" })
