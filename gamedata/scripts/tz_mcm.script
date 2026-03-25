@@ -1,4 +1,5 @@
 --- tz_mcm: MCM configuration for TestZone
+
 local RegisterScriptCallback = RegisterScriptCallback
 
 defaults = {
@@ -19,16 +20,7 @@ local path_builder = function(key)
     local tab = key:sub(1, 9) == "profiler_" and "profiler" or "main"
     return "tz/" .. tab .. "/" .. key
 end
-get_config = xmcm.create_getter("tz", defaults, path_builder)
-cfg = {}
-
-function load_config()
-    for k in pairs(defaults) do
-        cfg[k] = get_config(k)
-    end
-end
-
-load_config()
+cfg, get_config, load_config = xmcm.create_config("tz", defaults, path_builder)
 
 function on_mcm_load()
     return {
