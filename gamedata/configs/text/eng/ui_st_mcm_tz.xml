@@ -28,10 +28,10 @@
         <text>Log top-firing callbacks at regular intervals.</text>
     </string>
     <string id="ui_mcm_tz_main_periodic_stats_interval">
-        <text>Stats interval (seconds)</text>
+        <text>Stats interval</text>
     </string>
     <string id="ui_mcm_tz_main_periodic_stats_interval_desc">
-        <text>How often to log periodic statistics (10-3600).</text>
+        <text>[seconds]\nHow often to log periodic statistics. Range 10-3600.</text>
     </string>
     <string id="ui_mcm_tz_main_log_payload_enabled">
         <text>Log payload (arguments)</text>
@@ -58,10 +58,10 @@
         <text>Limit log frequency per callback type. Prevents log spam from high-frequency callbacks.</text>
     </string>
     <string id="ui_mcm_tz_main_rate_limit_interval">
-        <text>Rate limit interval (ms)</text>
+        <text>Rate limit interval</text>
     </string>
     <string id="ui_mcm_tz_main_rate_limit_interval_desc">
-        <text>Minimum milliseconds between logs for same callback type (100-10000).</text>
+        <text>[milliseconds]\nMinimum time between logs for same callback type. Range 100-10000.</text>
     </string>
     <string id="ui_mcm_tz_main_info">
         <text>Watcher logs all 162 engine callbacks. Log output: logs/testzone.log</text>
@@ -84,16 +84,16 @@
         <text>Start recording timing data for wrapped functions. Functions are always wrapped, this controls measurement.</text>
     </string>
     <string id="ui_mcm_tz_profiler_profiler_report_interval">
-        <text>Report interval (seconds)</text>
+        <text>Report interval</text>
     </string>
     <string id="ui_mcm_tz_profiler_profiler_report_interval_desc">
-        <text>How often to log profiler report (10-300).</text>
+        <text>[seconds]\nHow often to log profiler report. Range 10-300.</text>
     </string>
     <string id="ui_mcm_tz_profiler_profiler_spike_threshold">
-        <text>Spike threshold (microseconds)</text>
+        <text>Spike threshold</text>
     </string>
     <string id="ui_mcm_tz_profiler_profiler_spike_threshold_desc">
-        <text>Single call exceeding this value counts as a spike (100-10000).</text>
+        <text>[microseconds]\nSingle call exceeding this value counts as a spike. Range 100-10000.</text>
     </string>
     <string id="ui_mcm_tz_profiler_info">
         <text>Profiler wraps 22 suspect functions identified from GAMMA review. Log output: logs/testzone.log</text>
