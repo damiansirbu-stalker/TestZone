@@ -10,7 +10,7 @@
         <text>TestZone</text>
     </string>
     <string id="ui_mcm_tz_version">
-        <text>%c[d_cyan]1.0.0</text>
+        <text>%c[d_cyan]1.0.2</text>
     </string>
     <string id="ui_mcm_tz_main_desc">
         <text>Callback monitoring, performance profiling, and testing.</text>

@@ -1,5 +1,5 @@
 TestZone: Callback monitoring and profiling for STALKER Anomaly, by Damian
-Latest: 1.0.1 (xlibs 1.0.5)
+Latest: 1.0.2 (xlibs 1.2.1)
 GitHub: https://github.com/damiansirbu-stalker/TestZone
 
 Features:
@@ -56,6 +56,9 @@ License:
 MIT License. See LICENSE file.
 
 Versions:
+
+1.0.2
+  Changed: xlibs dependency updated to 1.2.1
 
 1.0.1
   Added: dependency gate for xlibs version check
