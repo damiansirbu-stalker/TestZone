@@ -1,5 +1,5 @@
 STALKER Mod Validation Report
-Generated: 2026-03-30 16:37:04
+Generated: 2026-03-31 01:05:47
 Validator: stalker-manager validate
 Mods: 1
 
@@ -259,45 +259,45 @@ Files:
 [4/5] load - runtime loading (PASS)
   Test: lua54 interpreter + X-Ray engine stubs
   Load test: TestZone
-  LOAD: xlevel
-  LOAD: xpda
-  LOAD: tz_mcm
-  LOAD: xevent
-  LOAD: _tz_deps
-  LOAD: xdata
   LOAD: xcreature
-  LOAD: xmcm
-  LOAD: xsmart
-  LOAD: xtrace
-  LOAD: xstash
-  LOAD: tz_profiler
-  LOAD: xobject
-  LOAD: xbus
-  LOAD: xtime
-  LOAD: xtable
-  LOAD: xstring
-  LOAD: xsquad
-  LOAD: xlog
-  LOAD: xttltable
-  LOAD: tz_watcher
-  LOAD: xmath
   LOAD: xinspect
-  LOAD: xlibs
+  LOAD: xdata
+  LOAD: xtable
+  LOAD: xlog
+  LOAD: xmcm
   LOAD: xprofiler
+  LOAD: tz_watcher
+  LOAD: xpda
+  LOAD: xbus
+  LOAD: xlevel
+  LOAD: xsquad
+  LOAD: _tz_deps
+  LOAD: xlibs
+  LOAD: xtime
+  LOAD: xsmart
+  LOAD: xttltable
   LOAD: xconst
+  LOAD: tz_profiler
+  LOAD: tz_mcm
+  LOAD: xmath
+  LOAD: xstring
+  LOAD: xstash
+  LOAD: xtrace
   LOAD: xlibs_mcm
-  START: tz_watcher.on_game_start
+  LOAD: xobject
+  LOAD: xevent
+  START: xlog.on_game_start
   START: xtime.on_game_start
+  START: tz_watcher.on_game_start
+  START: tz_mcm.on_game_start
   START: tz_profiler.on_game_start
   START: _tz_deps.on_game_start
-  START: tz_mcm.on_game_start
-  START: xlog.on_game_start
   OK: 27 loaded, 6 on_game_start
 
 [5/5] gitleaks - secret scanning (PASS)
   Scan: credentials, API keys, tokens, private keys
-  4:37PM INF scanned ~37873 bytes (37.87 KB) in 101ms
-  4:37PM INF no leaks found
+  1:05AM INF scanned ~58575 bytes (58.58 KB) in 109ms
+  1:05AM INF no leaks found
 
 ========================================================================
 RESULT: PASS | Grade: S+ | Score: 0

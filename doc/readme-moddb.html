@@ -1,0 +1,96 @@
+<h3>Latest: 1.0.3 (xlibs 1.2.3)</h3>
+<h3>GitHub: <a href="https://github.com/damiansirbu-stalker/TestZone">https://github.com/damiansirbu-stalker/TestZone</a></h3>
+
+<h2>Features</h2>
+<ul>
+<li><b>Watcher</b> - monitors all 162 engine callbacks with fire counts and payload logging</li>
+<li><b>Deep introspection</b> - extracts detailed info from tables and userdata arguments</li>
+<li><b>Rate limiting</b> - prevents log spam from high-frequency callbacks</li>
+<li><b>Per-callback toggles</b> - enable/disable individual callbacks via MCM</li>
+<li><b>Periodic statistics</b> - logs top-firing callbacks at configurable intervals</li>
+</ul>
+
+<h2>Requirements</h2>
+<ul>
+<li>Anomaly 1.5.3</li>
+<li>Modded exes</li>
+<li><a href="https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001">xlibs</a></li>
+<li>MCM</li>
+</ul>
+
+<h2>Install (MO2)</h2>
+<ul>
+<li>1. Install xlibs (load first)</li>
+<li>2. Install TestZone</li>
+<li>3. Load order does not matter</li>
+<li>4. Configure via MCM (Options -> TestZone)</li>
+</ul>
+
+<h2>Uninstall (MO2)</h2>
+<p>Disable or remove in MO2.</p>
+
+<h2>Configuration</h2>
+
+<h3>Main tab:</h3>
+<ul>
+<li><b>Watcher enabled</b> - master toggle for callback logging</li>
+<li><b>Periodic statistics</b> - log callback fire counts at regular intervals</li>
+<li><b>Stats interval</b> - how often to log periodic stats (10-3600 seconds)</li>
+<li><b>Log payload</b> - log callback arguments (can create large log files)</li>
+<li><b>Deep introspection</b> - extract detailed info from objects</li>
+<li><b>Table depth</b> - recursion depth for table introspection (1-4)</li>
+<li><b>Rate limiting</b> - throttle repeated callback logs</li>
+<li><b>Rate limit interval</b> - min ms between same callback logs (100-10000)</li>
+</ul>
+
+<h3>Tracked Events tab:</h3>
+<ul>
+<li>Per-callback enable/disable toggles for all 162 callbacks</li>
+</ul>
+
+<p>Log output: appdata/logs/testzone.log</p>
+
+<h2>Compatibility</h2>
+<p>No known incompatibilities.</p>
+
+<h2>Credits</h2>
+<p>DrakoMT and SaloEater for their support.<br />
+Demonized, Catspaw, Vintar0, RavenAscendant, xcvb, lizzardman, Aoldri, and Feel_Fried. Their work on the engine, modded exes, scripts, and tools shaped how Anomaly modding is done.</p>
+
+<h2>Development</h2>
+<p>Written against X-Ray Monolith engine source, Demonized exes source code, and Anomaly 1.5.3 unpacked gamedata.<br />
+Code patterns and engine usage validated against established work by reputable GAMMA modders (Demonized, Vintar0, RavenAscendant, xcvb).<br />
+The code is validated in real time by a multi-stage pipeline: luacheck, selene, tree-sitter AST analysis, contract rules, cross-file dependency resolution, cyclomatic complexity analysis, crash and vulnerability pattern detection, lua54 integration testing with X-Ray engine stubs, gitleaks secret scanning.<br />
+Full report in doc/test-report.log.</p>
+
+<h2>Usage and License</h2>
+<ul>
+<li>Modpacks: allowed and encouraged. Keep the readme and license files.</li>
+<li>Addons, patches, integrations: allowed. Credit "TestZone by Damian Sirbu" visibly on your mod page.</li>
+<li>Full license in LICENSE file and on GitHub.</li>
+</ul>
+
+<h2>Versions</h2>
+
+<h3>1.0.3</h3>
+<ul>
+<li>xlibs 1.2.3 dependency.</li>
+</ul>
+
+<h3>1.0.2</h3>
+<ul>
+<li>Changed: xlibs dependency updated to 1.2.1</li>
+</ul>
+
+<h3>1.0.1</h3>
+<ul>
+<li>Added: dependency gate for xlibs version check</li>
+</ul>
+
+<h3>1.0.0</h3>
+<ul>
+<li>Renamed from AlifeLogger. Multi-feature test lab.</li>
+<li>Changed: renamed AlifeLogger -> TestZone (prefix al_ -> tz_)</li>
+<li>Changed: log file alife_logger.log -> testzone.log</li>
+<li>Changed: MCM id al -> tz</li>
+</ul>
