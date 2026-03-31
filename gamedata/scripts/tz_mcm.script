@@ -32,7 +32,7 @@ function on_mcm_load()
                 text = "ui_mcm_menu_tz_main",
                 sh = true,
                 gr = {
-                    { id = "title", type = "slide", link = "ui_options_slider_player",
+                    { id = "title", type = "slide", link = "tz_mcm_banner",
                         text = "ui_mcm_tz_title", size = {512, 50}, spacing = 20 },
                     { id = "desc", type = "desc", text = "ui_mcm_tz_main_desc" },
                     { id = "watcher_enabled", type = "check", val = 1, def = false },
@@ -53,7 +53,8 @@ function on_mcm_load()
                     { id = "div_info", type = "line" },
                     { id = "info", type = "desc", text = "ui_mcm_tz_main_info", clr = {200, 200, 200, 100} },
                     { id = "div_version", type = "line" },
-                    { id = "version", type = "desc", text = "ui_mcm_tz_version", clr = {255, 0, 206, 209} },
+                    { id = "version", type = "desc", text = "ui_mcm_tz_main_info",
+                        ui_hook_functor = { tz_mcm.set_version_text }, clr = {255, 0, 206, 209} },
                 },
             },
             {
@@ -61,7 +62,7 @@ function on_mcm_load()
                 text = "ui_mcm_menu_tz_profiler",
                 sh = true,
                 gr = {
-                    { id = "title", type = "slide", link = "ui_options_slider_player",
+                    { id = "title", type = "slide", link = "tz_mcm_banner",
                         text = "ui_mcm_tz_profiler_title", size = {512, 50}, spacing = 20 },
                     { id = "desc", type = "desc", text = "ui_mcm_tz_profiler_desc" },
                     { id = "profiler_enabled", type = "check", val = 1, def = false },
@@ -74,6 +75,10 @@ function on_mcm_load()
             },
         },
     }
+end
+
+function set_version_text(anchor, handlers)
+    handlers.desc:SetText(_tz_deps.get_version())
 end
 
 function on_game_start()

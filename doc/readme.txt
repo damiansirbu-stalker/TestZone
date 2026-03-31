@@ -1,6 +1,6 @@
 TestZone: Callback monitoring and profiling for STALKER Anomaly, by Damian
-Latest: 1.0.3 (xlibs 1.2.3)
 GitHub: https://github.com/damiansirbu-stalker/TestZone
+Changelog: https://github.com/damiansirbu-stalker/TestZone/blob/main/doc/changelog
 
 Features:
 Watcher - monitors all 162 engine callbacks with fire counts and payload logging
@@ -56,20 +56,3 @@ Usage and License:
   Modpacks: allowed and encouraged. Keep the readme and license files.
   Addons, patches, integrations: allowed. Credit "TestZone by Damian Sirbu" visibly on your mod page.
   Full license in LICENSE file and on GitHub.
-
-Versions:
-
-1.0.3
-  xlibs 1.2.3 dependency.
-
-1.0.2
-  Changed: xlibs dependency updated to 1.2.1
-
-1.0.1
-  Added: dependency gate for xlibs version check
-
-1.0.0
-  Renamed from AlifeLogger. Multi-feature test lab.
-  Changed: renamed AlifeLogger -> TestZone (prefix al_ -> tz_)
-  Changed: log file alife_logger.log -> testzone.log
-  Changed: MCM id al -> tz

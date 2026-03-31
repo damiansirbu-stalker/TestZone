@@ -1,0 +1,14 @@
+1.0.3
+  xlibs 1.2.3 dependency.
+
+1.0.2
+  Changed: xlibs dependency updated to 1.2.1
+
+1.0.1
+  Added: dependency gate for xlibs version check
+
+1.0.0
+  Renamed from AlifeLogger. Multi-feature test lab.
+  Changed: renamed AlifeLogger -> TestZone (prefix al_ -> tz_)
+  Changed: log file alife_logger.log -> testzone.log
+  Changed: MCM id al -> tz
