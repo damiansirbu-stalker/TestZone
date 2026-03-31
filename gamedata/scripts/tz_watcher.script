@@ -329,6 +329,7 @@ end
 
 --- @safety pcall: some callbacks may not exist in engine
 function on_game_start()
+    log.info("TestZone v%s (xlibs v%s)", _tz_deps.get_version(), xlibs.get_version())
     log.info("TestZone Watcher initialized (162 callbacks)")
 
     -- Register all callbacks

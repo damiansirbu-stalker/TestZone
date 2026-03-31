@@ -77,7 +77,7 @@ function on_mcm_load()
     }
 end
 
-function set_version_text(anchor, handlers)
+function set_version_text(_anchor, handlers)
     handlers.desc:SetText(_tz_deps.get_version())
 end
 
