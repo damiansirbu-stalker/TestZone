@@ -3,7 +3,6 @@
 local pairs, ipairs, tostring = pairs, ipairs, tostring
 local string_format, table_sort = string.format, table.sort
 local time_global, RegisterScriptCallback = time_global, RegisterScriptCallback
-local ResetTimeEvent, CreateTimeEvent, RemoveTimeEvent = ResetTimeEvent, CreateTimeEvent, RemoveTimeEvent
 
 local log = xlog.get_logger("TestZone.profiler", { outfile = "testzone.log" })
 
