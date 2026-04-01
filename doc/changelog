@@ -1,7 +1,6 @@
 next
-  Added: MCM banner
   Added: version logged at startup (mod + xlibs)
-  Changed: MCM version displayed from code, no longer hardcoded in XML
+  Changed: MCM refresh (banner, version from code, cream version color)
 
 1.0.3
   xlibs 1.2.3 dependency.
