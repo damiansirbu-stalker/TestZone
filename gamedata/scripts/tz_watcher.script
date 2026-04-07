@@ -281,16 +281,15 @@ local function create_handler(callback_name)
     return function(...)
         if not config.enabled then return end
         stats[callback_name] = stats[callback_name] + 1
-        if config.log_payload_enabled and should_log(callback_name) then
-            local deep = config.deep_introspect_enabled
-            local arg_str = format_args(deep, ...)
-            local suffix = ""
-            if is_squad_cb then
-                local status = read_online_status(select(1, ...))
-                if status then suffix = " [" .. status .. "]" end
-            end
-            log.info("[%s] %s%s", callback_name, arg_str, suffix)
+        if not config.log_payload_enabled or not should_log(callback_name) then return end
+        local deep = config.deep_introspect_enabled
+        local arg_str = format_args(deep, ...)
+        local suffix = ""
+        if is_squad_cb then
+            local status = read_online_status(select(1, ...))
+            if status then suffix = " [" .. status .. "]" end
         end
+        log.info("[%s] %s%s", callback_name, arg_str, suffix)
     end
 end
 

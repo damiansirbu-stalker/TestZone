@@ -1,6 +1,6 @@
 --- tz_profiler: wrap suspect GAMMA mod functions with xprofiler timing
 
-local pairs, ipairs, tostring = pairs, ipairs, tostring
+local pairs, ipairs = pairs, ipairs
 local string_format, table_sort = string.format, table.sort
 local time_global, RegisterScriptCallback = time_global, RegisterScriptCallback
 
