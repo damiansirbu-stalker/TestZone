@@ -11,6 +11,8 @@ defaults = {
     introspect_depth = 3,
     rate_limit_enabled = true,
     rate_limit_interval = 500,
+    mutant_scan_enabled = true,
+    mutant_scan_interval = 10,
     profiler_enabled = false,
     profiler_report_interval = 30,
     profiler_spike_threshold = 1000,
@@ -45,6 +47,10 @@ function on_mcm_load()
                     { id = "div_introspect", type = "line" },
                     { id = "deep_introspect_enabled", type = "check", val = 1, def = false },
                     { id = "introspect_depth", type = "track", val = 2, min = 1, max = 4, step = 1, def = 2 },
+
+                    { id = "div_mutant_scan", type = "line" },
+                    { id = "mutant_scan_enabled", type = "check", val = 1, def = true },
+                    { id = "mutant_scan_interval", type = "track", val = 2, min = 5, max = 300, step = 5, def = 10 },
 
                     { id = "div_ratelimit", type = "line" },
                     { id = "rate_limit_enabled", type = "check", val = 1, def = false },

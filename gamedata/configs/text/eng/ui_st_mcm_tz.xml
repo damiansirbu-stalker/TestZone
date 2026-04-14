@@ -60,6 +60,18 @@
     <string id="ui_mcm_tz_main_rate_limit_interval_desc">
         <text>[milliseconds]\nMinimum time between logs for same callback type. Range 100-10000.</text>
     </string>
+    <string id="ui_mcm_tz_main_mutant_scan_enabled">
+        <text>Mutant scan enabled</text>
+    </string>
+    <string id="ui_mcm_tz_main_mutant_scan_enabled_desc">
+        <text>Periodic scan of all mutant squads. Logs species, faction, online/offline, smart terrain, commander fields.</text>
+    </string>
+    <string id="ui_mcm_tz_main_mutant_scan_interval">
+        <text>Mutant scan interval</text>
+    </string>
+    <string id="ui_mcm_tz_main_mutant_scan_interval_desc">
+        <text>[seconds]\nHow often the mutant scan runs. Range 5-300.</text>
+    </string>
     <string id="ui_mcm_tz_main_info">
         <text>Watcher logs all 162 engine callbacks. Log output: logs/testzone.log</text>
     </string>
