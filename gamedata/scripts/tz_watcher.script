@@ -198,6 +198,7 @@ local config = {
     rate_limit_interval_ms = 500,
     mutant_scan_enabled = true,
     mutant_scan_interval = 10,
+    geometry_scan_enabled = true,
 }
 
 --- Format dispatch table (reduces if/elseif chain)
@@ -473,6 +474,11 @@ function on_game_start()
     end
     CreateTimeEvent("tz_watcher", "mutant_scan", config.mutant_scan_interval, timer_mutant_scan)
 
+    -- Geometry scan on first update (once per level load)
+    RegisterScriptCallback("actor_on_first_update", function()
+        if config.geometry_scan_enabled then tz_geometry.scan() end
+    end)
+
     -- Config loader
     local cfg = tz_mcm and tz_mcm.cfg
     local function load_config()
@@ -487,6 +493,7 @@ function on_game_start()
         config.rate_limit_interval_ms = cfg.rate_limit_interval
         config.mutant_scan_enabled = cfg.mutant_scan_enabled
         config.mutant_scan_interval = cfg.mutant_scan_interval
+        config.geometry_scan_enabled = cfg.geometry_scan_enabled
     end
 
     -- Reload config on MCM change

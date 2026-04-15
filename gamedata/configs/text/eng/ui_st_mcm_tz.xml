@@ -48,6 +48,12 @@
     <string id="ui_mcm_tz_main_introspect_depth_desc">
         <text>Maximum depth for table introspection (1-4). Higher = more detail but larger logs.</text>
     </string>
+    <string id="ui_mcm_tz_main_geometry_scan_enabled">
+        <text>Geometry scan enabled</text>
+    </string>
+    <string id="ui_mcm_tz_main_geometry_scan_enabled_desc">
+        <text>Scan smart terrain distances, stash density, base spacing, and feature distribution per level. Fires on level load and periodically. Log output: logs/testzone.log</text>
+    </string>
     <string id="ui_mcm_tz_main_rate_limit_enabled">
         <text>Rate limiting</text>
     </string>

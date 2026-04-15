@@ -1,0 +1,200 @@
+--- tz_geometry: Level geometry scanner for smart terrain distance research
+
+local pairs, ipairs = pairs, ipairs
+local math_sqrt, math_floor, math_huge = math.sqrt, math.floor, math.huge
+local table_sort, table_concat = table.sort, table.concat
+
+local log = xlog.get_logger("TestZone.geometry", { outfile = "testzone.log" })
+local RADII = { 100, 200, 300, 500 }
+
+local function _smart_type(smart)
+    if xsmart.is_base(smart) then return "base" end
+    if xsmart.is_lair(smart) then return "lair" end
+    if xsmart.is_resource(smart) then return "resource" end
+    if xsmart.is_territory(smart) then return "territory" end
+    return "other"
+end
+
+local function _count_squads(smart_id)
+    local count = 0
+    local squad_data = xsmart.get_smart_squads(smart_id)
+    if squad_data then for _ in pairs(squad_data) do count = count + 1 end end
+    return count
+end
+
+local function _collect_smarts(level_id)
+    if not SIMBOARD or not SIMBOARD.smarts_by_names then return {} end
+    local smarts = {}
+    for _, smart in pairs(SIMBOARD.smarts_by_names) do
+        if not smart or not smart.position then goto continue end
+        if xlevel.get_level_id(smart) ~= level_id then goto continue end
+        smarts[#smarts + 1] = {
+            id = smart.id, name = smart:name(), position = smart.position,
+            stype = _smart_type(smart), faction = xsmart.get_smart_faction(smart),
+            campfire = xsmart.has_campfire(smart),
+            trader = xsmart.has_trader_job(smart),
+            mechanic = xsmart.has_mechanic_job(smart),
+        }
+        ::continue::
+    end
+    return smarts
+end
+
+local function _collect_stashes(level_id)
+    local positions = {}
+    if not treasure_manager or not treasure_manager.caches then return positions end
+    for stash_id in pairs(treasure_manager.caches) do
+        local se_obj = xobject.se(stash_id)
+        if se_obj and se_obj.position and xlevel.get_level_id(se_obj) == level_id then
+            positions[#positions + 1] = se_obj.position
+        end
+    end
+    return positions
+end
+
+local function _count_at_radii(origin, targets, skip_idx)
+    local counts = { 0, 0, 0, 0 }
+    for tidx = 1, #targets do
+        if tidx == skip_idx then goto next_target end
+        local dist = math_sqrt(origin:distance_to_sqr(targets[tidx]))
+        for ridx = 1, #RADII do
+            if dist <= RADII[ridx] then counts[ridx] = counts[ridx] + 1 end
+        end
+        ::next_target::
+    end
+    return counts
+end
+
+local function _nearest_neighbor_distances(smarts)
+    local smart_count = #smarts
+    local all_nn = {}
+    for idx = 1, smart_count do
+        local entry = smarts[idx]
+        local nearest = { any = math_huge, base = math_huge, lair = math_huge, campfire = math_huge }
+        local nearest_name = { any = "none", base = "none", lair = "none", campfire = "none" }
+        for jdx = 1, smart_count do
+            if idx == jdx then goto next_peer end
+            local peer = smarts[jdx]
+            local dist = math_sqrt(entry.position:distance_to_sqr(peer.position))
+            if dist < nearest.any then nearest.any = dist; nearest_name.any = peer.name end
+            if peer.stype == "base" and dist < nearest.base then nearest.base = dist; nearest_name.base = peer.name end
+            if peer.stype == "lair" and dist < nearest.lair then nearest.lair = dist; nearest_name.lair = peer.name end
+            if peer.campfire and dist < nearest.campfire then nearest.campfire = dist; nearest_name.campfire = peer.name end
+            ::next_peer::
+        end
+        all_nn[idx] = { entry = entry, nearest = nearest, nearest_name = nearest_name }
+    end
+    return all_nn
+end
+
+local function _build_tags(entry)
+    local tag_parts = { entry.stype }
+    if entry.campfire then tag_parts[#tag_parts + 1] = "fire" end
+    if entry.trader then tag_parts[#tag_parts + 1] = "trader" end
+    if entry.mechanic then tag_parts[#tag_parts + 1] = "mechanic" end
+    return table_concat(tag_parts, "+")
+end
+
+local function _dist_or_none(dist)
+    return dist == math_huge and -1 or dist
+end
+
+local function _log_per_smart(all_nn, smart_positions, stash_positions)
+    for idx = 1, #all_nn do
+        local row = all_nn[idx]
+        local entry, nn, nn_name = row.entry, row.nearest, row.nearest_name
+        local nc = _count_at_radii(entry.position, smart_positions, idx)
+        local sc = _count_at_radii(entry.position, stash_positions, nil)
+        log.info("  [%s] %s faction=%s squads=%d nn=%.0fm(%s) base=%.0fm(%s) lair=%.0fm(%s) fire=%.0fm(%s) | smarts@100=%d @200=%d @300=%d @500=%d | stash@100=%d @200=%d @300=%d @500=%d",
+            entry.name, _build_tags(entry), entry.faction, _count_squads(entry.id),
+            nn.any, nn_name.any,
+            _dist_or_none(nn.base), nn_name.base,
+            _dist_or_none(nn.lair), nn_name.lair,
+            _dist_or_none(nn.campfire), nn_name.campfire,
+            nc[1], nc[2], nc[3], nc[4], sc[1], sc[2], sc[3], sc[4])
+    end
+end
+
+local function _log_summary(level_name, smarts, stash_count, all_nn)
+    local smart_count = #smarts
+    local sorted_nn = {}
+    for idx = 1, #all_nn do sorted_nn[idx] = all_nn[idx].nearest.any end
+    table_sort(sorted_nn, function(a, b) return a < b end)
+    local total = 0
+    for idx = 1, smart_count do total = total + sorted_nn[idx] end
+    local avg = smart_count > 0 and total / smart_count or 0
+    local med = sorted_nn[math_floor(smart_count / 2 + 0.5)] or 0
+    local p10 = sorted_nn[math_floor(smart_count * 0.10 + 0.5)] or 0
+    local p25 = sorted_nn[math_floor(smart_count * 0.25 + 0.5)] or 0
+    local p75 = sorted_nn[math_floor(smart_count * 0.75 + 0.5)] or 0
+    local p90 = sorted_nn[math_floor(smart_count * 0.90 + 0.5)] or 0
+
+    local type_counts = {}
+    local fire_count, trader_count, mechanic_count, empty_count, occupied_count = 0, 0, 0, 0, 0
+    for _, entry in ipairs(smarts) do
+        type_counts[entry.stype] = (type_counts[entry.stype] or 0) + 1
+        if entry.campfire then fire_count = fire_count + 1 end
+        if entry.trader then trader_count = trader_count + 1 end
+        if entry.mechanic then mechanic_count = mechanic_count + 1 end
+        if _count_squads(entry.id) > 0 then occupied_count = occupied_count + 1 else empty_count = empty_count + 1 end
+    end
+    local type_parts = {}
+    for stype, count in pairs(type_counts) do type_parts[#type_parts + 1] = stype .. "=" .. count end
+
+    log.info("  SUMMARY: level=%s smarts=%d stashes=%d | %s", level_name, smart_count, stash_count, table_concat(type_parts, " "))
+    log.info("  FEATURES: campfire=%d trader=%d mechanic=%d | occupied=%d empty=%d (%.0f%% occupied)",
+        fire_count, trader_count, mechanic_count, occupied_count, empty_count,
+        smart_count > 0 and (occupied_count / smart_count * 100) or 0)
+    log.info("  NEAREST-NEIGHBOR: min=%.0fm p10=%.0fm p25=%.0fm median=%.0fm p75=%.0fm p90=%.0fm max=%.0fm avg=%.0fm",
+        sorted_nn[1] or 0, p10, p25, med, p75, p90, sorted_nn[smart_count] or 0, avg)
+end
+
+local function _log_base_distances(smarts)
+    local bases = {}
+    for _, entry in ipairs(smarts) do
+        if entry.stype == "base" then bases[#bases + 1] = entry end
+    end
+    if #bases < 2 then return end
+    local base_nn = {}
+    for idx = 1, #bases do
+        local nearest = math_huge
+        for jdx = 1, #bases do
+            if idx == jdx then goto next_base end
+            local dist = math_sqrt(bases[idx].position:distance_to_sqr(bases[jdx].position))
+            if dist < nearest then nearest = dist end
+            ::next_base::
+        end
+        base_nn[#base_nn + 1] = nearest
+    end
+    table_sort(base_nn, function(a, b) return a < b end)
+    local total = 0
+    for _, dist in ipairs(base_nn) do total = total + dist end
+    log.info("  BASE-TO-BASE: bases=%d min=%.0fm avg=%.0fm max=%.0fm",
+        #bases, base_nn[1], total / #base_nn, base_nn[#base_nn])
+end
+
+function scan()
+    if not level.present() then return end
+    local level_id = xlevel.get_actor_level_id()
+    if not level_id then return end
+
+    local level_name = level.name()
+    local smarts = _collect_smarts(level_id)
+    local stash_positions = _collect_stashes(level_id)
+    local smart_count = #smarts
+
+    log.info("=== GEOMETRY SCAN: %s (%d smarts, %d stashes) ===", level_name, smart_count, #stash_positions)
+    if smart_count == 0 then
+        log.info("=== END GEOMETRY ===")
+        return
+    end
+
+    local smart_positions = {}
+    for idx = 1, smart_count do smart_positions[idx] = smarts[idx].position end
+
+    local all_nn = _nearest_neighbor_distances(smarts)
+    _log_per_smart(all_nn, smart_positions, stash_positions)
+    _log_summary(level_name, smarts, #stash_positions, all_nn)
+    _log_base_distances(smarts)
+    log.info("=== END GEOMETRY ===")
+end
