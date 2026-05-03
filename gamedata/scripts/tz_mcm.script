@@ -13,6 +13,10 @@ defaults = {
     rate_limit_interval = 500,
     mutant_scan_enabled = true,
     mutant_scan_interval = 10,
+    level_scan_enabled = true,
+    level_scan_interval = 60,
+    world_scan_enabled = false,
+    world_scan_interval = 120,
     geometry_scan_enabled = true,
     profiler_enabled = false,
     profiler_report_interval = 30,
@@ -52,6 +56,14 @@ function on_mcm_load()
                     { id = "div_mutant_scan", type = "line" },
                     { id = "mutant_scan_enabled", type = "check", val = 1, def = true },
                     { id = "mutant_scan_interval", type = "track", val = 2, min = 5, max = 300, step = 5, def = 10 },
+
+                    { id = "div_level_scan", type = "line" },
+                    { id = "level_scan_enabled", type = "check", val = 1, def = true },
+                    { id = "level_scan_interval", type = "track", val = 2, min = 10, max = 300, step = 5, def = 60 },
+
+                    { id = "div_world_scan", type = "line" },
+                    { id = "world_scan_enabled", type = "check", val = 1, def = false },
+                    { id = "world_scan_interval", type = "track", val = 2, min = 30, max = 600, step = 10, def = 120 },
 
                     { id = "div_geometry_scan", type = "line" },
                     { id = "geometry_scan_enabled", type = "check", val = 1, def = true },

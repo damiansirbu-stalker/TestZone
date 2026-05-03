@@ -1,0 +1,282 @@
+--- tz_scanner: Periodic level and world scans (squads, smarts, stashes, AP overlay, world population)
+
+local pairs, ipairs, tostring, next = pairs, ipairs, tostring, next
+local string_format, table_concat, table_sort = string.format, table.concat, table.sort
+local alife_object = alife_object
+local INVALID_ENTITY_ID = xconst.INVALID_ENTITY_ID
+
+local log = xlog.get_logger("TestZone.scanner", { outfile = "testzone.log" })
+
+local _is_monster_faction = {
+    ["monster_predatory_day"] = true, ["monster_predatory_night"] = true,
+    ["monster_vegetarian"] = true, ["monster_special"] = true,
+    ["monster_zombied_day"] = true, ["monster_zombied_night"] = true,
+    ["monster_zombied"] = true, ["monster"] = true, ["zoo_monster"] = true,
+}
+
+--- @export console: tz_scanner.scan_mutants()
+function scan_mutants()
+    local by_species = {}
+    local by_faction = {}
+    local by_method = { resolved = 0, none = 0 }
+    local by_online = { online = 0, offline = 0 }
+    local unresolved = {}
+    local total = 0
+
+    for squad in xsquad.iter_squads() do
+        if not _is_monster_faction[squad.player_id] then goto continue end
+        total = total + 1
+        local faction = squad.player_id
+        local online_key = squad.online and "online" or "offline"
+        by_faction[faction] = (by_faction[faction] or 0) + 1
+        by_online[online_key] = (by_online[online_key] or 0) + 1
+
+        local section = squad:section_name()
+        local species = xcreature.get_mutant_species(squad)
+        local variant = xcreature.get_mutant_variant(squad)
+        if species then
+            by_method.resolved = by_method.resolved + 1
+            by_species[species] = (by_species[species] or 0) + 1
+        else
+            by_method.none = by_method.none + 1
+            unresolved[#unresolved + 1] = string_format("id=%d section=%s faction=%s npc=%d online=%s",
+                squad.id, section, faction, squad:npc_count(), online_key)
+        end
+
+        local cmd_id = squad:commander_id()
+        local cmd_clsid, cmd_section = nil, nil
+        local se_cmd = (cmd_id and cmd_id ~= INVALID_ENTITY_ID) and alife_object(cmd_id) or nil
+        if se_cmd then
+            cmd_clsid = se_cmd:clsid()
+            cmd_section = se_cmd:section_name()
+        end
+
+        log.info("[MUTANT_SCAN] id=%d species=%s variant=%s | section=%s faction=%s npc=%d online=%s smart=%s target=%s assigned=%s scripted=%s action=%s | cmd=%s clsid=%s sec=%s",
+            squad.id, species or "NONE", variant or "?",
+            section, faction, squad:npc_count(), online_key,
+            tostring(squad.smart_id), tostring(squad.current_target_id), tostring(squad.assigned_target_id),
+            tostring(squad.scripted_target), tostring(squad.current_action),
+            tostring(cmd_id), tostring(cmd_clsid), cmd_section or "?")
+        ::continue::
+    end
+
+    log.info("=== MUTANT SCAN: %d squads (online=%d offline=%d) ===", total, by_online.online, by_online.offline)
+
+    local sorted_species = {}
+    for species, count in pairs(by_species) do sorted_species[#sorted_species + 1] = { name = species, count = count } end
+    table_sort(sorted_species, function(a, b) return a.count > b.count end)
+    for _, item in ipairs(sorted_species) do log.info("  species: %-16s %d", item.name, item.count) end
+
+    local sorted_factions = {}
+    for faction, count in pairs(by_faction) do sorted_factions[#sorted_factions + 1] = { name = faction, count = count } end
+    table_sort(sorted_factions, function(a, b) return a.count > b.count end)
+    for _, item in ipairs(sorted_factions) do log.info("  faction: %-28s %d", item.name, item.count) end
+
+    log.info("  method: resolved=%d unresolved=%d", by_method.resolved, by_method.none)
+    if #unresolved > 0 then
+        log.info("  UNRESOLVED: %d", #unresolved)
+        for _, msg in ipairs(unresolved) do log.info("    %s", msg) end
+    end
+    log.info("=== END MUTANT SCAN ===")
+end
+
+--- @export console: tz_scanner.scan_squads()
+function scan_squads()
+    if not level.present() then return end
+    local actor_level_id = xlevel.get_actor_level_id()
+    if not actor_level_id then return end
+    local by_faction = {}
+    local by_online = { online = 0, offline = 0 }
+    local by_protection = { eligible = 0, protected = 0 }
+    local protection_reasons = {}
+    local total = 0
+    local protection_opts = { exclude_scripted = true, exclude_permanent = true, exclude_active_role = true, exclude_task_target = true }
+
+    for squad in xsquad.iter_squads() do
+        local lv = xlevel.get_level_id(squad)
+        if lv ~= actor_level_id then goto continue end
+        total = total + 1
+        local faction = squad.player_id or "?"
+        local online_key = squad.online and "online" or "offline"
+        by_faction[faction] = (by_faction[faction] or 0) + 1
+        by_online[online_key] = (by_online[online_key] or 0) + 1
+
+        local protected, reason, detail = xsquad.is_protected(squad, protection_opts)
+        local prot_str = "eligible"
+        if protected then
+            prot_str = reason .. ":" .. (detail or "?")
+            by_protection.protected = by_protection.protected + 1
+            protection_reasons[prot_str] = (protection_reasons[prot_str] or 0) + 1
+        else
+            by_protection.eligible = by_protection.eligible + 1
+        end
+
+        local section = squad:section_name() or "?"
+        local npc = squad:npc_count()
+        log.info("[SQUAD_SCAN] id=%d faction=%s section=%s npc=%d online=%s smart=%s target=%s scripted=%s protection=%s",
+            squad.id, faction, section, npc, online_key,
+            tostring(squad.smart_id), tostring(squad.current_target_id),
+            tostring(squad.scripted_target), prot_str)
+        ::continue::
+    end
+
+    log.info("=== SQUAD SCAN: level=%d squads=%d online=%d offline=%d eligible=%d protected=%d ===",
+        actor_level_id, total, by_online.online, by_online.offline, by_protection.eligible, by_protection.protected)
+
+    local sorted = {}
+    for f, c in pairs(by_faction) do sorted[#sorted + 1] = { name = f, count = c } end
+    table_sort(sorted, function(a, b) return a.count > b.count end)
+    for _, item in ipairs(sorted) do log.info("  faction: %-28s %d", item.name, item.count) end
+
+    if next(protection_reasons) then
+        log.info("  protection reasons:")
+        for r, c in pairs(protection_reasons) do log.info("    %-40s %d", r, c) end
+    end
+    log.info("=== END SQUAD SCAN ===")
+end
+
+--- @export console: tz_scanner.scan_smarts()
+function scan_smarts()
+    if not level.present() then return end
+    local actor_level_id = xlevel.get_actor_level_id()
+    if not actor_level_id then return end
+    if not simulation_board then return end
+    local SB = simulation_board.get_sim_board()
+    if not SB or not SB.smarts_by_names then return end
+    local total = 0
+    local by_type = { base = 0, lair = 0, territory = 0, campfire = 0, surge = 0, anomaly = 0, trader = 0, other = 0 }
+
+    for name, smart in pairs(SB.smarts_by_names) do
+        local lv = xlevel.get_level_id(smart)
+        if lv ~= actor_level_id then goto continue end
+        total = total + 1
+        local faction = xsmart.get_smart_faction(smart)
+        local flags = {}
+        if xsmart.is_base(smart) then flags[#flags + 1] = "base"; by_type.base = by_type.base + 1 end
+        if xsmart.is_lair(smart) then flags[#flags + 1] = "lair"; by_type.lair = by_type.lair + 1 end
+        if xsmart.is_territory(smart) then flags[#flags + 1] = "territory"; by_type.territory = by_type.territory + 1 end
+        if xsmart.has_campfire(smart) then flags[#flags + 1] = "campfire"; by_type.campfire = by_type.campfire + 1 end
+        if xsmart.has_surge_shelter(smart) then flags[#flags + 1] = "surge"; by_type.surge = by_type.surge + 1 end
+        if xsmart.has_anomaly(smart) then flags[#flags + 1] = "anomaly"; by_type.anomaly = by_type.anomaly + 1 end
+        if xsmart.has_trader_job(smart) then flags[#flags + 1] = "trader"; by_type.trader = by_type.trader + 1 end
+        if #flags == 0 then flags[#flags + 1] = "other"; by_type.other = by_type.other + 1 end
+
+        local pos = smart.position
+        local squads = xsmart.get_smart_squads(smart.id)
+        local pop = 0
+        if squads then for _ in pairs(squads) do pop = pop + 1 end end
+        log.info("[SMART_SCAN] id=%d name=%s faction=%s pop=%d/%d flags=%s pos=%.0f,%.0f,%.0f",
+            smart.id, name, faction or "none", pop, smart.max_population or 0,
+            table_concat(flags, "+"), pos.x, pos.y, pos.z)
+        ::continue::
+    end
+
+    log.info("=== SMART SCAN: level=%d total=%d base=%d lair=%d territory=%d campfire=%d surge=%d anomaly=%d trader=%d other=%d ===",
+        actor_level_id, total, by_type.base, by_type.lair, by_type.territory, by_type.campfire,
+        by_type.surge, by_type.anomaly, by_type.trader, by_type.other)
+    log.info("=== END SMART SCAN ===")
+end
+
+--- @export console: tz_scanner.scan_stashes()
+function scan_stashes()
+    if not level.present() then return end
+    if not treasure_manager or not treasure_manager.caches then log.info("[STASH_SCAN] no caches"); return end
+    local actor_level_id = xlevel.get_actor_level_id()
+    if not actor_level_id then return end
+    local total, filled, empty, looted = 0, 0, 0, 0
+
+    for id, data in pairs(treasure_manager.caches) do
+        local se = xobject.se(id)
+        if not se then goto continue end
+        local lv = xlevel.get_level_id(se)
+        if lv ~= actor_level_id then goto continue end
+        total = total + 1
+        local items = xstash.get_stash_items(id)
+        local is_looted = xstash.is_stash_looted(id)
+        local item_count = items and #items or 0
+        if is_looted then
+            looted = looted + 1
+        elseif item_count > 0 then
+            filled = filled + 1
+        else
+            empty = empty + 1
+        end
+        local pos = se.position
+        log.info("[STASH_SCAN] id=%d items=%d looted=%s pos=%.0f,%.0f,%.0f",
+            id, item_count, tostring(is_looted), pos.x, pos.y, pos.z)
+        ::continue::
+    end
+
+    log.info("=== STASH SCAN: level=%d total=%d filled=%d empty=%d looted=%d ===",
+        actor_level_id, total, filled, empty, looted)
+    log.info("=== END STASH SCAN ===")
+end
+
+local function _log_ap_squad(squad_id, data)
+    local se = xobject.se(squad_id)
+    if not se then return false, false end
+    local dst = tostring(data.scripted_target or "?")
+    local arr = data.arrived and "yes" or "no"
+    local rel = data.release_at and string_format("%.0f", data.release_at) or "nil"
+    log.info("[AP_SCAN] squad=%d faction=%s section=%s dst=%s arrived=%s release_at=%s",
+        squad_id, se.player_id or "?", se:section_name() or "?", dst, arr, rel)
+    return data.arrived or false, data.release_at ~= nil
+end
+
+--- @export console: tz_scanner.scan_ap_squads()
+function scan_ap_squads()
+    if not ap_core_squad then log.info("[AP_SCAN] ap_core_squad not loaded"); return end
+    local scripted = ap_core_squad.get_scripted_ids()
+    if not scripted then log.info("[AP_SCAN] no scripted squads"); return end
+    local total, arrived, waiting = 0, 0, 0
+
+    for squad_id, data in pairs(scripted) do
+        total = total + 1
+        local arr, wait = _log_ap_squad(squad_id, data)
+        if arr then arrived = arrived + 1 end
+        if wait then waiting = waiting + 1 end
+    end
+
+    local marked = ap_core_squad.get_marked_count()
+    log.info("=== AP SCAN: scripted=%d arrived=%d waiting=%d marked=%d ===", total, arrived, waiting, marked)
+    log.info("=== END AP SCAN ===")
+end
+
+--- @export console: tz_scanner.scan_world()
+function scan_world()
+    local by_faction = {}
+    local by_level = {}
+    local by_online = { online = 0, offline = 0 }
+    local total = 0
+
+    for squad in xsquad.iter_squads() do
+        total = total + 1
+        local faction = squad.player_id or "?"
+        local lv = xlevel.get_level_id(squad) or -1
+        local online_key = squad.online and "online" or "offline"
+        by_faction[faction] = (by_faction[faction] or 0) + 1
+        by_level[lv] = (by_level[lv] or 0) + 1
+        by_online[online_key] = (by_online[online_key] or 0) + 1
+    end
+
+    log.info("=== WORLD SCAN: squads=%d online=%d offline=%d ===", total, by_online.online, by_online.offline)
+
+    local sorted_factions = {}
+    for f, c in pairs(by_faction) do sorted_factions[#sorted_factions + 1] = { name = f, count = c } end
+    table_sort(sorted_factions, function(a, b) return a.count > b.count end)
+    for _, item in ipairs(sorted_factions) do log.info("  faction: %-28s %d", item.name, item.count) end
+
+    local sorted_levels = {}
+    for lv, c in pairs(by_level) do sorted_levels[#sorted_levels + 1] = { id = lv, count = c } end
+    table_sort(sorted_levels, function(a, b) return a.count > b.count end)
+    for _, item in ipairs(sorted_levels) do log.info("  level: %-4d %d squads", item.id, item.count) end
+    log.info("=== END WORLD SCAN ===")
+end
+
+--- Run all scans
+function run_all()
+    scan_squads()
+    scan_smarts()
+    scan_stashes()
+    scan_ap_squads()
+end

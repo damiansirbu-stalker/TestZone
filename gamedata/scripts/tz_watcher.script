@@ -2,7 +2,7 @@
 
 local pairs, ipairs, tostring, pcall, type, time_global = pairs, ipairs, tostring, pcall, type, time_global
 local math_floor, string_format, table_concat, table_sort = math.floor, string.format, table.concat, table.sort
-local RegisterScriptCallback, alife_object = RegisterScriptCallback, alife_object
+local RegisterScriptCallback = RegisterScriptCallback
 local INVALID_ENTITY_ID = xconst.INVALID_ENTITY_ID
 
 local log = xlog.get_logger("TestZone.watcher", { outfile = "testzone.log" })
@@ -198,6 +198,10 @@ local config = {
     rate_limit_interval_ms = 500,
     mutant_scan_enabled = true,
     mutant_scan_interval = 10,
+    level_scan_enabled = true,
+    level_scan_interval = 60,
+    world_scan_enabled = false,
+    world_scan_interval = 120,
     geometry_scan_enabled = true,
 }
 
@@ -296,85 +300,6 @@ local function create_handler(callback_name)
     end
 end
 
---- Mutant faction lookup
-local _is_monster_faction = {
-    ["monster_predatory_day"] = true, ["monster_predatory_night"] = true,
-    ["monster_vegetarian"] = true, ["monster_special"] = true,
-    ["monster_zombied_day"] = true, ["monster_zombied_night"] = true,
-    ["monster_zombied"] = true, ["monster"] = true, ["zoo_monster"] = true,
-}
-
---- @export console: tz_watcher.scan_mutants()
-function scan_mutants()
-    local by_species = {}
-    local by_faction = {}
-    local by_method = { resolved = 0, none = 0 }
-    local by_online = { online = 0, offline = 0 }
-    local unresolved = {}
-    local total = 0
-
-    for squad in xsquad.iter_squads() do
-        if not _is_monster_faction[squad.player_id] then goto continue end
-        total = total + 1
-        local faction = squad.player_id
-        local online_key = squad.online and "online" or "offline"
-        by_faction[faction] = (by_faction[faction] or 0) + 1
-        by_online[online_key] = (by_online[online_key] or 0) + 1
-
-        local section = squad:section_name()
-        local species = xcreature.get_mutant_species(squad)
-        local variant = xcreature.get_mutant_variant(squad)
-        if species then
-            by_method.resolved = by_method.resolved + 1
-            by_species[species] = (by_species[species] or 0) + 1
-        else
-            by_method.none = by_method.none + 1
-            unresolved[#unresolved + 1] = string_format("id=%d section=%s faction=%s npc=%d online=%s",
-                squad.id, section, faction, squad:npc_count(), online_key)
-        end
-
-        local cmd_id = squad:commander_id()
-        local cmd_clsid, cmd_section = nil, nil
-        local se_cmd = (cmd_id and cmd_id ~= INVALID_ENTITY_ID) and alife_object(cmd_id) or nil
-        if se_cmd then
-            cmd_clsid = se_cmd:clsid()
-            cmd_section = se_cmd:section_name()
-        end
-
-        log.info("[SCAN] id=%d species=%s variant=%s | section=%s faction=%s npc=%d online=%s smart=%s target=%s assigned=%s scripted=%s action=%s | cmd=%s clsid=%s sec=%s",
-            squad.id, species or "NONE", variant or "?",
-            section, faction, squad:npc_count(), online_key,
-            tostring(squad.smart_id), tostring(squad.current_target_id), tostring(squad.assigned_target_id),
-            tostring(squad.scripted_target), tostring(squad.current_action),
-            tostring(cmd_id), tostring(cmd_clsid), cmd_section or "?")
-        ::continue::
-    end
-
-    log.info("=== MUTANT SCAN: %d squads (online=%d offline=%d) ===", total, by_online.online, by_online.offline)
-
-    local sorted_species = {}
-    for species, count in pairs(by_species) do sorted_species[#sorted_species + 1] = { name = species, count = count } end
-    table_sort(sorted_species, function(a, b) return a.count > b.count end)
-    for _, item in ipairs(sorted_species) do
-        log.info("  species: %-16s %d", item.name, item.count)
-    end
-
-    local sorted_factions = {}
-    for faction, count in pairs(by_faction) do sorted_factions[#sorted_factions + 1] = { name = faction, count = count } end
-    table_sort(sorted_factions, function(a, b) return a.count > b.count end)
-    for _, item in ipairs(sorted_factions) do
-        log.info("  faction: %-28s %d", item.name, item.count)
-    end
-
-    log.info("  method: resolved=%d unresolved=%d", by_method.resolved, by_method.none)
-
-    if #unresolved > 0 then
-        log.info("  UNRESOLVED: %d", #unresolved)
-        for _, msg in ipairs(unresolved) do log.info("    %s", msg) end
-    end
-
-    log.info("=== END SCAN ===")
-end
 
 --- @export console: tz_watcher.get_stats()
 function get_stats()
@@ -439,74 +364,70 @@ local function log_periodic_stats()
     log.info("=== END STATS ===")
 end
 
---- @safety pcall: some callbacks may not exist in engine
-function on_game_start()
-    log.info("TestZone v%s (xlibs v%s)", _tz_deps.get_version(), xlibs.get_version())
-    log.info("TestZone Watcher initialized (162 callbacks)")
+local _callbacks_registered = false
 
-    -- Register all callbacks
-    local registered = 0
-    local failed = 0
+--- Register all 162 callbacks with pcall safety (idempotent, once-per-session)
+--- @safety pcall: some callbacks may not exist in engine
+local function _register_callbacks()
+    if _callbacks_registered then return end
+    _callbacks_registered = true
+    local registered, failed = 0, 0
     for _, callback_name in pairs(ALL_CALLBACKS) do
         local handler = create_handler(callback_name)
         local ok, _ = pcall(RegisterScriptCallback, callback_name, handler)
-        if ok then
-            registered = registered + 1
-        else
-            failed = failed + 1
-        end
+        if ok then registered = registered + 1 else failed = failed + 1 end
     end
-
     log.info("Registered %d callbacks (%d failed)", registered, failed)
+end
 
-    -- Periodic stats timer
-    local function timer_periodic_stats()
+--- Start periodic timers (stats, mutant scan, level scan, world scan)
+local function _init_timers()
+    CreateTimeEvent("tz_watcher", "periodic_stats", config.periodic_stats_interval_sec, function()
         log_periodic_stats()
         ResetTimeEvent("tz_watcher", "periodic_stats", config.periodic_stats_interval_sec)
-    end
-
-    CreateTimeEvent("tz_watcher", "periodic_stats", config.periodic_stats_interval_sec, timer_periodic_stats)
-
-    -- Periodic mutant scan
-    local function timer_mutant_scan()
-        if config.mutant_scan_enabled then scan_mutants() end
+    end)
+    CreateTimeEvent("tz_watcher", "mutant_scan", config.mutant_scan_interval, function()
+        if config.mutant_scan_enabled then tz_scanner.scan_mutants() end
         ResetTimeEvent("tz_watcher", "mutant_scan", config.mutant_scan_interval)
-    end
-    CreateTimeEvent("tz_watcher", "mutant_scan", config.mutant_scan_interval, timer_mutant_scan)
+    end)
+    CreateTimeEvent("tz_watcher", "level_scan", config.level_scan_interval, function()
+        if config.level_scan_enabled then tz_scanner.run_all() end
+        ResetTimeEvent("tz_watcher", "level_scan", config.level_scan_interval)
+    end)
+    CreateTimeEvent("tz_watcher", "world_scan", config.world_scan_interval, function()
+        if config.world_scan_enabled then tz_scanner.scan_world() end
+        ResetTimeEvent("tz_watcher", "world_scan", config.world_scan_interval)
+    end)
+end
 
-    -- Geometry scan on first update (once per level load)
+--- Load MCM config into local config table
+local _cfg = tz_mcm and tz_mcm.cfg
+local function _load_config()
+    if not _cfg then return end
+    config.enabled = _cfg.watcher_enabled
+    if config.enabled then _register_callbacks() end
+    config.periodic_stats_enabled = _cfg.periodic_stats_enabled
+    config.periodic_stats_interval_sec = _cfg.periodic_stats_interval
+    config.log_payload_enabled = _cfg.log_payload_enabled
+    config.deep_introspect_enabled = _cfg.deep_introspect_enabled
+    config.introspect_depth = _cfg.introspect_depth
+    config.rate_limit_enabled = _cfg.rate_limit_enabled
+    config.rate_limit_interval_ms = _cfg.rate_limit_interval
+    config.mutant_scan_enabled = _cfg.mutant_scan_enabled
+    config.mutant_scan_interval = _cfg.mutant_scan_interval
+    config.level_scan_enabled = _cfg.level_scan_enabled
+    config.level_scan_interval = _cfg.level_scan_interval
+    config.world_scan_enabled = _cfg.world_scan_enabled
+    config.world_scan_interval = _cfg.world_scan_interval
+    config.geometry_scan_enabled = _cfg.geometry_scan_enabled
+end
+
+function on_game_start()
+    log.info("TestZone v%s (xlibs v%s)", _tz_deps.get_version(), xlibs.get_version())
+    _init_timers()
+    _load_config()
     RegisterScriptCallback("actor_on_first_update", function()
         if config.geometry_scan_enabled then tz_geometry.scan() end
     end)
-
-    -- Config loader
-    local cfg = tz_mcm and tz_mcm.cfg
-    local function load_config()
-        if not cfg then return end
-        config.enabled = cfg.watcher_enabled
-        config.periodic_stats_enabled = cfg.periodic_stats_enabled
-        config.periodic_stats_interval_sec = cfg.periodic_stats_interval
-        config.log_payload_enabled = cfg.log_payload_enabled
-        config.deep_introspect_enabled = cfg.deep_introspect_enabled
-        config.introspect_depth = cfg.introspect_depth
-        config.rate_limit_enabled = cfg.rate_limit_enabled
-        config.rate_limit_interval_ms = cfg.rate_limit_interval
-        config.mutant_scan_enabled = cfg.mutant_scan_enabled
-        config.mutant_scan_interval = cfg.mutant_scan_interval
-        config.geometry_scan_enabled = cfg.geometry_scan_enabled
-    end
-
-    -- Reload config on MCM change
-    RegisterScriptCallback("on_option_change", function()
-        load_config()
-        -- Reschedule timer if interval changed
-        RemoveTimeEvent("tz_watcher", "periodic_stats")
-        CreateTimeEvent("tz_watcher", "periodic_stats", config.periodic_stats_interval_sec, function()
-            log_periodic_stats()
-            return true
-        end)
-    end)
-
-    -- Load initial config
-    load_config()
+    RegisterScriptCallback("on_option_change", _load_config)
 end

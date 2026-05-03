@@ -11,7 +11,6 @@ Periodic statistics - logs top-firing callbacks at configurable intervals
 
 Requirements:
 Anomaly 1.5.3
-Modded exes
 xlibs (https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001)
 MCM
 
@@ -40,11 +39,10 @@ Tracked Events tab:
 Log output: appdata/logs/testzone.log
 
 Compatibility:
-Compatible with all modded exe variants (Demonized, AOE, MT).
+Tested with vanilla Anomaly 1.5.3, Demonized main, Demonized MT, and AOEngine (latest versions).
 No known incompatibilities.
 
 Credits:
-Stalker_Boss - Russian translation
 Altogolik - support, ideas, source materials
 
 Development:
