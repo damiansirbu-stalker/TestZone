@@ -158,7 +158,7 @@ function scan_smarts()
         if xsmart.has_campfire(smart) then flags[#flags + 1] = "campfire"; by_type.campfire = by_type.campfire + 1 end
         if xsmart.has_surge_shelter(smart) then flags[#flags + 1] = "surge"; by_type.surge = by_type.surge + 1 end
         if xsmart.has_anomaly(smart) then flags[#flags + 1] = "anomaly"; by_type.anomaly = by_type.anomaly + 1 end
-        if xsmart.has_trader_job(smart) then flags[#flags + 1] = "trader"; by_type.trader = by_type.trader + 1 end
+        if xsmart.has_stalker_jobs(smart, xsmart.JOB_TYPE_TRADER) then flags[#flags + 1] = "trader"; by_type.trader = by_type.trader + 1 end
         if #flags == 0 then flags[#flags + 1] = "other"; by_type.other = by_type.other + 1 end
 
         local pos = smart.position
@@ -226,7 +226,7 @@ end
 --- @export console: tz_scanner.scan_ap_squads()
 function scan_ap_squads()
     if not ap_core_squad then log.info("[AP_SCAN] ap_core_squad not loaded"); return end
-    local scripted = ap_core_squad.get_scripted_ids()
+    local scripted = ap_core_squad.get_scripted_squads()
     if not scripted then log.info("[AP_SCAN] no scripted squads"); return end
     local total, arrived, waiting = 0, 0, 0
 
