@@ -32,8 +32,8 @@ local function _collect_smarts(level_id)
             id = smart.id, name = smart:name(), position = smart.position,
             stype = _smart_type(smart), faction = xsmart.get_smart_faction(smart),
             campfire = xsmart.has_campfire(smart),
-            trader = xsmart.has_trader_job(smart),
-            mechanic = xsmart.has_mechanic_job(smart),
+            trader = xsmart.has_stalker_jobs(smart, xsmart.JOB_TYPE_TRADER),
+            mechanic = xsmart.has_stalker_jobs(smart, xsmart.JOB_TYPE_MECHANIC),
         }
         ::continue::
     end
