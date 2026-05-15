@@ -1,6 +1,6 @@
 --- tz_watcher: A-Life callback monitoring with fire counts and payload logging
 
-local pairs, ipairs, tostring, pcall, type, time_global = pairs, ipairs, tostring, pcall, type, time_global
+local pairs, ipairs, tostring, type, time_global = pairs, ipairs, tostring, type, time_global
 local math_floor, string_format, table_concat, table_sort = math.floor, string.format, table.concat, table.sort
 local RegisterScriptCallback = RegisterScriptCallback
 local INVALID_ENTITY_ID = xconst.INVALID_ENTITY_ID
@@ -366,18 +366,18 @@ end
 
 local _callbacks_registered = false
 
---- Register all 162 callbacks with pcall safety (idempotent, once-per-session)
---- @safety pcall: some callbacks may not exist in engine
+--- Register all 162 callbacks (idempotent, once-per-session). Unknown names print to
+--- console via axr_main.callback_set but never raise; no pcall needed.
 local function _register_callbacks()
     if _callbacks_registered then return end
     _callbacks_registered = true
-    local registered, failed = 0, 0
+    local registered = 0
     for _, callback_name in pairs(ALL_CALLBACKS) do
         local handler = create_handler(callback_name)
-        local ok, _ = pcall(RegisterScriptCallback, callback_name, handler)
-        if ok then registered = registered + 1 else failed = failed + 1 end
+        RegisterScriptCallback(callback_name, handler)
+        registered = registered + 1
     end
-    log.info("Registered %d callbacks (%d failed)", registered, failed)
+    log.info("Registered %d callbacks", registered)
 end
 
 --- Start periodic timers (stats, mutant scan, level scan, world scan)
