@@ -1,0 +1,143 @@
+--- tz_fx: cyclers for xpp.PPE and xsound.SND. Each call toggles a cycler that
+--- advances every 5s, fades between entries, and auto-stops at the end of the list.
+---
+--- Invoke from in-game console (debug mode required):
+---   run_string tz_fx.pp()       -- cycle 35 post-process effects (visual)
+---   run_string tz_fx.snd()      -- cycle 14 ambient sound loops
+
+local log = xlog.get_logger("TestZone.fx", { outfile = "testzone.log" })
+
+local function _tip(msg, ms)
+    local actor = db.actor
+    if actor then news_manager.send_tip(actor, msg, nil, nil, ms or 5000) end
+end
+
+-- ordered lists for cycler iteration. xpp.PPE / xsound.SND are flat tables for
+-- code references; these arrays preserve a curated walk-through order.
+local _PP_LIST = {
+    "psi.ppe", "psy_antenna.ppe", "psychic.ppe", "controller_hit.ppe", "poltergeist_scan.ppe",
+    "bloody.ppe", "death.ppe", "actor_death.ppe", "amk_shoot.ppe", "snd_shock.ppe",
+    "radiation.ppe", "flame.ppe", "acidic.ppe", "acidic_mine.ppe",
+    "thermal.ppe", "thermal_mine.ppe", "steam_mine.ppe",
+    "gravi.ppe", "gravi_mine.ppe", "electra.ppe", "electra_mine.ppe", "mosquito_bald.ppe",
+    "alcohol.ppe", "blur.ppe", "total_recall.ppe", "deimos.ppe",
+    "black.ppe", "black_infinite.ppe", "blink.ppe", "brighten.ppe",
+    "fade_in.ppe", "fade_out.ppe", "fade_in_out.ppe", "fade_to_black_9_sec.ppe", "agr_u_fade.ppe",
+}
+
+local _SND_LIST = {
+    "anomaly\\psy_antenna_voices_1_l", "anomaly\\psy_antenna_voices_1_r",
+    "anomaly\\psi_storm_01", "anomaly\\emi_blowout", "anomaly\\emi_blowout_01",
+    "affects\\tinnitus3a",
+    "ambient\\earthquake", "ambient\\organic_moan1", "ambient\\monolith_1",
+    "ambient\\warlab_pod_noise", "ambient\\noos_tunnel_1",
+    "ambient\\radar_1", "ambient\\radar_2",
+    "ambient\\special\\light_humming",
+}
+
+local _pp_state = nil
+local _snd_state = nil
+
+--- Toggle the xpp cycler. 5s per entry, factor 0.7, smoothed.
+function pp()
+    if _pp_state then
+        UnregisterScriptCallback("actor_on_update", _pp_state.update_fn)
+        if _pp_state.slot then xpp.release(_pp_state.slot) end
+        _pp_state = nil
+        _tip("tz_fx.pp STOPPED", 4000)
+        log:info("pp STOPPED")
+        return
+    end
+
+    local DURATION_MS = 5000
+    local FACTOR = 0.7
+    local SMOOTHING = 1.5
+    local state = { idx = 0, slot = nil, next_switch = 0 }
+
+    local function switch_to_next()
+        if state.slot then xpp.release(state.slot) end
+        state.idx = state.idx + 1
+        if state.idx > #_PP_LIST then
+            UnregisterScriptCallback("actor_on_update", state.update_fn)
+            _pp_state = nil
+            _tip("tz_fx.pp COMPLETE (" .. #_PP_LIST .. " entries)", 6000)
+            log:info("pp COMPLETE")
+            return
+        end
+        local ppe = _PP_LIST[state.idx]
+        state.slot = xpp.acquire(ppe, { smoothing = SMOOTHING })
+        if state.slot then xpp.set_target(state.slot, FACTOR, SMOOTHING) end
+        local msg = string.format("%d/%d  %s", state.idx, #_PP_LIST, ppe)
+        _tip(msg, DURATION_MS - 200)
+        log:info("pp %s factor=%.2f", msg, FACTOR)
+        state.next_switch = time_global() + DURATION_MS
+    end
+
+    local function update_fn()
+        if time_global() >= state.next_switch then switch_to_next() end
+    end
+
+    state.update_fn = update_fn
+    RegisterScriptCallback("actor_on_update", update_fn)
+    _pp_state = state
+    _tip("tz_fx.pp STARTED, " .. #_PP_LIST .. " entries, " .. (DURATION_MS / 1000) .. "s each", 4000)
+    log:info("pp STARTED count=%d", #_PP_LIST)
+end
+
+--- Toggle the xsound cycler. 5s per entry, volume 0.7, smoothed.
+function snd()
+    if _snd_state then
+        UnregisterScriptCallback("actor_on_update", _snd_state.update_fn)
+        if _snd_state.handle then xsound.release(_snd_state.handle) end
+        _snd_state = nil
+        _tip("tz_fx.snd STOPPED", 4000)
+        log:info("snd STOPPED")
+        return
+    end
+
+    local DURATION_MS = 5000
+    local VOLUME = 0.7
+    local SMOOTHING = 2.0
+    local state = { idx = 0, handle = nil, next_switch = 0 }
+
+    local function switch_to_next()
+        if state.handle then xsound.release(state.handle) end
+        state.idx = state.idx + 1
+        if state.idx > #_SND_LIST then
+            UnregisterScriptCallback("actor_on_update", state.update_fn)
+            _snd_state = nil
+            _tip("tz_fx.snd COMPLETE (" .. #_SND_LIST .. " entries)", 6000)
+            log:info("snd COMPLETE")
+            return
+        end
+        local snd_path = _SND_LIST[state.idx]
+        state.handle = xsound.acquire(snd_path, { smoothing = SMOOTHING })
+        if state.handle then xsound.set_volume(state.handle, VOLUME, SMOOTHING) end
+        local msg = string.format("%d/%d  %s", state.idx, #_SND_LIST, snd_path)
+        _tip(msg, DURATION_MS - 200)
+        log:info("snd %s volume=%.2f", msg, VOLUME)
+        state.next_switch = time_global() + DURATION_MS
+    end
+
+    local function update_fn()
+        if time_global() >= state.next_switch then switch_to_next() end
+    end
+
+    state.update_fn = update_fn
+    RegisterScriptCallback("actor_on_update", update_fn)
+    _snd_state = state
+    _tip("tz_fx.snd STARTED, " .. #_SND_LIST .. " entries, " .. (DURATION_MS / 1000) .. "s each", 4000)
+    log:info("snd STARTED count=%d", #_SND_LIST)
+end
+
+--- Cleanup on save load.
+function on_game_start()
+    if _pp_state then
+        UnregisterScriptCallback("actor_on_update", _pp_state.update_fn)
+        _pp_state = nil
+    end
+    if _snd_state then
+        UnregisterScriptCallback("actor_on_update", _snd_state.update_fn)
+        _snd_state = nil
+    end
+end
