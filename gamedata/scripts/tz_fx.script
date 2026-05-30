@@ -5,6 +5,11 @@
 ---   run_string tz_fx.pp()       -- cycle 35 post-process effects (visual)
 ---   run_string tz_fx.snd()      -- cycle 14 ambient sound loops
 
+local UnregisterScriptCallback, RegisterScriptCallback = UnregisterScriptCallback, RegisterScriptCallback
+local time_global, string_format = time_global, string.format
+
+local CALLBACK_ACTOR_ON_UPDATE = "actor_on_update"
+
 local log = xlog.get_logger("TestZone.fx", { outfile = "testzone.log" })
 
 local function _tip(msg, ms)
@@ -41,7 +46,7 @@ local _snd_state = nil
 --- Toggle the xpp cycler. 5s per entry, factor 0.7, smoothed.
 function pp()
     if _pp_state then
-        UnregisterScriptCallback("actor_on_update", _pp_state.update_fn)
+        UnregisterScriptCallback(CALLBACK_ACTOR_ON_UPDATE, _pp_state.update_fn)
         if _pp_state.slot then xpp.release(_pp_state.slot) end
         _pp_state = nil
         _tip("tz_fx.pp STOPPED", 4000)
@@ -58,7 +63,7 @@ function pp()
         if state.slot then xpp.release(state.slot) end
         state.idx = state.idx + 1
         if state.idx > #_PP_LIST then
-            UnregisterScriptCallback("actor_on_update", state.update_fn)
+            UnregisterScriptCallback(CALLBACK_ACTOR_ON_UPDATE, state.update_fn)
             _pp_state = nil
             _tip("tz_fx.pp COMPLETE (" .. #_PP_LIST .. " entries)", 6000)
             log:info("pp COMPLETE")
@@ -67,7 +72,7 @@ function pp()
         local ppe = _PP_LIST[state.idx]
         state.slot = xpp.acquire(ppe, { smoothing = SMOOTHING })
         if state.slot then xpp.set_target(state.slot, FACTOR, SMOOTHING) end
-        local msg = string.format("%d/%d  %s", state.idx, #_PP_LIST, ppe)
+        local msg = string_format("%d/%d  %s", state.idx, #_PP_LIST, ppe)
         _tip(msg, DURATION_MS - 200)
         log:info("pp %s factor=%.2f", msg, FACTOR)
         state.next_switch = time_global() + DURATION_MS
@@ -78,16 +83,17 @@ function pp()
     end
 
     state.update_fn = update_fn
-    RegisterScriptCallback("actor_on_update", update_fn)
+    RegisterScriptCallback(CALLBACK_ACTOR_ON_UPDATE, update_fn)
     _pp_state = state
-    _tip("tz_fx.pp STARTED, " .. #_PP_LIST .. " entries, " .. (DURATION_MS / 1000) .. "s each", 4000)
+    local msg_start = string_format("tz_fx.pp STARTED %d entries %ds each", #_PP_LIST, DURATION_MS / 1000)
+    _tip(msg_start, 4000)
     log:info("pp STARTED count=%d", #_PP_LIST)
 end
 
 --- Toggle the xsound cycler. 5s per entry, volume 0.7, smoothed.
 function snd()
     if _snd_state then
-        UnregisterScriptCallback("actor_on_update", _snd_state.update_fn)
+        UnregisterScriptCallback(CALLBACK_ACTOR_ON_UPDATE, _snd_state.update_fn)
         if _snd_state.handle then xsound.release(_snd_state.handle) end
         _snd_state = nil
         _tip("tz_fx.snd STOPPED", 4000)
@@ -104,7 +110,7 @@ function snd()
         if state.handle then xsound.release(state.handle) end
         state.idx = state.idx + 1
         if state.idx > #_SND_LIST then
-            UnregisterScriptCallback("actor_on_update", state.update_fn)
+            UnregisterScriptCallback(CALLBACK_ACTOR_ON_UPDATE, state.update_fn)
             _snd_state = nil
             _tip("tz_fx.snd COMPLETE (" .. #_SND_LIST .. " entries)", 6000)
             log:info("snd COMPLETE")
@@ -113,7 +119,7 @@ function snd()
         local snd_path = _SND_LIST[state.idx]
         state.handle = xsound.acquire(snd_path, { smoothing = SMOOTHING })
         if state.handle then xsound.set_volume(state.handle, VOLUME, SMOOTHING) end
-        local msg = string.format("%d/%d  %s", state.idx, #_SND_LIST, snd_path)
+        local msg = string_format("%d/%d  %s", state.idx, #_SND_LIST, snd_path)
         _tip(msg, DURATION_MS - 200)
         log:info("snd %s volume=%.2f", msg, VOLUME)
         state.next_switch = time_global() + DURATION_MS
@@ -124,20 +130,21 @@ function snd()
     end
 
     state.update_fn = update_fn
-    RegisterScriptCallback("actor_on_update", update_fn)
+    RegisterScriptCallback(CALLBACK_ACTOR_ON_UPDATE, update_fn)
     _snd_state = state
-    _tip("tz_fx.snd STARTED, " .. #_SND_LIST .. " entries, " .. (DURATION_MS / 1000) .. "s each", 4000)
+    local msg_start = string_format("tz_fx.snd STARTED %d entries %ds each", #_SND_LIST, DURATION_MS / 1000)
+    _tip(msg_start, 4000)
     log:info("snd STARTED count=%d", #_SND_LIST)
 end
 
 --- Cleanup on save load.
 function on_game_start()
     if _pp_state then
-        UnregisterScriptCallback("actor_on_update", _pp_state.update_fn)
+        UnregisterScriptCallback(CALLBACK_ACTOR_ON_UPDATE, _pp_state.update_fn)
         _pp_state = nil
     end
     if _snd_state then
-        UnregisterScriptCallback("actor_on_update", _snd_state.update_fn)
+        UnregisterScriptCallback(CALLBACK_ACTOR_ON_UPDATE, _snd_state.update_fn)
         _snd_state = nil
     end
 end
