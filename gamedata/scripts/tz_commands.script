@@ -1,0 +1,68 @@
+--- tz_commands: One-shot console commands for crash repro and feature spotchecks. Invoke via `run_string tz_commands.<name>()` from the in-game console (debug mode required).
+
+local ipairs, string_format, ini_sys = ipairs, string.format, ini_sys
+
+local log = xlog.get_logger("TestZone.commands", { outfile = "testzone.log" })
+
+local function _tip(msg)
+    local actor = db.actor
+    if actor then news_manager.send_tip(actor, msg, nil, nil, 5000) end
+end
+
+local function _spawn_count(sec, id, count)
+    for _ = 1, count do xinventory.create_item(sec, id) end
+end
+
+local function _spawn(items, label)
+    local actor = db.actor
+    if not actor then
+        log:info("%s SKIP no_actor", label)
+        return 0, 0
+    end
+    local id = actor:id()
+    local spawned, skipped = 0, 0
+    for _, item in ipairs(items) do
+        if not ini_sys:section_exist(item.sec) then
+            log:info("%s SKIP missing section=%s", label, item.sec)
+            skipped = skipped + 1
+        else
+            _spawn_count(item.sec, id, item.count)
+            spawned = spawned + 1
+        end
+    end
+    return spawned, skipped
+end
+
+-- Keep Crafting Window Opened (mod 143) crash repro items.
+-- Cooking-side: cooking_limited=true multi-use tools + fuel + raw meat. Use the tool until last charge, cook once more.
+--   Old behavior: CTD on `pairs(self.multiUseItemsObj[1])` at OnCook. New (this PR): window closes cleanly.
+-- Repair-side: 2x of each multi-use repair kit section to enable same-section bonus-part testing.
+--   Old: latent CTD on the same pattern at OnRepair. New: clean discharge.
+--
+-- Items grouped by purpose:
+--   cooking tools (cooking_limited=true): cooking (3 uses), army_bowler (7 uses)
+--   cooking fuel: charcoal (3 uses, tier 1), kerosene (5 uses, tier 2)
+--   raw mutant parts (recipe inputs per GAMMA Cooking Overhaul mod_cook_GAMMA.ltx)
+--   water for tier-B recipes: flask
+--   multi-use repair kits (2x each for same-section bonus-part testing):
+--     cleaning_kit_s (3 uses, shotgun cleaning), toolkit_s (4 uses, shotgun toolkit), sewing_kit_a (4 uses, advanced sewing)
+local KCW_ITEMS = {
+    { sec = "cooking",                   count = 1 },
+    { sec = "army_bowler",               count = 1 },
+    { sec = "charcoal",                  count = 3 },
+    { sec = "kerosene",                  count = 2 },
+    { sec = "mutant_part_flesh_meat",    count = 20 },
+    { sec = "mutant_part_boar_chop",     count = 20 },
+    { sec = "mutant_part_tushkano_meat", count = 20 },
+    { sec = "flask",                     count = 10 },
+    { sec = "cleaning_kit_s",            count = 2 },
+    { sec = "toolkit_s",                 count = 2 },
+    { sec = "sewing_kit_a",              count = 2 },
+}
+
+--- @export console: tz_commands.kit_kcw()
+function kit_kcw()
+    local spawned, skipped = _spawn(KCW_ITEMS, "kit_kcw")
+    log:info("kit_kcw spawned=%d skipped=%d", spawned, skipped)
+    _tip(string_format("Kit KCW: %d items, %d skipped", spawned, skipped))
+end
