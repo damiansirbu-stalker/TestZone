@@ -150,7 +150,7 @@ function scan_smarts()
         local lv = xlevel.get_level_id(smart)
         if lv ~= actor_level_id then goto continue end
         total = total + 1
-        local faction = xsmart.get_controlling_faction(smart)
+        local faction = smart.faction or "none"
         local flags = {}
         if xsmart.is_base(smart) then flags[#flags + 1] = "base"; by_type.base = by_type.base + 1 end
         if xsmart.is_lair(smart) then flags[#flags + 1] = "lair"; by_type.lair = by_type.lair + 1 end

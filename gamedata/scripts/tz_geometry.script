@@ -30,7 +30,7 @@ local function _collect_smarts(level_id)
         if xlevel.get_level_id(smart) ~= level_id then goto continue end
         smarts[#smarts + 1] = {
             id = smart.id, name = smart:name(), position = smart.position,
-            stype = _smart_type(smart), faction = xsmart.get_controlling_faction(smart),
+            stype = _smart_type(smart), faction = smart.faction or "none",
             campfire = xsmart.has_campfire(smart),
             trader = xsmart.has_stalker_jobs(smart, xsmart.JOB_TYPE_TRADER),
             mechanic = xsmart.has_stalker_jobs(smart, xsmart.JOB_TYPE_MECHANIC),
