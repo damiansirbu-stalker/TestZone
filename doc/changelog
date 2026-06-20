@@ -3,7 +3,7 @@ next
   Added: version displayed at startup (mod + xlibs)
   Changed: MCM visual refresh
   Compatibility:
-    Removed: modded exes requirement. Works with vanilla Anomaly 1.5.3, Demonized, Demonized MT, AOEngine. Tested with GAMMA, EFP, Zona.
+    Requires themrdemonized modded exes 2025.9.10+ or AOEngine v0.55+.
 
 1.0.3
   xlibs 1.2.3 dependency.
