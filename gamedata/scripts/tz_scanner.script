@@ -2,7 +2,6 @@
 
 local pairs, ipairs, tostring, next = pairs, ipairs, tostring, next
 local string_format, table_concat, table_sort = string.format, table.concat, table.sort
-local alife_object = alife_object
 local INVALID_ENTITY_ID = xconst.INVALID_ENTITY_ID
 
 local log = xlog.get_logger("TestZone.scanner", { outfile = "testzone.log" })
@@ -45,7 +44,7 @@ function scan_mutants()
 
         local cmd_id = squad:commander_id()
         local cmd_clsid, cmd_section = nil, nil
-        local se_cmd = (cmd_id and cmd_id ~= INVALID_ENTITY_ID) and alife_object(cmd_id) or nil
+        local se_cmd = (cmd_id and cmd_id ~= INVALID_ENTITY_ID) and xobject.se(cmd_id) or nil
         if se_cmd then
             cmd_clsid = se_cmd:clsid()
             cmd_section = se_cmd:section_name()
