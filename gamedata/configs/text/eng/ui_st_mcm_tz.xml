@@ -54,6 +54,12 @@
     <string id="ui_mcm_tz_main_geometry_scan_enabled_desc">
         <text>Scan smart terrain distances, stash density, base spacing, and feature distribution per level. Fires on level load and periodically. Log output: logs/testzone.log</text>
     </string>
+    <string id="ui_mcm_tz_main_ambient_log_enabled">
+        <text>Ambient baseline logging</text>
+    </string>
+    <string id="ui_mcm_tz_main_ambient_log_enabled_desc">
+        <text>Log every ambient one-shot the game plays, in the same format AlifeSpooks uses, for a baseline diff. A verbatim clone of vanilla sound_ambient plus one log line. It takes the update_ambient slot while on, so disable AlifeSpooks for a clean baseline. Log output: logs/testzone.log</text>
+    </string>
     <string id="ui_mcm_tz_main_rate_limit_enabled">
         <text>Rate limiting</text>
     </string>

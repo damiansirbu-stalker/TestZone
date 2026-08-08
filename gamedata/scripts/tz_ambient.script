@@ -1,0 +1,154 @@
+--- tz_ambient: baseline ambient-play logger. A verbatim clone of vanilla sound_ambient
+--- (reset_settings + update_ambient), with one log line per play, so GAMMA/vanilla's own
+--- soundscape can be recorded in the SAME format AlifeSpooks logs and diffed against it.
+--- Default OFF. When enabled it takes the update_ambient slot; when disabled it hands the
+--- slot back to vanilla. Do NOT run this with AlifeSpooks enabled at the same time, they
+--- both own update_ambient. Use it with AlifeSpooks disabled to capture a clean baseline.
+
+local ini_file, parse_list, time_global = ini_file, parse_list, time_global
+local sound_object, vector = sound_object, vector
+local math_random, math_rad, math_cos, math_sin = math.random, math.rad, math.cos, math.sin
+local GetEvent, RegisterScriptCallback, tostring = GetEvent, RegisterScriptCallback, tostring
+local rawget, _G = rawget, _G
+
+local log = xlog.get_logger("TestZone.ambient", { outfile = "testzone.log" })
+local _cfg = tz_mcm and tz_mcm.cfg
+
+-- verbatim vanilla state (module-local, separate from vanilla's own)
+local snd_chanels = {}
+local tot_size = 0
+local last_hour = nil
+local last_ambient = nil
+local next_idx = 0
+local opt_ambient_volume = 1
+
+-- optional AlifeSpooks layer map for a column-identical log; nil-safe, "?" when absent
+local _lay, _lay_loaded = nil, false
+local function _layer(ch)
+    if not _lay_loaded then _lay_loaded = true; _lay = ini_file("environment\\as_channel_layers.ltx") end
+    return (_lay and _lay:r_string_ex("as_channel_layers", ch)) or "?"
+end
+
+--- Verbatim clone of vanilla sound_ambient.reset_settings
+local function reset_settings(level_name, ambient)
+    snd_chanels = {}
+    if not (level_name and ambient and ambient ~= "") then return false end
+    local ini_lvl = ini_file("environment\\ambients\\" .. level_name .. ".ltx")
+    if not ini_lvl then return false end
+    local channels = parse_list(ini_lvl, ambient, "sound_channels_dynamic")
+    if #channels == 0 then return false end
+    local cached = {}
+    local ini_snd = ini_file("environment\\sound_channels.ltx")
+    for i = 1, #channels do
+        local ch = channels[i]
+        if ini_snd:section_exist(ch) and not cached[ch] then
+            cached[ch] = true
+            local idx = #snd_chanels + 1
+            snd_chanels[idx] = {}
+            snd_chanels[idx].name = ch
+            snd_chanels[idx].max_dist = ini_snd:r_float_ex(ch, "max_distance")
+            snd_chanels[idx].min_dist = ini_snd:r_float_ex(ch, "min_distance")
+            snd_chanels[idx].height = ini_snd:r_float_ex(ch, "height") or 0
+            snd_chanels[idx].indoor = ini_snd:r_bool_ex(ch, "indoor") or false
+            snd_chanels[idx].periods = { ini_snd:r_float_ex(ch, "period0"), ini_snd:r_float_ex(ch, "period1"),
+                                         ini_snd:r_float_ex(ch, "period2"), ini_snd:r_float_ex(ch, "period3") }
+            snd_chanels[idx].sounds = parse_list(ini_snd, ch, "sounds")
+        end
+    end
+    tot_size = #snd_chanels
+    return true
+end
+
+--- Verbatim clone of vanilla sound_ambient.update_ambient, plus one log line at the play
+local function update_ambient()
+    ResetTimeEvent("sound_channels", "update_ambient", 1)
+    if not level.present() then return false end
+    local next_hour = level.get_time_hours()
+    if next_hour ~= last_hour then
+        last_hour = next_hour
+        next_idx = 0
+        local ambient = level_weathers.get_weather_manager():get_curr_ambient()
+        last_ambient = ambient
+        if reset_settings(level.name(), ambient) then return false else return true end
+    end
+    next_idx = next_idx + 1
+    if next_idx > tot_size then next_idx = 1 end
+    local tg = time_global()
+    local ch = snd_chanels[next_idx]
+    if not ch then return false end
+    if not ch.next then
+        ch.next = tg + math_random(1, (ch.periods[math_random(4)] + 1))
+        return false
+    end
+    if ch.next <= tg then
+        local inside = GetEvent("current_safe_cover")
+        local underground = GetEvent("underground")
+        local actor = db.actor
+        if not actor then return false end
+        local pos = actor:position()
+        local max_dist = ch.max_dist
+        local min_dist = underground and ch.min_dist or ((max_dist + ch.min_dist) / 2)
+        local dist = math_random(min_dist, max_dist) / 2
+        local angle_rad = math_rad(math_random(0, 359))
+        local vec = vector():set(pos.x + math_cos(angle_rad) * dist, pos.y + ch.height,
+                                 pos.z + math_sin(angle_rad) * dist)
+        local file = ch.sounds[math_random(#ch.sounds)]
+        ch.snd = sound_object(file)
+        ch.snd:play_at_pos(actor, vec)
+        local vol
+        if underground or inside then
+            if ch.indoor then vol = 1 else vol = 0.3 end
+        else
+            if ch.indoor then vol = 0 else vol = 1 end
+        end
+        vol = vol * opt_ambient_volume
+        ch.snd.volume = vol
+        local period = ch.periods[math_random(4)]
+        ch.next = tg + period
+        log.info("effect lvl=%s pos=%.0f,%.0f,%.0f hour=%s amb=%s ch=%s layer=%s file=%s dist=%.1f max=%.0f per=%.0f vol=%.2f ug=%s inside=%s",
+            tostring(level.name()), pos.x, pos.y, pos.z, tostring(last_hour), tostring(last_ambient),
+            ch.name, _layer(ch.name), tostring(file), dist, ch.max_dist or -1, period or -1, vol,
+            tostring(not not underground), tostring(not not inside))
+    end
+    return false
+end
+
+--- AlifeSpooks owns update_ambient through its as_effect module. rawget avoids auto-loading a
+--- missing file, so this is nil when AlifeSpooks is disabled and a table when it is enabled.
+local function _as_present()
+    return rawget(_G, "as_effect") ~= nil
+end
+
+local _owned = false
+local _warned = false
+--- Take or hand back the update_ambient slot to match the (default-off) MCM toggle. Yields to
+--- AlifeSpooks when it is enabled, since both cannot own update_ambient at once.
+local function _apply()
+    local want = (_cfg and _cfg.ambient_log_enabled) or false
+    if want and _as_present() then
+        if not _warned then
+            log.warn("tz_ambient: AlifeSpooks is enabled (as_effect present); baseline yields, AlifeSpooks owns update_ambient. Disable AlifeSpooks for a clean baseline.")
+            _warned = true
+        end
+        want = false
+    end
+    if want == _owned then return end
+    _owned = want
+    if want then
+        opt_ambient_volume = (ui_options and ui_options.get("sound/environment/ambient_volume")) or 1
+        last_hour = nil
+        RemoveTimeEvent("sound_channels", "update_ambient")
+        CreateTimeEvent("sound_channels", "update_ambient", 1, update_ambient)
+        log.info("tz_ambient: baseline logging ON (owning update_ambient)")
+    else
+        RemoveTimeEvent("sound_channels", "update_ambient")
+        CreateTimeEvent("sound_channels", "update_ambient", 1, sound_ambient.update_ambient)
+        log.info("tz_ambient: baseline logging OFF (handed update_ambient back to vanilla)")
+    end
+end
+
+function on_game_start()
+    RegisterScriptCallback("actor_on_first_update",      _apply)
+    RegisterScriptCallback("on_option_change",           _apply)
+    RegisterScriptCallback("mcm_option_restore_default", _apply)
+end
