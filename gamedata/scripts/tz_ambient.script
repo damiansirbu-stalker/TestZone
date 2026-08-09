@@ -10,6 +10,7 @@ local sound_object, vector = sound_object, vector
 local math_random, math_rad, math_cos, math_sin = math.random, math.rad, math.cos, math.sin
 local GetEvent, RegisterScriptCallback, tostring = GetEvent, RegisterScriptCallback, tostring
 local rawget, _G = rawget, _G
+local table_sort, table_concat, pairs = table.sort, table.concat, pairs
 
 local log = xlog.get_logger("TestZone.ambient", { outfile = "testzone.log" })
 local _cfg = tz_mcm and tz_mcm.cfg
@@ -27,6 +28,60 @@ local _lay, _lay_loaded = nil, false
 local function _layer(ch)
     if not _lay_loaded then _lay_loaded = true; _lay = ini_file("environment\\as_channel_layers.ltx") end
     return (_lay and _lay:r_string_ex("as_channel_layers", ch)) or "?"
+end
+
+local NO_SOUND = "ambient\\no_sound"
+local SUMMARY_MS = 30000
+local stats = nil
+
+--- Reset the running summary tally (called when baseline logging turns on)
+local function _stats_reset()
+    stats = { total = 0, silent = 0, start = nil, last = nil, last_summary = 0, ch = {}, lvl = {} }
+end
+
+--- Fold one play into the tally: per-channel count and distance min/avg/max, level split, silence
+local function _stat_record(name, level_name, dist, file, tg)
+    if not stats then return end
+    stats.total = stats.total + 1
+    if not stats.start then stats.start = tg; stats.last_summary = tg end
+    stats.last = tg
+    if file == NO_SOUND then stats.silent = stats.silent + 1 end
+    local ce = stats.ch[name]
+    if not ce then ce = { n = 0, dsum = 0, dmin = dist, dmax = dist }; stats.ch[name] = ce end
+    ce.n = ce.n + 1
+    ce.dsum = ce.dsum + dist
+    if dist < ce.dmin then ce.dmin = dist end
+    if dist > ce.dmax then ce.dmax = dist end
+    stats.lvl[level_name] = (stats.lvl[level_name] or 0) + 1
+end
+
+--- Write a self-contained per-channel summary block, so the log needs no external parsing
+local function _emit_summary(reason)
+    if not (stats and stats.total > 0) then return end
+    local span = (stats.last - stats.start) / 1000
+    local rate = span > 0 and (stats.total / span * 60) or 0
+    local levels = {}
+    for lv in pairs(stats.lvl) do levels[#levels + 1] = lv end
+    table_sort(levels)
+    log.info("=== AMBIENT SUMMARY (%s): plays=%d span=%.0fs rate=%.1f/min silent=%d levels=%s ===",
+        reason, stats.total, span, rate, stats.silent, table_concat(levels, ","))
+    local order = {}
+    for name, ce in pairs(stats.ch) do order[#order + 1] = { name = name, entry = ce } end
+    table_sort(order, function(a, b) return a.entry.n > b.entry.n end)
+    for i = 1, #order do
+        local ce = order[i].entry
+        log.info("  ch %-16s n=%-4d %5.1f%%  dist %.0f/%.0f/%.0f (min/avg/max)",
+            order[i].name, ce.n, 100 * ce.n / stats.total, ce.dmin, ce.dsum / ce.n, ce.dmax)
+    end
+    log.info("=== END AMBIENT SUMMARY ===")
+end
+
+--- Emit a periodic summary once enough real time has elapsed since the last one
+local function _summary_tick(tg)
+    if stats and stats.total > 0 and tg - stats.last_summary >= SUMMARY_MS then
+        _emit_summary("periodic")
+        stats.last_summary = tg
+    end
 end
 
 --- Verbatim clone of vanilla sound_ambient.reset_settings
@@ -74,6 +129,7 @@ local function update_ambient()
     next_idx = next_idx + 1
     if next_idx > tot_size then next_idx = 1 end
     local tg = time_global()
+    _summary_tick(tg)
     local ch = snd_chanels[next_idx]
     if not ch then return false end
     if not ch.next then
@@ -109,6 +165,7 @@ local function update_ambient()
             tostring(level.name()), pos.x, pos.y, pos.z, tostring(last_hour), tostring(last_ambient),
             ch.name, _layer(ch.name), tostring(file), dist, ch.max_dist or -1, period or -1, vol,
             tostring(not not underground), tostring(not not inside))
+        _stat_record(ch.name, level.name(), dist, file, tg)
     end
     return false
 end
@@ -137,10 +194,12 @@ local function _apply()
     if want then
         opt_ambient_volume = (ui_options and ui_options.get("sound/environment/ambient_volume")) or 1
         last_hour = nil
+        _stats_reset()
         RemoveTimeEvent("sound_channels", "update_ambient")
         CreateTimeEvent("sound_channels", "update_ambient", 1, update_ambient)
         log.info("tz_ambient: baseline logging ON (owning update_ambient)")
     else
+        _emit_summary("logging off")
         RemoveTimeEvent("sound_channels", "update_ambient")
         CreateTimeEvent("sound_channels", "update_ambient", 1, sound_ambient.update_ambient)
         log.info("tz_ambient: baseline logging OFF (handed update_ambient back to vanilla)")
