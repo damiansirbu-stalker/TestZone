@@ -170,25 +170,11 @@ local function update_ambient()
     return false
 end
 
---- AlifeSpooks owns update_ambient through its as_effect module. rawget avoids auto-loading a
---- missing file, so this is nil when AlifeSpooks is disabled and a table when it is enabled.
-local function _as_present()
-    return rawget(_G, "as_effect") ~= nil
-end
-
 local _owned = false
-local _warned = false
---- Take or hand back the update_ambient slot to match the (default-off) MCM toggle. Yields to
---- AlifeSpooks when it is enabled, since both cannot own update_ambient at once.
+--- Take or hand back the update_ambient slot to match the (default-off) MCM toggle. AlifeSpooks no
+--- longer owns update_ambient (it runs its own dread tick), so the baseline and it coexist freely.
 local function _apply()
     local want = (_cfg and _cfg.ambient_log_enabled) or false
-    if want and _as_present() then
-        if not _warned then
-            log.warn("tz_ambient: AlifeSpooks is enabled (as_effect present); baseline yields, AlifeSpooks owns update_ambient. Disable AlifeSpooks for a clean baseline.")
-            _warned = true
-        end
-        want = false
-    end
     if want == _owned then return end
     _owned = want
     if want then
