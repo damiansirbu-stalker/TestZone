@@ -84,6 +84,30 @@
     <string id="ui_mcm_tz_main_mutant_scan_interval_desc">
         <text>[seconds]\nHow often the mutant scan runs. Range 5-300.</text>
     </string>
+    <string id="ui_mcm_tz_main_level_scan_enabled">
+        <text>Level scan enabled</text>
+    </string>
+    <string id="ui_mcm_tz_main_level_scan_enabled_desc">
+        <text>Periodic scan of the current level: squads, smart terrains, stashes, and the AP squad overlay.</text>
+    </string>
+    <string id="ui_mcm_tz_main_level_scan_interval">
+        <text>Level scan interval</text>
+    </string>
+    <string id="ui_mcm_tz_main_level_scan_interval_desc">
+        <text>[seconds]\nHow often the level scan runs. Range 10-300.</text>
+    </string>
+    <string id="ui_mcm_tz_main_world_scan_enabled">
+        <text>World scan enabled</text>
+    </string>
+    <string id="ui_mcm_tz_main_world_scan_enabled_desc">
+        <text>World-wide squad census: totals by faction, by level, and online/offline counts.</text>
+    </string>
+    <string id="ui_mcm_tz_main_world_scan_interval">
+        <text>World scan interval</text>
+    </string>
+    <string id="ui_mcm_tz_main_world_scan_interval_desc">
+        <text>[seconds]\nHow often the world scan runs. Range 30-600.</text>
+    </string>
     <string id="ui_mcm_tz_main_info">
         <text>Watcher logs all 162 engine callbacks. Log output: logs/testzone.log</text>
     </string>
