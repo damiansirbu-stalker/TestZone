@@ -18,7 +18,6 @@ defaults = {
     world_scan_enabled = false,
     world_scan_interval = 120,
     geometry_scan_enabled = false,
-    ambient_log_enabled = false,
     profiler_enabled = false,
     profiler_report_interval = 30,
     profiler_spike_threshold = 1000,
@@ -68,9 +67,6 @@ function on_mcm_load()
 
                     { id = "div_geometry_scan", type = "line" },
                     { id = "geometry_scan_enabled", type = "check", val = 1, def = false },
-
-                    { id = "div_ambient_log", type = "line" },
-                    { id = "ambient_log_enabled", type = "check", val = 1, def = false },
 
                     { id = "div_ratelimit", type = "line" },
                     { id = "rate_limit_enabled", type = "check", val = 1, def = false },
