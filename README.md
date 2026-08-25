@@ -1,4 +1,4 @@
-# TestZone: callback monitoring and profiling for STALKER Anomaly
+# TestZone: Callback monitoring and profiling for STALKER Anomaly
 
 Watches every engine callback with fire counts and payload logging, including introspection of table and userdata arguments.
 Rate limiting keeps high-frequency callbacks from flooding the log, and each callback toggles on its own through MCM.
