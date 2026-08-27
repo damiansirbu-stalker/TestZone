@@ -233,6 +233,9 @@ local format_dispatch = {
 
 --- Format single argument (shallow or deep based on _config)
 local function format_arg(arg, deep)
+
+-- One second between rate-limited log lines when MCM sets none.
+local DEFAULT_RATE_LIMIT_MS = 1000
     local formatter = format_dispatch[type(arg)]
     return formatter and formatter(arg, deep) or tostring(arg)
 end
@@ -252,7 +255,7 @@ local function should_log(callback_name)
     if not _config.rate_limit_enabled then return true end
     local now = time_global()
     local last = last_log_time[callback_name] or 0
-    local interval = _config.rate_limit_interval_ms or 1000
+    local interval = _config.rate_limit_interval_ms or DEFAULT_RATE_LIMIT_MS
     if now - last < interval then return false end
     last_log_time[callback_name] = now
     return true
