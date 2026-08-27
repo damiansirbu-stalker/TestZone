@@ -237,8 +237,7 @@ local function format_arg(arg, deep)
     return formatter and formatter(arg, deep) or tostring(arg)
 end
 
---- Format all arguments with positional labels
---- Output: arg1=value, arg2=value, ...
+--- Format every argument as arg1=value, arg2=value
 local function format_args(deep, ...)
     local args = {...}
     local parts = {}
@@ -259,8 +258,7 @@ local function should_log(callback_name)
     return true
 end
 
---- Attempt to read .online field from first arg (squad server_object)
---- Returns "online", "offline", or nil if not applicable/readable
+--- Read .online off a squad server object as "online" / "offline", nil when absent
 --- @safety SAFE - type-guarded, no pcall needed (field access on luabind is safe, returns nil if missing)
 local function read_online_status(first_arg)
     if type(first_arg) ~= "userdata" then return nil end
@@ -366,8 +364,7 @@ end
 
 local _callbacks_registered = false
 
---- Register all 162 callbacks (idempotent, once-per-session). Unknown names print to
---- console via axr_main.callback_set but never raise; no pcall needed.
+--- Register every callback once per session. @src anomaly/axr_main.script callback_set
 local function _register_callbacks()
     if _callbacks_registered then return end
     _callbacks_registered = true
