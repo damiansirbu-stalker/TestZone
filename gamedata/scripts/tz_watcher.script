@@ -251,7 +251,7 @@ local function format_args(deep, ...)
 end
 
 --- Check rate limit for callback
-local function should_log(callback_name)
+local function check_log_allowed(callback_name)
     if not _config.rate_limit_enabled then return true end
     local now = time_global()
     local last = last_log_time[callback_name] or 0
@@ -289,7 +289,7 @@ local function create_handler(callback_name)
     return function(...)
         if not _config.enabled then return end
         stats[callback_name] = stats[callback_name] + 1
-        if not _config.log_payload_enabled or not should_log(callback_name) then return end
+        if not _config.log_payload_enabled or not check_log_allowed(callback_name) then return end
         local deep = _config.deep_introspect_enabled
         local arg_str = format_args(deep, ...)
         local suffix = ""
