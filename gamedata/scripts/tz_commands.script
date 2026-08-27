@@ -1,4 +1,4 @@
---- tz_commands: One-shot console commands for crash repro and feature spotchecks. Invoke via `run_string tz_commands.<name>()` from the in-game console (debug mode required).
+--- tz_commands: one-shot console commands for crash repro and spotchecks, run via `run_string tz_commands.<name>()` in debug mode
 
 local ipairs, string_format, ini_sys = ipairs, string.format, ini_sys
 
