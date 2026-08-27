@@ -44,10 +44,10 @@ local TARGETS = {
 }
 
 -- Per-target stats: { call_count, total_us, max_us, spike_count }
-local data = {}
+local _data = {}
 
 -- Config (loaded from MCM)
-local config = {
+local _config = {
     enabled = false,
     report_interval = 30,
     spike_threshold_us = 1000,
@@ -57,17 +57,17 @@ local config = {
 local last_report_time = 0
 
 local function record(key, us)
-    local stats = data[key]
+    local stats = _data[key]
     stats.call_count = stats.call_count + 1
     stats.total_us = stats.total_us + us
     if us > stats.max_us then stats.max_us = us end
-    if us > config.spike_threshold_us then stats.spike_count = stats.spike_count + 1 end
+    if us > _config.spike_threshold_us then stats.spike_count = stats.spike_count + 1 end
 end
 
 local function reset_data()
     for _, target in ipairs(TARGETS) do
         local key = target[1] .. "." .. target[2]
-        data[key] = { call_count = 0, total_us = 0, max_us = 0, spike_count = 0 }
+        _data[key] = { call_count = 0, total_us = 0, max_us = 0, spike_count = 0 }
     end
 end
 
@@ -79,7 +79,7 @@ local function wrap_target(module_name, func_name)
 
     local key = module_name .. "." .. func_name
     mod[func_name] = function(...)
-        if not config.enabled then return original(...) end
+        if not _config.enabled then return original(...) end
         local timer = xprofiler.new()
         timer:start()
         local r1, r2, r3, r4 = original(...)
@@ -91,7 +91,7 @@ local function wrap_target(module_name, func_name)
 end
 
 local function log_report()
-    if not config.enabled then return end
+    if not _config.enabled then return end
 
     local now = time_global()
     local elapsed_sec = (now - last_report_time) / 1000
@@ -100,7 +100,7 @@ local function log_report()
 
     local total_us = 0
     local active = {}
-    for key, stats in pairs(data) do
+    for key, stats in pairs(_data) do
         if stats.call_count > 0 then
             active[#active + 1] = { key = key, stats = stats }
             total_us = total_us + stats.total_us
@@ -154,23 +154,23 @@ function on_game_start()
     -- Periodic report timer
     local function timer_report()
         log_report()
-        ResetTimeEvent("tz_profiler", "report", config.report_interval)
+        ResetTimeEvent("tz_profiler", "report", _config.report_interval)
     end
-    CreateTimeEvent("tz_profiler", "report", config.report_interval, timer_report)
+    CreateTimeEvent("tz_profiler", "report", _config.report_interval, timer_report)
 
     -- Config loader
     local cfg = tz_mcm and tz_mcm.cfg
     local function load_config()
         if not cfg then return end
-        config.enabled = cfg.profiler_enabled
-        config.report_interval = cfg.profiler_report_interval
-        config.spike_threshold_us = cfg.profiler_spike_threshold
+        _config.enabled = cfg.profiler_enabled
+        _config.report_interval = cfg.profiler_report_interval
+        _config.spike_threshold_us = cfg.profiler_spike_threshold
     end
 
     RegisterScriptCallback("on_option_change", function()
         load_config()
         RemoveTimeEvent("tz_profiler", "report")
-        CreateTimeEvent("tz_profiler", "report", config.report_interval, function()
+        CreateTimeEvent("tz_profiler", "report", _config.report_interval, function()
             log_report()
             return true
         end)

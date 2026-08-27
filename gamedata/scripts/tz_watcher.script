@@ -187,7 +187,7 @@ for _, cb in pairs(ALL_CALLBACKS) do
 end
 
 -- Config state
-local config = {
+local _config = {
     enabled = false,
     periodic_stats_enabled = false,
     periodic_stats_interval_sec = 300,
@@ -214,7 +214,7 @@ local format_dispatch = {
         return (id and id ~= INVALID_ENTITY_ID) and ("obj#" .. id) or "userdata"
     end,
     table = function(arg, deep)
-        if deep then return format_table(arg, 1, config.introspect_depth or 2) end
+        if deep then return format_table(arg, 1, _config.introspect_depth or 2) end
         local size = 0
         for _ in pairs(arg) do size = size + 1 end
         return "table[" .. size .. "]"
@@ -231,7 +231,7 @@ local format_dispatch = {
     ["function"] = function() return "function" end,
 }
 
---- Format single argument (shallow or deep based on config)
+--- Format single argument (shallow or deep based on _config)
 local function format_arg(arg, deep)
     local formatter = format_dispatch[type(arg)]
     return formatter and formatter(arg, deep) or tostring(arg)
@@ -249,10 +249,10 @@ end
 
 --- Check rate limit for callback
 local function should_log(callback_name)
-    if not config.rate_limit_enabled then return true end
+    if not _config.rate_limit_enabled then return true end
     local now = time_global()
     local last = last_log_time[callback_name] or 0
-    local interval = config.rate_limit_interval_ms or 1000
+    local interval = _config.rate_limit_interval_ms or 1000
     if now - last < interval then return false end
     last_log_time[callback_name] = now
     return true
@@ -284,10 +284,10 @@ local SQUAD_CALLBACKS = {
 local function create_handler(callback_name)
     local is_squad_cb = SQUAD_CALLBACKS[callback_name]
     return function(...)
-        if not config.enabled then return end
+        if not _config.enabled then return end
         stats[callback_name] = stats[callback_name] + 1
-        if not config.log_payload_enabled or not should_log(callback_name) then return end
-        local deep = config.deep_introspect_enabled
+        if not _config.log_payload_enabled or not should_log(callback_name) then return end
+        local deep = _config.deep_introspect_enabled
         local arg_str = format_args(deep, ...)
         local suffix = ""
         if is_squad_cb then
@@ -345,7 +345,7 @@ end
 
 --- Log periodic statistics
 local function log_periodic_stats()
-    if not config.periodic_stats_enabled then return end
+    if not _config.periodic_stats_enabled then return end
 
     local fired = {}
     for callback, count in pairs(stats) do
@@ -379,44 +379,44 @@ end
 
 --- Start periodic timers (stats, mutant scan, level scan, world scan)
 local function _init_timers()
-    CreateTimeEvent("tz_watcher", "periodic_stats", config.periodic_stats_interval_sec, function()
+    CreateTimeEvent("tz_watcher", "periodic_stats", _config.periodic_stats_interval_sec, function()
         log_periodic_stats()
-        ResetTimeEvent("tz_watcher", "periodic_stats", config.periodic_stats_interval_sec)
+        ResetTimeEvent("tz_watcher", "periodic_stats", _config.periodic_stats_interval_sec)
     end)
-    CreateTimeEvent("tz_watcher", "mutant_scan", config.mutant_scan_interval, function()
-        if config.mutant_scan_enabled then tz_scanner.scan_mutants() end
-        ResetTimeEvent("tz_watcher", "mutant_scan", config.mutant_scan_interval)
+    CreateTimeEvent("tz_watcher", "mutant_scan", _config.mutant_scan_interval, function()
+        if _config.mutant_scan_enabled then tz_scanner.scan_mutants() end
+        ResetTimeEvent("tz_watcher", "mutant_scan", _config.mutant_scan_interval)
     end)
-    CreateTimeEvent("tz_watcher", "level_scan", config.level_scan_interval, function()
-        if config.level_scan_enabled then tz_scanner.run_all() end
-        ResetTimeEvent("tz_watcher", "level_scan", config.level_scan_interval)
+    CreateTimeEvent("tz_watcher", "level_scan", _config.level_scan_interval, function()
+        if _config.level_scan_enabled then tz_scanner.run_all() end
+        ResetTimeEvent("tz_watcher", "level_scan", _config.level_scan_interval)
     end)
-    CreateTimeEvent("tz_watcher", "world_scan", config.world_scan_interval, function()
-        if config.world_scan_enabled then tz_scanner.scan_world() end
-        ResetTimeEvent("tz_watcher", "world_scan", config.world_scan_interval)
+    CreateTimeEvent("tz_watcher", "world_scan", _config.world_scan_interval, function()
+        if _config.world_scan_enabled then tz_scanner.scan_world() end
+        ResetTimeEvent("tz_watcher", "world_scan", _config.world_scan_interval)
     end)
 end
 
---- Load MCM config into local config table
+--- Load MCM _config into local _config table
 local _cfg = tz_mcm and tz_mcm.cfg
 local function _load_config()
     if not _cfg then return end
-    config.enabled = _cfg.watcher_enabled
-    if config.enabled then _register_callbacks() end
-    config.periodic_stats_enabled = _cfg.periodic_stats_enabled
-    config.periodic_stats_interval_sec = _cfg.periodic_stats_interval
-    config.log_payload_enabled = _cfg.log_payload_enabled
-    config.deep_introspect_enabled = _cfg.deep_introspect_enabled
-    config.introspect_depth = _cfg.introspect_depth
-    config.rate_limit_enabled = _cfg.rate_limit_enabled
-    config.rate_limit_interval_ms = _cfg.rate_limit_interval
-    config.mutant_scan_enabled = _cfg.mutant_scan_enabled
-    config.mutant_scan_interval = _cfg.mutant_scan_interval
-    config.level_scan_enabled = _cfg.level_scan_enabled
-    config.level_scan_interval = _cfg.level_scan_interval
-    config.world_scan_enabled = _cfg.world_scan_enabled
-    config.world_scan_interval = _cfg.world_scan_interval
-    config.geometry_scan_enabled = _cfg.geometry_scan_enabled
+    _config.enabled = _cfg.watcher_enabled
+    if _config.enabled then _register_callbacks() end
+    _config.periodic_stats_enabled = _cfg.periodic_stats_enabled
+    _config.periodic_stats_interval_sec = _cfg.periodic_stats_interval
+    _config.log_payload_enabled = _cfg.log_payload_enabled
+    _config.deep_introspect_enabled = _cfg.deep_introspect_enabled
+    _config.introspect_depth = _cfg.introspect_depth
+    _config.rate_limit_enabled = _cfg.rate_limit_enabled
+    _config.rate_limit_interval_ms = _cfg.rate_limit_interval
+    _config.mutant_scan_enabled = _cfg.mutant_scan_enabled
+    _config.mutant_scan_interval = _cfg.mutant_scan_interval
+    _config.level_scan_enabled = _cfg.level_scan_enabled
+    _config.level_scan_interval = _cfg.level_scan_interval
+    _config.world_scan_enabled = _cfg.world_scan_enabled
+    _config.world_scan_interval = _cfg.world_scan_interval
+    _config.geometry_scan_enabled = _cfg.geometry_scan_enabled
 end
 
 function on_game_start()
@@ -424,7 +424,7 @@ function on_game_start()
     _init_timers()
     _load_config()
     RegisterScriptCallback("actor_on_first_update", function()
-        if config.geometry_scan_enabled then tz_geometry.scan() end
+        if _config.geometry_scan_enabled then tz_geometry.scan() end
     end)
     RegisterScriptCallback("on_option_change", _load_config)
 end
