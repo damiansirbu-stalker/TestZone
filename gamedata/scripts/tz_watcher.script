@@ -232,10 +232,10 @@ local format_dispatch = {
 }
 
 --- Format single argument (shallow or deep based on _config)
-local function format_arg(arg, deep)
-
 -- One second between rate-limited log lines when MCM sets none.
 local DEFAULT_RATE_LIMIT_MS = 1000
+
+local function format_arg(arg, deep)
     local formatter = format_dispatch[type(arg)]
     return formatter and formatter(arg, deep) or tostring(arg)
 end
