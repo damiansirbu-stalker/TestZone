@@ -22,7 +22,7 @@ function scan_mutants()
     local unresolved = {}
     local total = 0
 
-    for squad in xsquad.iter_squads() do
+    for squad in xsquad.iterate_squads() do
         if not _is_monster_faction[squad.player_id] then goto continue end
         total = total + 1
         local faction = squad.player_id
@@ -91,7 +91,7 @@ function scan_squads()
     local total = 0
     local protection_opts = { exclude_scripted = true, exclude_permanent = true, exclude_active_role = true, exclude_task_target = true }
 
-    for squad in xsquad.iter_squads() do
+    for squad in xsquad.iterate_squads() do
         local lv = xlevel.get_level_id(squad)
         if lv ~= actor_level_id then goto continue end
         total = total + 1
@@ -248,7 +248,7 @@ function scan_world()
     local by_online = { online = 0, offline = 0 }
     local total = 0
 
-    for squad in xsquad.iter_squads() do
+    for squad in xsquad.iterate_squads() do
         total = total + 1
         local faction = squad.player_id or "?"
         local lv = xlevel.get_level_id(squad) or -1
