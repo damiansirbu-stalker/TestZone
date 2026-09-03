@@ -44,7 +44,7 @@ local function _collect_stashes(level_id)
     local positions = {}
     if not treasure_manager or not treasure_manager.caches then return positions end
     for stash_id in pairs(treasure_manager.caches) do
-        local se_obj = xobject.se(stash_id)
+        local se_obj = xobject.get_se(stash_id)
         if se_obj and se_obj.position and xlevel.get_level_id(se_obj) == level_id then
             positions[#positions + 1] = se_obj.position
         end

@@ -44,7 +44,7 @@ function scan_mutants()
 
         local cmd_id = squad:commander_id()
         local cmd_clsid, cmd_section = nil, nil
-        local se_cmd = (cmd_id and cmd_id ~= INVALID_ENTITY_ID) and xobject.se(cmd_id) or nil
+        local se_cmd = (cmd_id and cmd_id ~= INVALID_ENTITY_ID) and xobject.get_se(cmd_id) or nil
         if se_cmd then
             cmd_clsid = se_cmd:clsid()
             cmd_section = se_cmd:section_name()
@@ -185,7 +185,7 @@ function scan_stashes()
     local total, filled, empty, looted = 0, 0, 0, 0
 
     for id, data in pairs(treasure_manager.caches) do
-        local se = xobject.se(id)
+        local se = xobject.get_se(id)
         if not se then goto continue end
         local lv = xlevel.get_level_id(se)
         if lv ~= actor_level_id then goto continue end
@@ -212,7 +212,7 @@ function scan_stashes()
 end
 
 local function _log_ap_squad(squad_id, data)
-    local se = xobject.se(squad_id)
+    local se = xobject.get_se(squad_id)
     if not se then return false, false end
     local dst = tostring(data.scripted_target or "?")
     local arr = data.arrived and "yes" or "no"
