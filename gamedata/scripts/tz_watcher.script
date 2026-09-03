@@ -12,7 +12,7 @@ local last_log_time = {}
 
 -- Use xinspect for formatting (with local aliases for performance)
 local format_table = xinspect.format_table
-local format_userdata_deep = xinspect.userdata
+local format_userdata_deep = xinspect.format_userdata
 
 -- All 162 callbacks from callbacks-reference.md
 local ALL_CALLBACKS = {
