@@ -13,7 +13,7 @@ local _is_monster_faction = {
     ["monster_zombied"] = true, ["monster"] = true, ["zoo_monster"] = true,
 }
 
---- @export console: tz_scanner.scan_mutants()
+--- @novalidate(code.unused_export, reason:"console command")
 function scan_mutants()
     local by_species = {}
     local by_faction = {}
@@ -79,7 +79,7 @@ function scan_mutants()
     log.info("=== END MUTANT SCAN ===")
 end
 
---- @export console: tz_scanner.scan_squads()
+--- @novalidate(code.unused_export, reason:"console command")
 function scan_squads()
     if not level.present() then return end
     local actor_level_id = xlevel.get_actor_level_id()
@@ -134,7 +134,7 @@ function scan_squads()
     log.info("=== END SQUAD SCAN ===")
 end
 
---- @export console: tz_scanner.scan_smarts()
+--- @novalidate(code.unused_export, reason:"console command")
 function scan_smarts()
     if not level.present() then return end
     local actor_level_id = xlevel.get_actor_level_id()
@@ -176,7 +176,7 @@ function scan_smarts()
     log.info("=== END SMART SCAN ===")
 end
 
---- @export console: tz_scanner.scan_stashes()
+--- @novalidate(code.unused_export, reason:"console command")
 function scan_stashes()
     if not level.present() then return end
     if not treasure_manager or not treasure_manager.caches then log.info("[STASH_SCAN] no caches"); return end
@@ -222,7 +222,7 @@ local function _log_ap_squad(squad_id, data)
     return data.arrived or false, data.release_at ~= nil
 end
 
---- @export console: tz_scanner.scan_ap_squads()
+--- @novalidate(code.unused_export, reason:"console command")
 function scan_ap_squads()
     if not ap_core_squad then log.info("[AP_SCAN] ap_core_squad not loaded"); return end
     local scripted = ap_core_squad.get_scripted_squads()
@@ -241,7 +241,7 @@ function scan_ap_squads()
     log.info("=== END AP SCAN ===")
 end
 
---- @export console: tz_scanner.scan_world()
+--- @novalidate(code.unused_export, reason:"console command")
 function scan_world()
     local by_faction = {}
     local by_level = {}

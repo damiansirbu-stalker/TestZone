@@ -302,7 +302,7 @@ local function create_handler(callback_name)
 end
 
 
---- @export console: tz_watcher.get_stats()
+--- @novalidate(code.unused_export, reason:"console command")
 function get_stats()
     local result = {}
     for callback, count in pairs(stats) do
@@ -313,7 +313,7 @@ function get_stats()
     return result
 end
 
---- @export console: tz_watcher.print_fired()
+--- @novalidate(code.unused_export, reason:"console command")
 function print_fired()
     local fired = {}
     for callback, count in pairs(stats) do
@@ -330,7 +330,7 @@ function print_fired()
     log.info("=== END ===")
 end
 
---- @export console: tz_watcher.print_never_fired()
+--- @novalidate(code.unused_export, reason:"console command")
 function print_never_fired()
     local never = {}
     for _, cb in pairs(ALL_CALLBACKS) do

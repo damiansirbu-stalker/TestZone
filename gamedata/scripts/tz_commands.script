@@ -60,7 +60,7 @@ local KCW_ITEMS = {
     { sec = "sewing_kit_a",              count = 2 },
 }
 
---- @export console: tz_commands.kit_kcw()
+--- @novalidate(code.unused_export, reason:"console command")
 function kit_kcw()
     local spawned, skipped = _spawn(KCW_ITEMS, "kit_kcw")
     log:info("kit_kcw spawned=%d skipped=%d", spawned, skipped)
