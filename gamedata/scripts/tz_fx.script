@@ -70,7 +70,7 @@ function pp()
             return
         end
         local ppe = _PP_LIST[state.idx]
-        state.slot = xpp.acquire(ppe, { smoothing = SMOOTHING })
+        state.slot = xpp.create_effector(ppe, { smoothing = SMOOTHING })
         if state.slot then xpp.set_target(state.slot, FACTOR, SMOOTHING) end
         local msg = string_format("%d/%d  %s", state.idx, #_PP_LIST, ppe)
         _tip(msg, DURATION_MS - 200)
@@ -117,7 +117,7 @@ function snd()
             return
         end
         local snd_path = _SND_LIST[state.idx]
-        state.handle = xsound.acquire(snd_path, { smoothing = SMOOTHING })
+        state.handle = xsound.create_sound(snd_path, { smoothing = SMOOTHING })
         if state.handle then xsound.set_volume(state.handle, VOLUME, SMOOTHING) end
         local msg = string_format("%d/%d  %s", state.idx, #_SND_LIST, snd_path)
         _tip(msg, DURATION_MS - 200)
