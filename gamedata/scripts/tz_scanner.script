@@ -82,7 +82,7 @@ end
 --- @novalidate(code.unused_export, reason:"console command")
 function scan_squads()
     if not level.present() then return end
-    local actor_level_id = xlevel.get_actor_level_id()
+    local actor_level_id = xlevel.get_actor_level()
     if not actor_level_id then return end
     local by_faction = {}
     local by_online = { online = 0, offline = 0 }
@@ -137,7 +137,7 @@ end
 --- @novalidate(code.unused_export, reason:"console command")
 function scan_smarts()
     if not level.present() then return end
-    local actor_level_id = xlevel.get_actor_level_id()
+    local actor_level_id = xlevel.get_actor_level()
     if not actor_level_id then return end
     if not simulation_board then return end
     local SB = simulation_board.get_sim_board()
@@ -180,7 +180,7 @@ end
 function scan_stashes()
     if not level.present() then return end
     if not treasure_manager or not treasure_manager.caches then log.info("[STASH_SCAN] no caches"); return end
-    local actor_level_id = xlevel.get_actor_level_id()
+    local actor_level_id = xlevel.get_actor_level()
     if not actor_level_id then return end
     local total, filled, empty, looted = 0, 0, 0, 0
 

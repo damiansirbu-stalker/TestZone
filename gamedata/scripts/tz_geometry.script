@@ -175,7 +175,7 @@ end
 
 function scan()
     if not level.present() then return end
-    local level_id = xlevel.get_actor_level_id()
+    local level_id = xlevel.get_actor_level()
     if not level_id then return end
 
     local level_name = level.name()
