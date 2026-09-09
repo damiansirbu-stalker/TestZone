@@ -55,12 +55,12 @@ end
 local function _count_at_radii(origin, targets, skip_idx)
     local counts = { 0, 0, 0, 0 }
     for tidx = 1, #targets do
-        if tidx == skip_idx then goto next_target end
+        if tidx == skip_idx then goto continue end
         local dist = math_sqrt(origin:distance_to_sqr(targets[tidx]))
         for ridx = 1, #RADII do
             if dist <= RADII[ridx] then counts[ridx] = counts[ridx] + 1 end
         end
-        ::next_target::
+        ::continue::
     end
     return counts
 end
@@ -73,14 +73,14 @@ local function _nearest_neighbor_distances(smarts)
         local nearest = { any = math_huge, base = math_huge, lair = math_huge, campfire = math_huge }
         local nearest_name = { any = "none", base = "none", lair = "none", campfire = "none" }
         for jdx = 1, smart_count do
-            if idx == jdx then goto next_peer end
+            if idx == jdx then goto continue end
             local peer = smarts[jdx]
             local dist = math_sqrt(entry.position:distance_to_sqr(peer.position))
             if dist < nearest.any then nearest.any = dist; nearest_name.any = peer.name end
             if peer.stype == "base" and dist < nearest.base then nearest.base = dist; nearest_name.base = peer.name end
             if peer.stype == "lair" and dist < nearest.lair then nearest.lair = dist; nearest_name.lair = peer.name end
             if peer.campfire and dist < nearest.campfire then nearest.campfire = dist; nearest_name.campfire = peer.name end
-            ::next_peer::
+            ::continue::
         end
         all_nn[idx] = { entry = entry, nearest = nearest, nearest_name = nearest_name }
     end
@@ -159,10 +159,10 @@ local function _log_base_distances(smarts)
     for idx = 1, #bases do
         local nearest = math_huge
         for jdx = 1, #bases do
-            if idx == jdx then goto next_base end
+            if idx == jdx then goto continue end
             local dist = math_sqrt(bases[idx].position:distance_to_sqr(bases[jdx].position))
             if dist < nearest then nearest = dist end
-            ::next_base::
+            ::continue::
         end
         base_nn[#base_nn + 1] = nearest
     end
