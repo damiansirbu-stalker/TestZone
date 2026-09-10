@@ -1,9 +1,4 @@
---- tz_fx: cyclers for xpp.PPE and xsound.SND. Each call toggles a cycler that
---- advances every 5s, fades between entries, and auto-stops at the end of the list.
----
---- Invoke from in-game console (debug mode required):
----   run_string tz_fx.pp()       -- cycle 35 post-process effects (visual)
----   run_string tz_fx.snd()      -- cycle 14 ambient sound loops
+--- tz_fx: console cyclers for post-process effects (pp) and ambient sound loops (snd).
 
 local UnregisterScriptCallback, RegisterScriptCallback = UnregisterScriptCallback, RegisterScriptCallback
 local time_global, string_format = time_global, string.format
@@ -12,13 +7,7 @@ local CALLBACK_ACTOR_ON_UPDATE = "actor_on_update"
 
 local log = xlog.get_logger("TestZone.fx", { outfile = "testzone.log" })
 
-local function _tip(msg, ms)
-    local actor = db.actor
-    if actor then news_manager.send_tip(actor, msg, nil, nil, ms or 5000) end
-end
-
--- ordered lists for cycler iteration. xpp.PPE / xsound.SND are flat tables for
--- code references; these arrays preserve a curated walk-through order.
+-- Curated walk-through order for the cyclers; xpp.PPE / xsound.SND are unordered.
 local _PP_LIST = {
     "psi.ppe", "psy_antenna.ppe", "psychic.ppe", "controller_hit.ppe", "poltergeist_scan.ppe",
     "bloody.ppe", "death.ppe", "actor_death.ppe", "amk_shoot.ppe", "snd_shock.ppe",
@@ -43,7 +32,13 @@ local _SND_LIST = {
 local _pp_state = nil
 local _snd_state = nil
 
+local function _tip(msg, ms)
+    local actor = db.actor
+    if actor then news_manager.send_tip(actor, msg, nil, nil, ms or 5000) end
+end
+
 --- Toggle the xpp cycler. 5s per entry, factor 0.7, smoothed.
+--- @novalidate(code.unused_export, reason:"console command")
 function pp()
     if _pp_state then
         UnregisterScriptCallback(CALLBACK_ACTOR_ON_UPDATE, _pp_state.update_fn)
@@ -91,6 +86,7 @@ function pp()
 end
 
 --- Toggle the xsound cycler. 5s per entry, volume 0.7, smoothed.
+--- @novalidate(code.unused_export, reason:"console command")
 function snd()
     if _snd_state then
         UnregisterScriptCallback(CALLBACK_ACTOR_ON_UPDATE, _snd_state.update_fn)

@@ -6,8 +6,7 @@ local time_global, RegisterScriptCallback = time_global, RegisterScriptCallback
 
 local log = xlog.get_logger("TestZone.profiler", { outfile = "testzone.log" })
 
--- Profiler targets: { module, func, category }
--- Discovered from gamma-review Phase 1 (471 mods)
+-- Profiler targets { module, func, category }, from the gamma-review pass.
 local TARGETS = {
     -- frame * heavy (KILLERS)
     { "drx_da_main", "actor_on_update", "killer" },
@@ -151,14 +150,12 @@ function on_game_start()
     end
     log.info("[PROFILER] Wrapped %d targets (%d skipped)", wrapped, skipped)
 
-    -- Periodic report timer
     local function run_report()
         log_report()
         ResetTimeEvent("tz_profiler", "report", _config.report_interval)
     end
     CreateTimeEvent("tz_profiler", "report", _config.report_interval, run_report)
 
-    -- Config loader
     local cfg = tz_mcm and tz_mcm.cfg
     local function load_config()
         if not cfg then return end

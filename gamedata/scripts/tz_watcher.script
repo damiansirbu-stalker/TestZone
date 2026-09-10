@@ -231,16 +231,16 @@ local format_dispatch = {
     ["function"] = function() return "function" end,
 }
 
---- Format single argument (shallow or deep based on _config)
 -- One second between rate-limited log lines when MCM sets none.
 local DEFAULT_RATE_LIMIT_MS = 1000
 
+--- Format single argument, shallow or deep per _config.
 local function format_arg(arg, deep)
     local formatter = format_dispatch[type(arg)]
     return formatter and formatter(arg, deep) or tostring(arg)
 end
 
---- Format every argument as arg1=value, arg2=value
+--- Format every argument as arg1=value, arg2=value.
 local function format_args(deep, ...)
     local args = {...}
     local parts = {}
@@ -250,7 +250,7 @@ local function format_args(deep, ...)
     return table_concat(parts, ", ")
 end
 
---- Check rate limit for callback
+--- Check rate limit for callback.
 local function check_log_allowed(callback_name)
     if not _config.rate_limit_enabled then return true end
     local now = time_global()
@@ -261,7 +261,7 @@ local function check_log_allowed(callback_name)
     return true
 end
 
---- Read .online off a squad server object as "online" / "offline", nil when absent
+--- Read .online off a squad server object as "online" / "offline", nil when absent.
 --- @safety SAFE - type-guarded, no pcall needed (field access on luabind is safe, returns nil if missing)
 local function read_online_status(first_arg)
     if type(first_arg) ~= "userdata" then return nil end
@@ -301,6 +301,83 @@ local function create_handler(callback_name)
     end
 end
 
+
+--- Log periodic statistics.
+local function log_periodic_stats()
+    if not _config.periodic_stats_enabled then return end
+
+    local fired = {}
+    for callback, count in pairs(stats) do
+        if count > 0 then
+            fired[#fired + 1] = {name = callback, count = count}
+        end
+    end
+    table_sort(fired, function(a, b) return a.count > b.count end)
+
+    log.info("=== PERIODIC STATS (%d active) ===", #fired)
+    for _, item in ipairs(fired) do
+        log.info("  %10d  %s", item.count, item.name)
+    end
+    log.info("=== END STATS ===")
+end
+
+local _callbacks_registered = false
+
+--- Register every callback once per session.
+--- @src anomaly/axr_main.script callback_set
+local function _register_callbacks()
+    if _callbacks_registered then return end
+    _callbacks_registered = true
+    local registered = 0
+    for _, callback_name in pairs(ALL_CALLBACKS) do
+        local handler = create_handler(callback_name)
+        RegisterScriptCallback(callback_name, handler)
+        registered = registered + 1
+    end
+    log.info("Registered %d callbacks", registered)
+end
+
+--- Start periodic timers (stats, mutant scan, level scan, world scan).
+local function _init_timers()
+    CreateTimeEvent("tz_watcher", "periodic_stats", _config.periodic_stats_interval_sec, function()
+        log_periodic_stats()
+        ResetTimeEvent("tz_watcher", "periodic_stats", _config.periodic_stats_interval_sec)
+    end)
+    CreateTimeEvent("tz_watcher", "mutant_scan", _config.mutant_scan_interval, function()
+        if _config.mutant_scan_enabled then tz_scanner.scan_mutants() end
+        ResetTimeEvent("tz_watcher", "mutant_scan", _config.mutant_scan_interval)
+    end)
+    CreateTimeEvent("tz_watcher", "level_scan", _config.level_scan_interval, function()
+        if _config.level_scan_enabled then tz_scanner.run_all() end
+        ResetTimeEvent("tz_watcher", "level_scan", _config.level_scan_interval)
+    end)
+    CreateTimeEvent("tz_watcher", "world_scan", _config.world_scan_interval, function()
+        if _config.world_scan_enabled then tz_scanner.scan_world() end
+        ResetTimeEvent("tz_watcher", "world_scan", _config.world_scan_interval)
+    end)
+end
+
+--- Load MCM _config into local _config table
+local _cfg = tz_mcm and tz_mcm.cfg
+local function _load_config()
+    if not _cfg then return end
+    _config.enabled = _cfg.watcher_enabled
+    if _config.enabled then _register_callbacks() end
+    _config.periodic_stats_enabled = _cfg.periodic_stats_enabled
+    _config.periodic_stats_interval_sec = _cfg.periodic_stats_interval
+    _config.log_payload_enabled = _cfg.log_payload_enabled
+    _config.deep_introspect_enabled = _cfg.deep_introspect_enabled
+    _config.introspect_depth = _cfg.introspect_depth
+    _config.rate_limit_enabled = _cfg.rate_limit_enabled
+    _config.rate_limit_interval_ms = _cfg.rate_limit_interval
+    _config.mutant_scan_enabled = _cfg.mutant_scan_enabled
+    _config.mutant_scan_interval = _cfg.mutant_scan_interval
+    _config.level_scan_enabled = _cfg.level_scan_enabled
+    _config.level_scan_interval = _cfg.level_scan_interval
+    _config.world_scan_enabled = _cfg.world_scan_enabled
+    _config.world_scan_interval = _cfg.world_scan_interval
+    _config.geometry_scan_enabled = _cfg.geometry_scan_enabled
+end
 
 --- @novalidate(code.unused_export, reason:"console command")
 function get_stats()
@@ -344,82 +421,6 @@ function log_never_fired()
         log.info("  %s", cb)
     end
     log.info("=== END ===")
-end
-
---- Log periodic statistics
-local function log_periodic_stats()
-    if not _config.periodic_stats_enabled then return end
-
-    local fired = {}
-    for callback, count in pairs(stats) do
-        if count > 0 then
-            fired[#fired + 1] = {name = callback, count = count}
-        end
-    end
-    table_sort(fired, function(a, b) return a.count > b.count end)
-
-    log.info("=== PERIODIC STATS (%d active) ===", #fired)
-    for _, item in ipairs(fired) do
-        log.info("  %10d  %s", item.count, item.name)
-    end
-    log.info("=== END STATS ===")
-end
-
-local _callbacks_registered = false
-
---- Register every callback once per session. @src anomaly/axr_main.script callback_set
-local function _register_callbacks()
-    if _callbacks_registered then return end
-    _callbacks_registered = true
-    local registered = 0
-    for _, callback_name in pairs(ALL_CALLBACKS) do
-        local handler = create_handler(callback_name)
-        RegisterScriptCallback(callback_name, handler)
-        registered = registered + 1
-    end
-    log.info("Registered %d callbacks", registered)
-end
-
---- Start periodic timers (stats, mutant scan, level scan, world scan)
-local function _init_timers()
-    CreateTimeEvent("tz_watcher", "periodic_stats", _config.periodic_stats_interval_sec, function()
-        log_periodic_stats()
-        ResetTimeEvent("tz_watcher", "periodic_stats", _config.periodic_stats_interval_sec)
-    end)
-    CreateTimeEvent("tz_watcher", "mutant_scan", _config.mutant_scan_interval, function()
-        if _config.mutant_scan_enabled then tz_scanner.scan_mutants() end
-        ResetTimeEvent("tz_watcher", "mutant_scan", _config.mutant_scan_interval)
-    end)
-    CreateTimeEvent("tz_watcher", "level_scan", _config.level_scan_interval, function()
-        if _config.level_scan_enabled then tz_scanner.run_all() end
-        ResetTimeEvent("tz_watcher", "level_scan", _config.level_scan_interval)
-    end)
-    CreateTimeEvent("tz_watcher", "world_scan", _config.world_scan_interval, function()
-        if _config.world_scan_enabled then tz_scanner.scan_world() end
-        ResetTimeEvent("tz_watcher", "world_scan", _config.world_scan_interval)
-    end)
-end
-
---- Load MCM _config into local _config table
-local _cfg = tz_mcm and tz_mcm.cfg
-local function _load_config()
-    if not _cfg then return end
-    _config.enabled = _cfg.watcher_enabled
-    if _config.enabled then _register_callbacks() end
-    _config.periodic_stats_enabled = _cfg.periodic_stats_enabled
-    _config.periodic_stats_interval_sec = _cfg.periodic_stats_interval
-    _config.log_payload_enabled = _cfg.log_payload_enabled
-    _config.deep_introspect_enabled = _cfg.deep_introspect_enabled
-    _config.introspect_depth = _cfg.introspect_depth
-    _config.rate_limit_enabled = _cfg.rate_limit_enabled
-    _config.rate_limit_interval_ms = _cfg.rate_limit_interval
-    _config.mutant_scan_enabled = _cfg.mutant_scan_enabled
-    _config.mutant_scan_interval = _cfg.mutant_scan_interval
-    _config.level_scan_enabled = _cfg.level_scan_enabled
-    _config.level_scan_interval = _cfg.level_scan_interval
-    _config.world_scan_enabled = _cfg.world_scan_enabled
-    _config.world_scan_interval = _cfg.world_scan_interval
-    _config.geometry_scan_enabled = _cfg.geometry_scan_enabled
 end
 
 function on_game_start()

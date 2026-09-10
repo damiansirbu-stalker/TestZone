@@ -13,6 +13,17 @@ local _is_monster_faction = {
     ["monster_zombied"] = true, ["monster"] = true, ["zoo_monster"] = true,
 }
 
+local function _log_ap_squad(squad_id, data)
+    local se = xobject.get_se(squad_id)
+    if not se then return false, false end
+    local dst = tostring(data.scripted_target or "?")
+    local arr = data.arrived and "yes" or "no"
+    local rel = data.release_at and string_format("%.0f", data.release_at) or "nil"
+    log.info("[AP_SCAN] squad=%d faction=%s section=%s dst=%s arrived=%s release_at=%s",
+        squad_id, se.player_id or "?", se:section_name() or "?", dst, arr, rel)
+    return data.arrived or false, data.release_at ~= nil
+end
+
 --- @novalidate(code.unused_export, reason:"console command")
 function scan_mutants()
     local by_species = {}
@@ -211,17 +222,6 @@ function scan_stashes()
     log.info("=== END STASH SCAN ===")
 end
 
-local function _log_ap_squad(squad_id, data)
-    local se = xobject.get_se(squad_id)
-    if not se then return false, false end
-    local dst = tostring(data.scripted_target or "?")
-    local arr = data.arrived and "yes" or "no"
-    local rel = data.release_at and string_format("%.0f", data.release_at) or "nil"
-    log.info("[AP_SCAN] squad=%d faction=%s section=%s dst=%s arrived=%s release_at=%s",
-        squad_id, se.player_id or "?", se:section_name() or "?", dst, arr, rel)
-    return data.arrived or false, data.release_at ~= nil
-end
-
 --- @novalidate(code.unused_export, reason:"console command")
 function scan_ap_squads()
     if not ap_core_squad then log.info("[AP_SCAN] ap_core_squad not loaded"); return end
@@ -272,7 +272,7 @@ function scan_world()
     log.info("=== END WORLD SCAN ===")
 end
 
---- Run all scans
+--- Run all scans.
 function run_all()
     scan_squads()
     scan_smarts()
