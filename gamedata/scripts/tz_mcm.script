@@ -23,11 +23,11 @@ defaults = {
     profiler_spike_threshold = 1000,
 }
 
-local path_builder = function(key)
+local build_path = function(key)
     local tab = key:sub(1, 9) == "profiler_" and "profiler" or "main"
     return "tz/" .. tab .. "/" .. key
 end
-cfg, get_config, load_config = xmcm.create_config("tz", defaults, path_builder)
+cfg, get_config, load_config = xmcm.create_config("tz", defaults, build_path)
 
 function on_mcm_load()
     return {

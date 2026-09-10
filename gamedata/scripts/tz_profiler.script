@@ -56,7 +56,7 @@ local _config = {
 -- Last report timestamp for calls/sec calculation
 local last_report_time = 0
 
-local function record(key, us)
+local function add_sample(key, us)
     local stats = _data[key]
     stats.call_count = stats.call_count + 1
     stats.total_us = stats.total_us + us
@@ -71,7 +71,7 @@ local function reset_data()
     end
 end
 
-local function wrap_target(module_name, func_name)
+local function apply_timer(module_name, func_name)
     local mod = _G[module_name]
     if not mod then return false end
     local original = mod[func_name]
@@ -84,7 +84,7 @@ local function wrap_target(module_name, func_name)
         timer:start()
         local r1, r2, r3, r4 = original(...)
         timer:stop()
-        record(key, timer:get_us())
+        add_sample(key, timer:get_us())
         return r1, r2, r3, r4
     end
     return true
@@ -142,7 +142,7 @@ function on_game_start()
     local wrapped = 0
     local skipped = 0
     for _, target in ipairs(TARGETS) do
-        if wrap_target(target[1], target[2]) then
+        if apply_timer(target[1], target[2]) then
             wrapped = wrapped + 1
         else
             skipped = skipped + 1
@@ -152,11 +152,11 @@ function on_game_start()
     log.info("[PROFILER] Wrapped %d targets (%d skipped)", wrapped, skipped)
 
     -- Periodic report timer
-    local function timer_report()
+    local function run_report()
         log_report()
         ResetTimeEvent("tz_profiler", "report", _config.report_interval)
     end
-    CreateTimeEvent("tz_profiler", "report", _config.report_interval, timer_report)
+    CreateTimeEvent("tz_profiler", "report", _config.report_interval, run_report)
 
     -- Config loader
     local cfg = tz_mcm and tz_mcm.cfg

@@ -314,7 +314,7 @@ function get_stats()
 end
 
 --- @novalidate(code.unused_export, reason:"console command")
-function print_fired()
+function log_fired()
     local fired = {}
     for callback, count in pairs(stats) do
         if count > 0 then
@@ -331,7 +331,7 @@ function print_fired()
 end
 
 --- @novalidate(code.unused_export, reason:"console command")
-function print_never_fired()
+function log_never_fired()
     local never = {}
     for _, cb in pairs(ALL_CALLBACKS) do
         if stats[cb] == 0 then
@@ -427,7 +427,7 @@ function on_game_start()
     _init_timers()
     _load_config()
     RegisterScriptCallback("actor_on_first_update", function()
-        if _config.geometry_scan_enabled then tz_geometry.scan() end
+        if _config.geometry_scan_enabled then tz_geometry.run() end
     end)
     RegisterScriptCallback("on_option_change", _load_config)
 end

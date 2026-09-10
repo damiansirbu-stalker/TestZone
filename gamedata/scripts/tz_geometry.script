@@ -6,16 +6,18 @@ local table_sort, table_concat = table.sort, table.concat
 
 local log = xlog.get_logger("TestZone.geometry", { outfile = "testzone.log" })
 local RADII = { 100, 200, 300, 500 }
+local SMART_BASE = "base"
+local SMART_LAIR = "lair"
 
-local function _smart_type(smart)
-    if xsmart.is_base(smart) then return "base" end
-    if xsmart.is_lair(smart) then return "lair" end
+local function _get_smart_type(smart)
+    if xsmart.is_base(smart) then return SMART_BASE end
+    if xsmart.is_lair(smart) then return SMART_LAIR end
     if xsmart.is_resource(smart) then return "resource" end
     if xsmart.is_territory(smart) then return "territory" end
     return "other"
 end
 
-local function _count_squads(smart_id)
+local function _get_squad_count(smart_id)
     local count = 0
     local squad_data = xsmart.get_smart_squads(smart_id)
     if squad_data then for _ in pairs(squad_data) do count = count + 1 end end
@@ -30,7 +32,7 @@ local function _collect_smarts(level_id)
         if xlevel.get_level_id(smart) ~= level_id then goto continue end
         smarts[#smarts + 1] = {
             id = smart.id, name = smart:name(), position = smart.position,
-            stype = _smart_type(smart), faction = smart.faction or "none",
+            stype = _get_smart_type(smart), faction = smart.faction or "none",
             campfire = xsmart.has_campfire(smart),
             trader = xsmart.has_stalker_jobs(smart, xsmart.JOB_TYPE_TRADER),
             mechanic = xsmart.has_stalker_jobs(smart, xsmart.JOB_TYPE_MECHANIC),
@@ -52,7 +54,7 @@ local function _collect_stashes(level_id)
     return positions
 end
 
-local function _count_at_radii(origin, targets, skip_idx)
+local function _get_radius_counts(origin, targets, skip_idx)
     local counts = { 0, 0, 0, 0 }
     for tidx = 1, #targets do
         if tidx == skip_idx then goto continue end
@@ -65,7 +67,7 @@ local function _count_at_radii(origin, targets, skip_idx)
     return counts
 end
 
-local function _nearest_neighbor_distances(smarts)
+local function _collect_neighbors(smarts)
     local smart_count = #smarts
     local all_nn = {}
     for idx = 1, smart_count do
@@ -77,8 +79,8 @@ local function _nearest_neighbor_distances(smarts)
             local peer = smarts[jdx]
             local dist = math_sqrt(entry.position:distance_to_sqr(peer.position))
             if dist < nearest.any then nearest.any = dist; nearest_name.any = peer.name end
-            if peer.stype == "base" and dist < nearest.base then nearest.base = dist; nearest_name.base = peer.name end
-            if peer.stype == "lair" and dist < nearest.lair then nearest.lair = dist; nearest_name.lair = peer.name end
+            if peer.stype == SMART_BASE and dist < nearest.base then nearest.base = dist; nearest_name.base = peer.name end
+            if peer.stype == SMART_LAIR and dist < nearest.lair then nearest.lair = dist; nearest_name.lair = peer.name end
             if peer.campfire and dist < nearest.campfire then nearest.campfire = dist; nearest_name.campfire = peer.name end
             ::continue::
         end
@@ -95,7 +97,7 @@ local function _build_tags(entry)
     return table_concat(tag_parts, "+")
 end
 
-local function _dist_or_none(dist)
+local function _get_log_dist(dist)
     return dist == math_huge and -1 or dist
 end
 
@@ -103,14 +105,14 @@ local function _log_per_smart(all_nn, smart_positions, stash_positions)
     for idx = 1, #all_nn do
         local row = all_nn[idx]
         local entry, nn, nn_name = row.entry, row.nearest, row.nearest_name
-        local nc = _count_at_radii(entry.position, smart_positions, idx)
-        local sc = _count_at_radii(entry.position, stash_positions, nil)
+        local nc = _get_radius_counts(entry.position, smart_positions, idx)
+        local sc = _get_radius_counts(entry.position, stash_positions, nil)
         log.info("  [%s] %s faction=%s squads=%d nn=%.0fm(%s) base=%.0fm(%s) lair=%.0fm(%s) fire=%.0fm(%s) | smarts@100=%d @200=%d @300=%d @500=%d | stash@100=%d @200=%d @300=%d @500=%d",
-            entry.name, _build_tags(entry), entry.faction, _count_squads(entry.id),
+            entry.name, _build_tags(entry), entry.faction, _get_squad_count(entry.id),
             nn.any, nn_name.any,
-            _dist_or_none(nn.base), nn_name.base,
-            _dist_or_none(nn.lair), nn_name.lair,
-            _dist_or_none(nn.campfire), nn_name.campfire,
+            _get_log_dist(nn.base), nn_name.base,
+            _get_log_dist(nn.lair), nn_name.lair,
+            _get_log_dist(nn.campfire), nn_name.campfire,
             nc[1], nc[2], nc[3], nc[4], sc[1], sc[2], sc[3], sc[4])
     end
 end
@@ -136,7 +138,7 @@ local function _log_summary(level_name, smarts, stash_count, all_nn)
         if entry.campfire then fire_count = fire_count + 1 end
         if entry.trader then trader_count = trader_count + 1 end
         if entry.mechanic then mechanic_count = mechanic_count + 1 end
-        if _count_squads(entry.id) > 0 then occupied_count = occupied_count + 1 else empty_count = empty_count + 1 end
+        if _get_squad_count(entry.id) > 0 then occupied_count = occupied_count + 1 else empty_count = empty_count + 1 end
     end
     local type_parts = {}
     for stype, count in pairs(type_counts) do type_parts[#type_parts + 1] = stype .. "=" .. count end
@@ -152,7 +154,7 @@ end
 local function _log_base_distances(smarts)
     local bases = {}
     for _, entry in ipairs(smarts) do
-        if entry.stype == "base" then bases[#bases + 1] = entry end
+        if entry.stype == SMART_BASE then bases[#bases + 1] = entry end
     end
     if #bases < 2 then return end
     local base_nn = {}
@@ -173,7 +175,7 @@ local function _log_base_distances(smarts)
         #bases, base_nn[1], total / #base_nn, base_nn[#base_nn])
 end
 
-function scan()
+function run()
     if not level.present() then return end
     local level_id = xlevel.get_actor_level()
     if not level_id then return end
@@ -192,7 +194,7 @@ function scan()
     local smart_positions = {}
     for idx = 1, smart_count do smart_positions[idx] = smarts[idx].position end
 
-    local all_nn = _nearest_neighbor_distances(smarts)
+    local all_nn = _collect_neighbors(smarts)
     _log_per_smart(all_nn, smart_positions, stash_positions)
     _log_summary(level_name, smarts, #stash_positions, all_nn)
     _log_base_distances(smarts)
