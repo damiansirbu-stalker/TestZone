@@ -26,6 +26,7 @@ Periodic statistics - logs top-firing callbacks at configurable intervals
 
 Requirements:
 Anomaly 1.5.3
+Modded exes: themrdemonized 2025.9.10 or newer, or AOEngine v0.55 or newer. The full feature set needs the latest demonized build; a feature that needs a newer one stays inactive on older exes.
 xlibs (https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001)
 MCM
 
@@ -53,21 +54,11 @@ Tracked Events tab:
 
 Log output: appdata/logs/testzone.log
 
+Compatibility:
+Coexists with everything; no known incompatibilities.
+
 Performance:
 Performance comes first, ahead of any feature. When a feature cannot fit the budget it is reworked, replaced, or removed with an X-Ray engine modification rather than allowed to slow the game. Measured on the engine built from the latest source with no multithreading and no optimizations, so the timings are worst-case; the optimized multithreaded build you run is always faster.
-
-Compatibility:
-Requires xlibs.
-Runs on themrdemonized modded exes 2025.9.10 or newer, or AOEngine v0.55 or newer.
-The full feature set needs the latest demonized build. A feature that needs a newer build stays inactive on older exes.
-No known incompatibilities.
-
-FAQ:
-Do I need modded exes?
-  Yes. TestZone needs themrdemonized modded exes (2025.9.10 or newer) or AOEngine (v0.55 or newer). Vanilla Anomaly does not expose the APIs it relies on.
-
-Credits:
-Altogolik - support, ideas, source materials
 
 Development:
 Written against X-Ray Monolith engine source, Demonized exes source code, and Anomaly 1.5.3 unpacked gamedata.
@@ -75,15 +66,15 @@ Code patterns and engine usage validated against established work by reputable A
 The code is validated in real time by a multi-stage pipeline: luacheck, selene, tree-sitter AST analysis, contract rules, cross-file dependency resolution, cyclomatic complexity analysis, crash and vulnerability pattern detection, lua54 integration testing with X-Ray engine stubs, gitleaks secret scanning.
 Full report in doc/test-report.log.
 
+Credits:
+Altogolik - support, ideas, source materials
+
 Usage and License:
   Modpacks: allowed and encouraged. Keep the readme and license files.
   Addons, patches, integrations: allowed. Credit "TestZone by Damian Sirbu" visibly on your mod page.
   Reproducing the implementation in other software: not allowed, even with credit.
   Full license in LICENSE file and on GitHub.
 
-Reporting issues and suggestions
-Open a report at https://github.com/damiansirbu-stalker/TestZone/issues/new/choose, or ask on the EFP, Anomaly, and Zona Discord servers. Read this readme and the MCM options first.
-
-Include: exact repro steps (new game or named save, expected vs actual), engine build, modlist, load order, xray.log, and the mod debug log. With hundreds of mods loaded, only the log shows whether this one was involved.
-
-The debug log is required: set the MCM log level to DEBUG, reproduce, then back to WARN. DEBUG is not free. It writes a timed line for every evaluation and hitches single-threaded exes, and the millisecond figures include the tracing itself, so treat them as relative.
+Diagnostics and reporting:
+The Watcher is the diagnostic surface: enable it on the Main tab and it logs callback fire counts and payloads to appdata/logs/testzone.log.
+Report at https://github.com/damiansirbu-stalker/TestZone/issues/new/choose or the EFP, Anomaly, and Zona Discord. Include repro steps, engine build, modlist, load order, xray.log, and testzone.log.
