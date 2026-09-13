@@ -5,6 +5,8 @@ Rate limiting keeps high-frequency callbacks from flooding the log, and each cal
 
 [Releases](https://github.com/damiansirbu-stalker/TestZone/releases) | [Bugs, suggestions](https://github.com/damiansirbu-stalker/TestZone/issues)
 
+[![Grade](https://img.shields.io/endpoint?url=https%3A%2F%2Fdamiansirbu-stalker.github.io%2FTestZone%2Fbadge.json)](https://damiansirbu-stalker.github.io/TestZone/) [![validate](https://github.com/damiansirbu-stalker/TestZone/actions/workflows/validate.yml/badge.svg)](https://github.com/damiansirbu-stalker/TestZone/actions/workflows/validate.yml) [![Project Health](https://img.shields.io/badge/project_health-dashboard-00ced1)](https://damiansirbu-stalker.github.io/TestZone/)
+
 Requires: Anomaly 1.5.3, modded exes (themrdemonized or AOEngine), [xlibs](https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001), MCM. Exact versions in [readme.txt](doc/readme.txt).
 
 ## Alife Collection
