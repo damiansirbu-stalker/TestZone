@@ -100,7 +100,7 @@ function on_mcm_load()
 end
 
 function set_version_text(_anchor, handlers)
-    handlers.desc:SetText(_tz_deps.get_version())
+    handlers.desc:SetText(_tz_init.get_version())
 end
 
 function on_game_start()

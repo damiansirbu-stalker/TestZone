@@ -422,7 +422,7 @@ function log_never_fired()
 end
 
 function on_game_start()
-    log.info("TestZone v%s (xlibs v%s)", _tz_deps.get_version(), xlibs.get_version())
+    log.info("TestZone v%s (xlibs v%s)", _tz_init.get_version(), xlibs.get_version())
     _init_timers()
     _load_config()
     RegisterScriptCallback("actor_on_first_update", function()

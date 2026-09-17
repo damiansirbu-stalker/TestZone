@@ -1,0 +1,7 @@
+--- _tz_manifest: TestZone identity. Pure data, no logic. Read by _tz_init (the gate) and the validator (deps.manifest_structure).
+
+MANIFEST = {
+    name    = "TestZone",
+    version = "next",
+    xlibs   = "1.5.1",
+}
