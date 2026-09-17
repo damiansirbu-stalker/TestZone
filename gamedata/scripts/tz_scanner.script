@@ -1,4 +1,5 @@
 --- tz_scanner: Periodic level and world scans (squads, smarts, stashes, AP overlay, world population)
+--- @novalidate(conventions.unused_export, reason:"console commands, invoked by name via run_string")
 
 local pairs, ipairs, tostring, next = pairs, ipairs, tostring, next
 local string_format, table_concat, table_sort = string.format, table.concat, table.sort
@@ -24,8 +25,7 @@ local function _log_ap_squad(squad_id, data)
     return data.arrived or false, data.release_at ~= nil
 end
 
---- @novalidate(code.unused_export, reason:"console command")
-function scan_mutants()
+function log_mutants()
     local by_species = {}
     local by_faction = {}
     local by_method = { resolved = 0, none = 0 }
@@ -90,8 +90,7 @@ function scan_mutants()
     log.info("=== END MUTANT SCAN ===")
 end
 
---- @novalidate(code.unused_export, reason:"console command")
-function scan_squads()
+function log_squads()
     if not level.present() then return end
     local actor_level_id = xlevel.get_actor_level()
     if not actor_level_id then return end
@@ -145,8 +144,7 @@ function scan_squads()
     log.info("=== END SQUAD SCAN ===")
 end
 
---- @novalidate(code.unused_export, reason:"console command")
-function scan_smarts()
+function log_smarts()
     if not level.present() then return end
     local actor_level_id = xlevel.get_actor_level()
     if not actor_level_id then return end
@@ -187,8 +185,7 @@ function scan_smarts()
     log.info("=== END SMART SCAN ===")
 end
 
---- @novalidate(code.unused_export, reason:"console command")
-function scan_stashes()
+function log_stashes()
     if not level.present() then return end
     if not treasure_manager or not treasure_manager.caches then log.info("[STASH_SCAN] no caches"); return end
     local actor_level_id = xlevel.get_actor_level()
@@ -222,8 +219,7 @@ function scan_stashes()
     log.info("=== END STASH SCAN ===")
 end
 
---- @novalidate(code.unused_export, reason:"console command")
-function scan_ap_squads()
+function log_ap_squads()
     if not ap_core_squad then log.info("[AP_SCAN] ap_core_squad not loaded"); return end
     local scripted = ap_core_squad.get_scripted_squads()
     if not scripted then log.info("[AP_SCAN] no scripted squads"); return end
@@ -241,8 +237,7 @@ function scan_ap_squads()
     log.info("=== END AP SCAN ===")
 end
 
---- @novalidate(code.unused_export, reason:"console command")
-function scan_world()
+function log_world()
     local by_faction = {}
     local by_level = {}
     local by_online = { online = 0, offline = 0 }
@@ -274,8 +269,8 @@ end
 
 --- Run all scans.
 function run_all()
-    scan_squads()
-    scan_smarts()
-    scan_stashes()
-    scan_ap_squads()
+    log_squads()
+    log_smarts()
+    log_stashes()
+    log_ap_squads()
 end

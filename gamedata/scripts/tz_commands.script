@@ -1,12 +1,13 @@
 --- tz_commands: one-shot console commands for crash repro and spotchecks, run via `run_string tz_commands.<name>()` in debug mode
+--- @novalidate(conventions.unused_export, reason:"console commands, invoked by name via run_string")
 
 local ipairs, string_format, ini_sys = ipairs, string.format, ini_sys
 
 local log = xlog.get_logger("TestZone.commands", { outfile = "testzone.log" })
 
-local function _tip(msg)
+local function _show_tip(msg)
     local actor = db.actor
-    if actor then news_manager.send_tip(actor, msg, nil, nil, 5000) end
+    if actor then news_manager.send_show_tip(actor, msg, nil, nil, 5000) end
 end
 
 local function _spawn_count(sec, id, count)
@@ -48,9 +49,8 @@ local KCW_ITEMS = {
     { sec = "sewing_kit_a",              count = 2 },
 }
 
---- @novalidate(code.unused_export, reason:"console command")
-function kit_kcw()
+function add_kcw_kit()
     local spawned, skipped = _spawn(KCW_ITEMS, "kit_kcw")
     log:info("kit_kcw spawned=%d skipped=%d", spawned, skipped)
-    _tip(string_format("Kit KCW: %d items, %d skipped", spawned, skipped))
+    _show_tip(string_format("Kit KCW: %d items, %d skipped", spawned, skipped))
 end

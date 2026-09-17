@@ -1,4 +1,5 @@
 --- tz_watcher: A-Life callback monitoring with fire counts and payload logging
+--- @novalidate(conventions.unused_export, reason:"console commands, invoked by name via run_string")
 
 local pairs, ipairs, tostring, type, time_global = pairs, ipairs, tostring, type, time_global
 local math_floor, string_format, table_concat, table_sort = math.floor, string.format, table.concat, table.sort
@@ -379,7 +380,6 @@ local function _load_config()
     _config.geometry_scan_enabled = _cfg.geometry_scan_enabled
 end
 
---- @novalidate(code.unused_export, reason:"console command")
 function get_stats()
     local result = {}
     for callback, count in pairs(stats) do
@@ -390,7 +390,6 @@ function get_stats()
     return result
 end
 
---- @novalidate(code.unused_export, reason:"console command")
 function log_fired()
     local fired = {}
     for callback, count in pairs(stats) do
@@ -407,7 +406,6 @@ function log_fired()
     log.info("=== END ===")
 end
 
---- @novalidate(code.unused_export, reason:"console command")
 function log_never_fired()
     local never = {}
     for _, cb in pairs(ALL_CALLBACKS) do

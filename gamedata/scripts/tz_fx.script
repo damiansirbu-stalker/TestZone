@@ -1,4 +1,5 @@
 --- tz_fx: console cyclers for post-process effects (pp) and ambient sound loops (snd).
+--- @novalidate(conventions.unused_export, reason:"console commands, invoked by name via run_string")
 
 local UnregisterScriptCallback, RegisterScriptCallback = UnregisterScriptCallback, RegisterScriptCallback
 local time_global, string_format = time_global, string.format
@@ -32,19 +33,18 @@ local _SND_LIST = {
 local _pp_state = nil
 local _snd_state = nil
 
-local function _tip(msg, ms)
+local function _show_tip(msg, ms)
     local actor = db.actor
-    if actor then news_manager.send_tip(actor, msg, nil, nil, ms or 5000) end
+    if actor then news_manager.send_show_tip(actor, msg, nil, nil, ms or 5000) end
 end
 
 --- Toggle the xpp cycler. 5s per entry, factor 0.7, smoothed.
---- @novalidate(code.unused_export, reason:"console command")
-function pp()
+function run_pp()
     if _pp_state then
         UnregisterScriptCallback(CALLBACK_ACTOR_ON_UPDATE, _pp_state.update_fn)
         if _pp_state.slot then xpp.release(_pp_state.slot) end
         _pp_state = nil
-        _tip("tz_fx.pp STOPPED", 4000)
+        _show_tip("tz_fx.pp STOPPED", 4000)
         log:info("pp STOPPED")
         return
     end
@@ -54,13 +54,13 @@ function pp()
     local SMOOTHING = 1.5
     local state = { idx = 0, slot = nil, next_switch = 0 }
 
-    local function switch_to_next()
+    local function run_next()
         if state.slot then xpp.release(state.slot) end
         state.idx = state.idx + 1
         if state.idx > #_PP_LIST then
             UnregisterScriptCallback(CALLBACK_ACTOR_ON_UPDATE, state.update_fn)
             _pp_state = nil
-            _tip("tz_fx.pp COMPLETE (" .. #_PP_LIST .. " entries)", 6000)
+            _show_tip("tz_fx.pp COMPLETE (" .. #_PP_LIST .. " entries)", 6000)
             log:info("pp COMPLETE")
             return
         end
@@ -68,31 +68,30 @@ function pp()
         state.slot = xpp.create_effector(ppe, { smoothing = SMOOTHING })
         if state.slot then xpp.set_target(state.slot, FACTOR, SMOOTHING) end
         local msg = string_format("%d/%d  %s", state.idx, #_PP_LIST, ppe)
-        _tip(msg, DURATION_MS - 200)
+        _show_tip(msg, DURATION_MS - 200)
         log:info("pp %s factor=%.2f", msg, FACTOR)
         state.next_switch = time_global() + DURATION_MS
     end
 
     local function update_fn()
-        if time_global() >= state.next_switch then switch_to_next() end
+        if time_global() >= state.next_switch then run_next() end
     end
 
     state.update_fn = update_fn
     RegisterScriptCallback(CALLBACK_ACTOR_ON_UPDATE, update_fn)
     _pp_state = state
     local msg_start = string_format("tz_fx.pp STARTED %d entries %ds each", #_PP_LIST, DURATION_MS / 1000)
-    _tip(msg_start, 4000)
+    _show_tip(msg_start, 4000)
     log:info("pp STARTED count=%d", #_PP_LIST)
 end
 
 --- Toggle the xsound cycler. 5s per entry, volume 0.7, smoothed.
---- @novalidate(code.unused_export, reason:"console command")
-function snd()
+function run_snd()
     if _snd_state then
         UnregisterScriptCallback(CALLBACK_ACTOR_ON_UPDATE, _snd_state.update_fn)
         if _snd_state.handle then xsound.release(_snd_state.handle) end
         _snd_state = nil
-        _tip("tz_fx.snd STOPPED", 4000)
+        _show_tip("tz_fx.snd STOPPED", 4000)
         log:info("snd STOPPED")
         return
     end
@@ -102,13 +101,13 @@ function snd()
     local SMOOTHING = 2.0
     local state = { idx = 0, handle = nil, next_switch = 0 }
 
-    local function switch_to_next()
+    local function run_next()
         if state.handle then xsound.release(state.handle) end
         state.idx = state.idx + 1
         if state.idx > #_SND_LIST then
             UnregisterScriptCallback(CALLBACK_ACTOR_ON_UPDATE, state.update_fn)
             _snd_state = nil
-            _tip("tz_fx.snd COMPLETE (" .. #_SND_LIST .. " entries)", 6000)
+            _show_tip("tz_fx.snd COMPLETE (" .. #_SND_LIST .. " entries)", 6000)
             log:info("snd COMPLETE")
             return
         end
@@ -116,20 +115,20 @@ function snd()
         state.handle = xsound.create_sound(snd_path, { smoothing = SMOOTHING })
         if state.handle then xsound.set_volume(state.handle, VOLUME, SMOOTHING) end
         local msg = string_format("%d/%d  %s", state.idx, #_SND_LIST, snd_path)
-        _tip(msg, DURATION_MS - 200)
+        _show_tip(msg, DURATION_MS - 200)
         log:info("snd %s volume=%.2f", msg, VOLUME)
         state.next_switch = time_global() + DURATION_MS
     end
 
     local function update_fn()
-        if time_global() >= state.next_switch then switch_to_next() end
+        if time_global() >= state.next_switch then run_next() end
     end
 
     state.update_fn = update_fn
     RegisterScriptCallback(CALLBACK_ACTOR_ON_UPDATE, update_fn)
     _snd_state = state
     local msg_start = string_format("tz_fx.snd STARTED %d entries %ds each", #_SND_LIST, DURATION_MS / 1000)
-    _tip(msg_start, 4000)
+    _show_tip(msg_start, 4000)
     log:info("snd STARTED count=%d", #_SND_LIST)
 end
 
