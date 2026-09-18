@@ -1,5 +1,5 @@
 TestZone: Callback monitoring and profiling for STALKER Anomaly, by Damian
-Version: next (xlibs 1.5.1, demonized 20250908)
+Version: 1.0.4-snapshot (xlibs 1.5.1, demonized 20250908)
 Changelog: https://github.com/damiansirbu-stalker/TestZone/blob/main/doc/changelog
 
 My work:
