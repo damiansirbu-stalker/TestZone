@@ -78,4 +78,4 @@ Usage and License:
 
 Diagnostics and reporting:
 The Watcher is the diagnostic surface: enable it on the Main tab and it logs callback fire counts and payloads to appdata/logs/testzone.log.
-Report at https://github.com/damiansirbu-stalker/TestZone/issues/new/choose or the EFP, Anomaly, and Zona Discord. Include repro steps, engine build, modlist, load order, xray.log, and testzone.log.
+Report at https://github.com/damiansirbu-stalker/TestZone/issues/new/choose or the EFP, Anomaly, and Zona Discord. Include repro steps, engine build, modlist, load order, xray.log, and the debug log.
