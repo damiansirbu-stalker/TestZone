@@ -1,0 +1,1 @@
+Callback monitoring for STALKER Anomaly. TestZone taps all 162 engine callbacks through one seam, logging fire counts and payloads with deep table and userdata introspection, rate-limited and per-callback toggled. An engine tracer that reads the callback bus and never drives it. Engine-native, performant, save-safe.
