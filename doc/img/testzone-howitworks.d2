@@ -1,0 +1,40 @@
+direction: down
+
+style.fill: "#1f2421"
+
+**.style.fill: "#262c27"
+**.style.stroke: "#ece7d8"
+**.style.font-color: "#ece7d8"
+**.style.stroke-width: 2
+
+title: "TestZone - watch every engine callback" {
+  near: top-center
+  style: { stroke-width: 0; fill: "#1f2421"; font-color: "#ece7d8"; font-size: 28 }
+}
+
+cbs: "162 engine callbacks\nhit, shot, spawn, update, ..."
+
+watch: "The Watcher" {
+  style.stroke: "#c9d8b6"
+  grid-columns: 1
+  grid-gap: 12
+  s: "one interception seam over the callback registry"
+  c: "count fires, log the payload"
+}
+
+proc: "Shaped before it hits the log" {
+  grid-columns: 2
+  grid-gap: 14
+  d: "deep table / userdata introspection"
+  r: "rate limit repeated callbacks"
+  t: "per-callback toggle in MCM"
+  p: "periodic top-firing stats"
+}
+
+out: "appdata/logs/testzone.log" {
+  style.stroke: "#c9d8b6"
+}
+
+cbs -> watch: "intercept" { style: { stroke: "#c9d8b6"; font-color: "#c9d8b6" } }
+watch -> proc: "each fire" { style: { stroke: "#c9d8b6"; font-color: "#c9d8b6" } }
+proc -> out: "write" { style: { stroke: "#c9d8b6"; font-color: "#c9d8b6" } }
