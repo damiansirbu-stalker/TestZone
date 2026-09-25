@@ -41,18 +41,18 @@ local WEAPONS = {
     silenced = { "wpn_pb",     "ammo_9x18_fmj", 3 },
 }
 
--- show_commands catalog: group and a runnable example per command; getfenv reflection lists any missing here.
+-- show_commands catalog: group, param-name signature, and a runnable example per command; getfenv lists any missing here.
 local CATALOG = {
-    { "combat", "start_arena",       "16, 45, 60" },
-    { "combat", "stop_arena",        "" },
-    { "kit",    "add_kit",           '"shotgun"' },
-    { "world",  "set_weather",       '"rain"' },
-    { "world",  "add_hours",         "6" },
-    { "warp",   "teleport_to_smart", '"dar_angar"' },
-    { "warp",   "teleport_to_stash", "" },
-    { "unlock", "enable_north",      "" },
-    { "unlock", "enable_travel",     "" },
-    { "help",   "show_commands",     "" },
+    { "combat", "start_arena",       "count, dist, shuffle", "16, 45, 60" },
+    { "combat", "stop_arena",        "",                     "" },
+    { "kit",    "add_kit",           "what, amount",         '"silenced", 3' },
+    { "world",  "set_weather",       "key",                  '"rain"' },
+    { "world",  "add_hours",         "hours",                "6" },
+    { "warp",   "teleport_to_smart", "name",                 '"dar_angar"' },
+    { "warp",   "teleport_to_stash", "",                     "" },
+    { "unlock", "enable_north",      "",                     "" },
+    { "unlock", "enable_travel",     "",                     "" },
+    { "help",   "show_commands",     "",                     "" },
 }
 
 -- set_weather presets: key -> { AtmosFear cycle, its preset } (weather.script:23).
@@ -305,10 +305,14 @@ function show_commands()
     if not actor then return _show_tip("Not in game") end
     local tip_lines, sheet_lines, listed, last_group = {}, {}, {}, nil
     for i = 1, #CATALOG do
-        local group, name, example = CATALOG[i][1], CATALOG[i][2], CATALOG[i][3]
+        local group, name, params, example = CATALOG[i][1], CATALOG[i][2], CATALOG[i][3], CATALOG[i][4]
         if group ~= last_group then tip_lines[#tip_lines + 1] = group .. ":"; last_group = group end
-        tip_lines[#tip_lines + 1] = "  " .. name .. "(" .. example .. ")"
-        sheet_lines[#sheet_lines + 1] = "run_string tz_commands." .. name .. "(" .. example .. ")"
+        tip_lines[#tip_lines + 1] = "  " .. name .. "(" .. params .. ")"
+        sheet_lines[#sheet_lines + 1] = "run_string tz_commands." .. name .. "(" .. params .. ")"
+        if example ~= "" then
+            tip_lines[#tip_lines + 1] = "  " .. name .. "(" .. example .. ")"
+            sheet_lines[#sheet_lines + 1] = "run_string tz_commands." .. name .. "(" .. example .. ")"
+        end
         listed[name] = true
     end
     for name, value in pairs(getfenv(1)) do
