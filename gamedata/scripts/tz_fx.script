@@ -35,7 +35,7 @@ local _snd_state = nil
 
 local function _show_tip(msg, ms)
     local actor = db.actor
-    if actor then news_manager.send_show_tip(actor, msg, nil, nil, ms or 5000) end
+    if actor then news_manager.send_tip(actor, msg, nil, nil, ms or 5000) end
 end
 
 --- Toggle the xpp cycler. 5s per entry, factor 0.7, smoothed.

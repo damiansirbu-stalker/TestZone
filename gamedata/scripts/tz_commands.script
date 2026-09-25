@@ -91,7 +91,7 @@ local _arena = { on = false, want = 0, dist = 0, shuffle_sec = 0, shuffle_at = 0
 
 local function _show_tip(msg)
     local actor = db.actor
-    if actor then news_manager.send_show_tip(actor, msg, nil, nil, 5000) end
+    if actor then news_manager.send_tip(actor, msg, nil, nil, 5000) end
 end
 
 local function _find_arena_pos(angle)
@@ -318,5 +318,5 @@ function show_commands()
         end
     end
     xfs.write_file(getFS():update_path("$logs$", "") .. COMMANDS_FILE, table_concat(sheet_lines, "\n") .. "\n")
-    news_manager.send_show_tip(actor, table_concat(tip_lines, "\n"), nil, nil, 30000)
+    news_manager.send_tip(actor, table_concat(tip_lines, "\n"), nil, nil, 30000)
 end
