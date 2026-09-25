@@ -1,56 +1,280 @@
---- tz_commands: one-shot console commands for crash repro and spotchecks, run via `run_string tz_commands.<name>()` in debug mode
+--- tz_commands: parametrized console commands for testing and filming, run via `run_string tz_commands.<name>(...)` in debug mode.
 --- @novalidate(conventions.unused_export, reason:"console commands, invoked by name via run_string")
 
-local ipairs, string_format, ini_sys = ipairs, string.format, ini_sys
+local pairs, tostring, string_format = pairs, tostring, string.format
+local math_random, math_cos, math_sin, math_pi, math_rad, math_floor =
+    math.random, math.cos, math.sin, math.pi, math.rad, math.floor
+local time_global, alife, level, ini_sys = time_global, alife, level, ini_sys
+local news_manager, xinventory, xstash, xlevel, xobject =
+    news_manager, xinventory, xstash, xlevel, xobject
 
-local log = xlog.get_logger("TestZone.commands", { outfile = "testzone.log" })
+local INVALID_VERTEX = 4294967295
+
+local AMMO_BOXES   = 6
+local MONEY        = 100000
+local RANK         = 30000
+local DEFAULT_HOURS = 12
+local KIT_MONEY    = "money"
+local KIT_RANK     = "rank"
+local PSY_HELMET   = "good_psy_helmet"
+
+local ARENA_TICK       = 2
+local ARENA_DIST       = 45
+local ARENA_RING_MIN   = 10
+local ARENA_RING_MAX   = 18
+local ARENA_MAX_SPAWN  = 8
+local ARENA_SPREAD_DEG = 25
+-- Cosmetic gear per combatant: artefact auras glow on camera, plus optics and NVG (at_test.script:14).
+local ARENA_GEAR = { "af_gravi", "af_soul", "af_fireball", "af_electra_sparkler", "af_compass", "af_kevlar", "wpn_binoc", "device_torch_nv_1" }
+
+-- Weapon kits: key -> { weapon section, ammo section, default ammo boxes }; ammo is always attached.
+local WEAPONS = {
+    pistol   = { "wpn_pm",     "ammo_9x18_fmj" },
+    shotgun  = { "wpn_spas12", "ammo_12x70_buck" },
+    rifle    = { "wpn_ak74",   "ammo_5.45x39_fmj" },
+    smg      = { "wpn_mp5",    "ammo_9x18_fmj" },
+    sniper   = { "wpn_svd",    "ammo_7.62x54_7h1" },
+    silenced = { "wpn_pb",     "ammo_9x18_fmj", 3 },
+}
+
+-- set_weather presets: key -> { AtmosFear cycle, its preset } (weather.script:23).
+local WEATHER_PRESETS = {
+    clear = { cycle = "clear", name = "w_clear1" },
+    rain  = { cycle = "rain",  name = "w_rain1" },
+    storm = { cycle = "storm", name = "w_storm1" },
+    fog   = { cycle = "foggy", name = "w_foggy1" },
+}
+
+-- North psy-field / story deactivation flags; good_psy_helmet also zeroes each antenna (rad_psy_zone_1.ltx:7).
+local NORTH_FLAGS = {
+    "story_mode_disabled",
+    "yan_labx16_switcher_1_off", "yan_labx16_switcher_2_off",
+    "yan_labx16_switcher_3_off", "yan_labx16_switcher_primary_off",
+    "bar_deactivate_radar_done",
+    "warlab_deactivate_generators_done",
+    "yantar_attack_start",
+    "bar_in_done",
+}
+
+-- Arena faction tier pools and the hostile matchups start_arena rolls.
+local ARENA_POOLS = {
+    army     = { "sim_default_military_1", "sim_default_military_2", "sim_default_military_3", "sim_default_military_4" },
+    monolith = { "sim_default_monolith_1", "sim_default_monolith_2", "sim_default_monolith_3", "sim_default_monolith_4" },
+    ecolog   = { "sim_default_ecolog_0", "sim_default_ecolog_1", "sim_default_ecolog_2", "sim_default_ecolog_3", "sim_default_ecolog_4" },
+    renegade = { "sim_default_renegade_0", "sim_default_renegade_1", "sim_default_renegade_2" },
+}
+local ARENA_PAIRS = {
+    { "army", "monolith" }, { "ecolog", "monolith" }, { "renegade", "monolith" }, { "army", "renegade" },
+}
+
+local _arena = { on = false, want = 0, dist = 0, shuffle_sec = 0, shuffle_at = 0,
+                 center_lvid = nil, gvid = nil, side_dir = 0, side_a = "army", side_b = "monolith",
+                 spawned = {} }
 
 local function _show_tip(msg)
     local actor = db.actor
     if actor then news_manager.send_show_tip(actor, msg, nil, nil, 5000) end
 end
 
-local function _spawn_count(sec, id, count)
-    for _ = 1, count do xinventory.create_item(sec, id) end
+local function _find_arena_pos(angle)
+    local dir = vector():set(math_cos(angle), 0, math_sin(angle))
+    local dist = ARENA_RING_MIN + math_random() * (ARENA_RING_MAX - ARENA_RING_MIN)
+    local lvid = level.vertex_in_direction(_arena.center_lvid, dir, dist)
+    if not lvid or lvid >= INVALID_VERTEX then return nil end
+    return level.vertex_position(lvid), lvid
 end
 
-local function _spawn(items, label)
-    local actor = db.actor
-    if not actor then
-        log:info("%s SKIP no_actor", label)
-        return 0, 0
+local function _select_arena_pair()
+    local pair = ARENA_PAIRS[math_random(#ARENA_PAIRS)]
+    _arena.side_a, _arena.side_b = pair[1], pair[2]
+    _arena.shuffle_at = time_global() + _arena.shuffle_sec * 1000
+    _show_tip(string_format("arena: %s vs %s", _arena.side_a, _arena.side_b))
+end
+
+local function _spawn_combatant(side)
+    local faction = (side == "b") and _arena.side_b or _arena.side_a
+    local pool = ARENA_POOLS[faction]
+    local base = (side == "b") and (_arena.side_dir + math_pi) or _arena.side_dir
+    local angle = base + math_rad((math_random() * 2 - 1) * ARENA_SPREAD_DEG)
+    local pos, lvid = _find_arena_pos(angle)
+    if not pos then return false end
+    local sec = pool[math_random(#pool)]
+    if not ini_sys:section_exist(sec) then return false end
+    local sim = alife()
+    local se = sim:create(sec, pos, lvid, _arena.gvid)
+    if not se then return false end
+    _arena.spawned[se.id] = { side = side, dead_seen = false }
+    for i = 1, #ARENA_GEAR do
+        if ini_sys:section_exist(ARENA_GEAR[i]) then sim:create(ARENA_GEAR[i], pos, lvid, _arena.gvid, se.id) end
     end
-    local id = actor:id()
-    local spawned, skipped = 0, 0
-    for _, item in ipairs(items) do
-        if not ini_sys:section_exist(item.sec) then
-            log:info("%s SKIP missing section=%s", label, item.sec)
-            skipped = skipped + 1
+    return true
+end
+
+local function _release_arena()
+    local sim = alife()
+    local released = 0
+    for id in pairs(_arena.spawned) do
+        local se = xobject.get_se(id)
+        if se then sim:release(se, true); released = released + 1 end
+        _arena.spawned[id] = nil
+    end
+    return released
+end
+
+-- Count alive per side; release a corpse one tick after it is first seen dead so the kill reads on camera.
+local function _update_census()
+    local sim = alife()
+    local alive_a, alive_b = 0, 0
+    for id, rec in pairs(_arena.spawned) do
+        local se = xobject.get_se(id)
+        if not se then
+            _arena.spawned[id] = nil
+        elseif se:alive() then
+            if rec.side == "a" then alive_a = alive_a + 1 else alive_b = alive_b + 1 end
+        elseif rec.dead_seen then
+            sim:release(se, true)
+            _arena.spawned[id] = nil
         else
-            _spawn_count(item.sec, id, item.count)
-            spawned = spawned + 1
+            rec.dead_seen = true
         end
     end
-    return spawned, skipped
+    return alive_a, alive_b
 end
 
--- Keep Crafting Window Opened (mod 143) crash repro: multi-use cooking tools + fuel + raw parts + repair kits.
-local KCW_ITEMS = {
-    { sec = "cooking",                   count = 1 },
-    { sec = "army_bowler",               count = 1 },
-    { sec = "charcoal",                  count = 3 },
-    { sec = "kerosene",                  count = 2 },
-    { sec = "mutant_part_flesh_meat",    count = 20 },
-    { sec = "mutant_part_boar_chop",     count = 20 },
-    { sec = "mutant_part_tushkano_meat", count = 20 },
-    { sec = "flask",                     count = 10 },
-    { sec = "cleaning_kit_s",            count = 2 },
-    { sec = "toolkit_s",                 count = 2 },
-    { sec = "sewing_kit_a",              count = 2 },
-}
+local function _spawn_wave(alive_a, alive_b)
+    local budget = ARENA_MAX_SPAWN
+    local half = math_floor(_arena.want / 2)
+    local need_a, need_b = half - alive_a, half - alive_b
+    while (need_a > 0 or need_b > 0) and budget > 0 do
+        if need_a >= need_b and _spawn_combatant("a") then need_a = need_a - 1
+        elseif need_a < need_b and _spawn_combatant("b") then need_b = need_b - 1 end
+        budget = budget - 1
+    end
+end
 
-function add_kcw_kit()
-    local spawned, skipped = _spawn(KCW_ITEMS, "kit_kcw")
-    log:info("kit_kcw spawned=%d skipped=%d", spawned, skipped)
-    _show_tip(string_format("Kit KCW: %d items, %d skipped", spawned, skipped))
+local function _update_arena()
+    if not _arena.on then return true end
+    ResetTimeEvent("tz_arena", "tick", ARENA_TICK)
+    if not db.actor then return false end
+    if _arena.shuffle_sec > 0 and time_global() >= _arena.shuffle_at then
+        _release_arena()
+        _select_arena_pair()
+    end
+    local alive_a, alive_b = _update_census()
+    _spawn_wave(alive_a, alive_b)
+    return false
+end
+
+--- Give the actor a keyed kit; guns include ammo, or use the money and rank keys, or a raw item section.
+function add_kit(what, amount)
+    local actor = db.actor
+    if not actor then return _show_tip("Not in game") end
+    if what == KIT_MONEY then
+        actor:give_money(amount or MONEY)
+        return _show_tip(string_format("money +%d", amount or MONEY))
+    end
+    if what == KIT_RANK then
+        actor:set_character_rank(amount or RANK)
+        return _show_tip(string_format("rank set %d", amount or RANK))
+    end
+    local id = actor:id()
+    local weapon = WEAPONS[what]
+    if weapon then
+        local boxes = amount or weapon[3] or AMMO_BOXES
+        xinventory.create_item(weapon[1], id)
+        for _ = 1, boxes do xinventory.create_item(weapon[2], id) end
+        return _show_tip(string_format("%s + %d ammo", what, boxes))
+    end
+    if not ini_sys:section_exist(what) then return _show_tip("no section " .. tostring(what)) end
+    for _ = 1, (amount or 1) do xinventory.create_item(what, id) end
+    _show_tip(string_format("%s x%d", what, amount or 1))
+end
+
+--- Keep count combatants fighting half against half on a ring, reshuffling factions every shuffle seconds.
+function start_arena(count, dist, shuffle)
+    local actor = db.actor
+    if not actor then return _show_tip("Not in game") end
+    if not count or count < 2 then return _show_tip("arena: pass a count like start_arena(16)") end
+    _arena.want = count
+    _arena.dist = dist or ARENA_DIST
+    _arena.shuffle_sec = shuffle or 0
+    _arena.side_dir = math_random() * 2 * math_pi
+    local fdir = actor:direction()
+    local apos = actor:position()
+    local cvid = level.vertex_id(vector():set(apos.x + fdir.x * _arena.dist, apos.y, apos.z + fdir.z * _arena.dist))
+    _arena.center_lvid = (cvid ~= INVALID_VERTEX) and cvid or actor:level_vertex_id()
+    _arena.gvid = actor:game_vertex_id()
+    _arena.on = true
+    _select_arena_pair()
+    RemoveTimeEvent("tz_arena", "tick")
+    CreateTimeEvent("tz_arena", "tick", 1, _update_arena)
+    _show_tip(string_format("arena: %d combatants @%dm", count, _arena.dist))
+end
+
+--- Stop the arena and release every NPC it spawned.
+function stop_arena()
+    if not _arena.on then return end
+    _arena.on = false
+    RemoveTimeEvent("tz_arena", "tick")
+    _show_tip(string_format("arena stopped, released %d", _release_arena()))
+end
+
+--- Set the weather to a preset key of clear, rain, storm, or fog.
+function set_weather(key)
+    if not db.actor then return _show_tip("Not in game") end
+    local preset = WEATHER_PRESETS[key]
+    if not preset then return _show_tip("weather keys: clear rain storm fog") end
+    local manager = level_weathers and level_weathers.get_weather_manager and level_weathers.get_weather_manager()
+    if manager then manager.cycle = preset.cycle end
+    level.set_weather(preset.name, true)
+    _show_tip("weather " .. key)
+end
+
+--- Advance the game clock by hours hours.
+function add_hours(hours)
+    if not db.actor then return _show_tip("Not in game") end
+    hours = hours or DEFAULT_HOURS
+    local before = level.get_time_hours()
+    level.change_game_time(0, hours, 0)
+    _show_tip(string_format("+%dh (%02d -> %02d)", hours, before, level.get_time_hours()))
+end
+
+--- Warp to a smart terrain by name on any level.
+function teleport_to_smart(name)
+    if not db.actor then return _show_tip("Not in game") end
+    local smart = SIMBOARD and SIMBOARD.smarts_by_names and SIMBOARD.smarts_by_names[name]
+    if not smart then return _show_tip("no smart " .. tostring(name)) end
+    _show_tip("warping to " .. tostring(name))
+    ChangeLevel(smart.position, smart.m_level_vertex_id, smart.m_game_vertex_id, VEC_ZERO, true)
+end
+
+--- Warp to a random stash on the current level.
+function teleport_to_stash()
+    local actor = db.actor
+    if not actor then return _show_tip("Not in game") end
+    if not (xstash and xstash.find_stashes) then return _show_tip("xstash unavailable") end
+    local se_actor = alife():actor()
+    local lvid = se_actor and xlevel.get_level_id(se_actor)
+    local list = xstash.find_stashes(actor:position(), { max_distance = 100000, max_count = 100000, level_id = lvid })
+    if not list or #list == 0 then return _show_tip("no stashes on this level") end
+    local stash = list[math_random(#list)]
+    actor:set_actor_position(stash.position)
+    _show_tip(string_format("%s stash", stash.filled and "filled" or "empty"))
+end
+
+--- Unlock the north by granting every psy-field flag and giving good_psy_helmet.
+function enable_north()
+    local actor = db.actor
+    if not actor then return _show_tip("Not in game") end
+    for i = 1, #NORTH_FLAGS do actor:give_info_portion(NORTH_FLAGS[i]) end
+    if not actor:object(PSY_HELMET) then xinventory.create_item(PSY_HELMET, actor:id()) end
+    _show_tip("north unlocked: flags + good_psy_helmet")
+end
+
+--- Unlock all fast-travel waypoints.
+function enable_travel()
+    if not db.actor then return _show_tip("Not in game") end
+    ui_options.set("gameplay/fast_travel/state", 2)
+    game_fast_travel.update_settings()
+    _show_tip("fast travel unlocked")
 end
