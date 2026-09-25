@@ -1,12 +1,13 @@
 --- tz_commands: parametrized console commands for testing and filming, run via `run_string tz_commands.<name>(...)` in debug mode.
 --- @novalidate(conventions.unused_export, reason:"console commands, invoked by name via run_string")
 
-local pairs, tostring, string_format = pairs, tostring, string.format
+local pairs, type, tostring, string_format, table_concat, getfenv = pairs, type, tostring, string.format, table.concat, getfenv
 local math_random, math_cos, math_sin, math_pi, math_rad, math_floor =
     math.random, math.cos, math.sin, math.pi, math.rad, math.floor
 local time_global, alife, level, ini_sys = time_global, alife, level, ini_sys
 local news_manager, xinventory, xstash, xlevel, xobject =
     news_manager, xinventory, xstash, xlevel, xobject
+local xfs, getFS = xfs, getFS
 
 local INVALID_VERTEX = 4294967295
 
@@ -16,7 +17,10 @@ local RANK         = 30000
 local DEFAULT_HOURS = 12
 local KIT_MONEY    = "money"
 local KIT_RANK     = "rank"
+local WEATHER_FREEZE = "freeze"
+local WEATHER_RESUME = "resume"
 local PSY_HELMET   = "good_psy_helmet"
+local COMMANDS_FILE = "testzone_commands.txt"
 
 local ARENA_TICK       = 2
 local ARENA_DIST       = 45
@@ -35,6 +39,20 @@ local WEAPONS = {
     smg      = { "wpn_mp5",    "ammo_9x18_fmj" },
     sniper   = { "wpn_svd",    "ammo_7.62x54_7h1" },
     silenced = { "wpn_pb",     "ammo_9x18_fmj", 3 },
+}
+
+-- show_commands catalog: group and a runnable example per command; getfenv reflection lists any missing here.
+local CATALOG = {
+    { "combat", "start_arena",       "16, 45, 60" },
+    { "combat", "stop_arena",        "" },
+    { "kit",    "add_kit",           '"shotgun"' },
+    { "world",  "set_weather",       '"rain"' },
+    { "world",  "add_hours",         "6" },
+    { "warp",   "teleport_to_smart", '"dar_angar"' },
+    { "warp",   "teleport_to_stash", "" },
+    { "unlock", "enable_north",      "" },
+    { "unlock", "enable_travel",     "" },
+    { "help",   "show_commands",     "" },
 }
 
 -- set_weather presets: key -> { AtmosFear cycle, its preset } (weather.script:23).
@@ -219,11 +237,13 @@ function stop_arena()
     _show_tip(string_format("arena stopped, released %d", _release_arena()))
 end
 
---- Set the weather to a preset key of clear, rain, storm, or fog.
+--- Set the weather to a preset key (clear, rain, storm, fog), or freeze / resume the dynamic cycle.
 function set_weather(key)
     if not db.actor then return _show_tip("Not in game") end
+    if key == WEATHER_FREEZE then weather.pause(true); return _show_tip("weather frozen") end
+    if key == WEATHER_RESUME then weather.pause(false); return _show_tip("weather resumed") end
     local preset = WEATHER_PRESETS[key]
-    if not preset then return _show_tip("weather keys: clear rain storm fog") end
+    if not preset then return _show_tip("weather keys: clear rain storm fog freeze resume") end
     local manager = level_weathers and level_weathers.get_weather_manager and level_weathers.get_weather_manager()
     if manager then manager.cycle = preset.cycle end
     level.set_weather(preset.name, true)
@@ -277,4 +297,26 @@ function enable_travel()
     ui_options.set("gameplay/fast_travel/state", 2)
     game_fast_travel.update_settings()
     _show_tip("fast travel unlocked")
+end
+
+--- Show the command list on screen and write a paste-ready run_string sheet to appdata/logs/testzone_commands.txt.
+function show_commands()
+    local actor = db.actor
+    if not actor then return _show_tip("Not in game") end
+    local tip_lines, sheet_lines, listed, last_group = {}, {}, {}, nil
+    for i = 1, #CATALOG do
+        local group, name, example = CATALOG[i][1], CATALOG[i][2], CATALOG[i][3]
+        if group ~= last_group then tip_lines[#tip_lines + 1] = group .. ":"; last_group = group end
+        tip_lines[#tip_lines + 1] = "  " .. name .. "(" .. example .. ")"
+        sheet_lines[#sheet_lines + 1] = "run_string tz_commands." .. name .. "(" .. example .. ")"
+        listed[name] = true
+    end
+    for name, value in pairs(getfenv(1)) do
+        if type(value) == "function" and not listed[name] then
+            tip_lines[#tip_lines + 1] = "  " .. name .. "() [unlisted]"
+            sheet_lines[#sheet_lines + 1] = "run_string tz_commands." .. name .. "()"
+        end
+    end
+    xfs.write_file(getFS():update_path("$logs$", "") .. COMMANDS_FILE, table_concat(sheet_lines, "\n") .. "\n")
+    news_manager.send_show_tip(actor, table_concat(tip_lines, "\n"), nil, nil, 30000)
 end
