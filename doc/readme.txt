@@ -1,5 +1,9 @@
 Version: 1.0.4-snapshot (xlibs 1.5.1, demonized 20250908)
-Changelog: https://github.com/damiansirbu-stalker/TestZone/blob/main/doc/changelog | Health: https://damiansirbu-stalker.github.io/TestZone/health/ | JitProfiler: https://damiansirbu-stalker.github.io/TestZone/jitprofiler/ | Bugs: https://github.com/damiansirbu-stalker/TestZone/issues | Russian / На русском: https://github.com/damiansirbu-stalker/TestZone/blob/main/doc/readme_ru.txt
+Changelog: https://github.com/damiansirbu-stalker/TestZone/blob/main/doc/changelog
+Health: https://damiansirbu-stalker.github.io/TestZone/health/
+JitProfiler: https://damiansirbu-stalker.github.io/TestZone/jitprofiler/
+Bugs: https://github.com/damiansirbu-stalker/TestZone/issues
+Russian / На русском: https://github.com/damiansirbu-stalker/TestZone/blob/main/doc/readme_ru.txt
 
 My work:
 GitHub: https://github.com/orgs/damiansirbu-stalker/repositories
@@ -46,10 +50,10 @@ Although it started from work by Demonized, Alundaio, and Tronex, the current co
 It taps all 162 engine callbacks through one interception seam, counting fires and logging payloads with deep table and userdata introspection.
 Rate limiters keep a high-frequency callback from flooding the log, and each callback toggles on its own through MCM.
 The design favors the engine's own mechanisms and minimal intervention. It reads the callback bus and never drives it.
-Profiled continuously with JitProfiler, an engine-native scientific tool. Manual tests run on unoptimized, single-threaded exes.
+Profiled continuously with JitProfiler, an engine-native profiler. Manual tests run on unoptimized, single-threaded exes.
 Every commit runs the full pipeline locally and in CI: luacheck, a Selene build compiled for STALKER with flags the public build lacks, and a load test that runs every script against engine stubs.
 Rule layers then check crash safety, hotpath cost, engine correctness, complexity, architecture contracts, security, and the docs.
-It depends on no other mod, not even my own. The only shared layers are X-Ray and xlibs.
+It depends on no other mod, not even the author's own. The only shared layers are X-Ray and xlibs.
 
 That pipeline runs on every commit and publishes what it finds. The header links a live health page and a JitProfiler capture of the mod's real CPU and allocation cost.
 
@@ -60,7 +64,7 @@ Usage and License:
   Modpacks: allowed and encouraged. Keep the readme and license files.
   Addons, patches, integrations: allowed. Credit "TestZone by Damian Sirbu" visibly on your mod page.
   Reproducing the implementation in other software: not allowed, even with credit.
-  Full license in LICENSE file and on GitHub.
+  The full license is in the LICENSE file and on GitHub.
 
 Diagnostics and reporting:
 Every release goes through careful engineering and testing, but bugs can still slip through.
