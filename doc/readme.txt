@@ -1,5 +1,5 @@
 Version: 1.0.4-snapshot (xlibs 1.5.1, demonized 20250908)
-Changelog: https://github.com/damiansirbu-stalker/TestZone/blob/main/doc/changelog
+Changelog: https://github.com/damiansirbu-stalker/TestZone/blob/main/doc/changelog | Health: https://damiansirbu-stalker.github.io/TestZone/health/ | JitProfiler: https://damiansirbu-stalker.github.io/TestZone/jitprofiler/ | Bugs: https://github.com/damiansirbu-stalker/TestZone/issues | Russian / На русском: https://github.com/damiansirbu-stalker/TestZone/blob/main/doc/readme_ru.txt
 
 My work:
 GitHub: https://github.com/orgs/damiansirbu-stalker/repositories
@@ -22,15 +22,6 @@ Modded exes: themrdemonized 20250908 or newer, or AOEngine v0.55 or newer. The f
 xlibs (https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001)
 MCM
 
-Install (MO2):
-1. Install xlibs (load first)
-2. Install TestZone
-3. Load order does not matter
-4. Configure via MCM (Options -> TestZone)
-
-Uninstall (MO2):
-Disable or remove in MO2.
-
 Configuration:
 Main tab:
   Watcher enabled - master toggle for callback logging
@@ -47,7 +38,7 @@ Tracked Events tab:
 Log output: appdata/logs/testzone.log
 
 Compatibility:
-Coexists with everything; no known incompatibilities.
+Coexists with everything. A callback tracer with no gameplay of its own, observation only.
 
 How It's Built:
 
@@ -60,8 +51,7 @@ Every commit runs the full pipeline locally and in CI: luacheck, a Selene build 
 Rule layers then check crash safety, hotpath cost, engine correctness, complexity, architecture contracts, security, and the docs.
 It depends on no other mod, not even my own. The only shared layers are X-Ray and xlibs.
 
-[Screenshot: TestZone under JitProfiler, a live CPU and allocation capture]
-Project Health: https://damiansirbu-stalker.github.io/TestZone/
+That pipeline runs on every commit and publishes what it finds. The header links a live health page and a JitProfiler capture of the mod's real CPU and allocation cost.
 
 Credits:
 Altogolik - support, ideas, source materials
