@@ -39,7 +39,7 @@ Main tab:
 Tracked Events tab:
   Per-callback enable/disable toggles for all 162 callbacks
 
-Log output: appdata/logs/testzone.log
+The log writes to appdata/logs/testzone.log.
 
 Compatibility:
 Coexists with everything. A callback tracer with no gameplay of its own, observation only.
@@ -58,7 +58,7 @@ It depends on no other mod, not even the author's own. The only shared layers ar
 That pipeline runs on every commit and publishes what it finds. The header links a live health page and a JitProfiler capture of the mod's real CPU and allocation cost.
 
 Credits:
-Altogolik - support, ideas, source materials
+Altogolik provided support, ideas, and source materials.
 
 Usage and License:
   Modpacks: allowed and encouraged. Keep the readme and license files.
