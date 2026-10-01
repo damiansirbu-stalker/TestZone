@@ -145,7 +145,7 @@ local function _update_census()
     local alive_a, alive_b = 0, 0
     for id, rec in pairs(_arena.spawned) do
         local se = xobject.get_se(id)
-        if not se then
+        if not se or not se.alive then
             _arena.spawned[id] = nil
         elseif se:alive() then
             if rec.side == "a" then alive_a = alive_a + 1 else alive_b = alive_b + 1 end

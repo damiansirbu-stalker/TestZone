@@ -1,4 +1,5 @@
 1.0.4-snapshot
+  Fixed: rare arena census crash when the engine recycles a dead combatant's id to another object
   Added: timed event scheduling works correctly with major modpacks (globals resolve at call time for demonized_time_events compatibility)
   Added: version displayed at startup (mod + xlibs)
   Changed: MCM visual refresh
