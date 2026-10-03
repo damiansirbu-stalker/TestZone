@@ -22,6 +22,9 @@ local WEATHER_RESUME = "resume"
 local PSY_HELMET   = "good_psy_helmet"
 local COMMANDS_FILE = "testzone_commands.txt"
 
+local LIFEPUMP_TICK      = 0.5
+local LIFEPUMP_THRESHOLD = 0.5
+
 local ARENA_TICK       = 2
 local ARENA_DIST       = 45
 local ARENA_RING_MIN   = 10
@@ -88,6 +91,8 @@ local ARENA_PAIRS = {
 local _arena = { on = false, want = 0, dist = 0, shuffle_sec = 0, shuffle_at = 0,
                  center_lvid = nil, gvid = nil, side_dir = 0, side_a = "army", side_b = "monolith",
                  spawned = {} }
+
+local _lifepump = { on = false, threshold = LIFEPUMP_THRESHOLD, topups = 0 }
 
 local function _show_tip(msg)
     local actor = db.actor
@@ -183,6 +188,20 @@ local function _update_arena()
     return false
 end
 
+local function _update_lifepump()
+    if not _lifepump.on then return true end
+    ResetTimeEvent("tz_lifepump", "tick", LIFEPUMP_TICK)
+    local actor = db.actor
+    if not actor then return false end
+    if actor.health < _lifepump.threshold then
+        actor.health = 1
+        actor.power = 1
+        actor.bleeding = 1
+        _lifepump.topups = _lifepump.topups + 1
+    end
+    return false
+end
+
 --- Give the actor a keyed kit; guns include ammo, or use the money and rank keys, or a raw item section.
 function add_kit(what, amount)
     local actor = db.actor
@@ -235,6 +254,25 @@ function stop_arena()
     _arena.on = false
     RemoveTimeEvent("tz_arena", "tick")
     _show_tip(string_format("arena stopped, released %d", _release_arena()))
+end
+
+--- Keep the tester alive: below the threshold, refill health, power, and bleeding every half second.
+function start_lifepump(threshold)
+    if not db.actor then return _show_tip("Not in game") end
+    _lifepump.threshold = threshold or LIFEPUMP_THRESHOLD
+    _lifepump.topups = 0
+    _lifepump.on = true
+    RemoveTimeEvent("tz_lifepump", "tick")
+    CreateTimeEvent("tz_lifepump", "tick", LIFEPUMP_TICK, _update_lifepump)
+    _show_tip(string_format("lifepump on @%.2f", _lifepump.threshold))
+end
+
+--- Stop the life pump.
+function stop_lifepump()
+    if not _lifepump.on then return end
+    _lifepump.on = false
+    RemoveTimeEvent("tz_lifepump", "tick")
+    _show_tip(string_format("lifepump off, %d topups", _lifepump.topups))
 end
 
 --- Set the weather to a preset key (clear, rain, storm, fog), or freeze / resume the dynamic cycle.
