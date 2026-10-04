@@ -1,0 +1,203 @@
+--- tz_anim: animation command bench. Commands a motion through the real per-domain surface and logs whether it played/held.
+--- Run via `run_string tz_anim.<name>(...)` in debug mode; aim at the target first (todo-animations.md a1/a2).
+--- @novalidate(conventions.unused_export, reason:"console commands, invoked by name via run_string")
+
+local tostring, string_format, pairs = tostring, string.format, pairs
+local level, game = level, game
+local alife, ini_sys = alife, ini_sys
+local news_manager, state_mgr, xgraft, xobject = news_manager, state_mgr, xgraft, xobject
+
+local INVALID_VERTEX = 4294967295
+
+local log = xlog.get_logger("TestZone.anim", { outfile = "testzone.log", buffer_size = 1 })
+
+-- Mutant override re-assert cadence and the NPC-hold re-assert cadence, both in time-event seconds.
+local REASSERT_TICK = 1
+
+-- NPC ids currently held open through xgraft, id -> state name. The bench's gate reads this.
+local _held = {}
+-- Monster ids currently override-driven, id -> motion name, re-asserted each tick.
+local _override = {}
+-- Bench-spawned mob ids, kept movement-frozen by the freeze loop until clear_mobs.
+local _spawned = {}
+
+-- The bench's single xgraft consumer spec; gate reads _held, registered lazily since xgraft is single-consumer (AT may own the slot).
+local BENCH_SPEC
+BENCH_SPEC = {
+    gate = function(npc)
+        return _held[npc:id()] ~= nil
+    end,
+    on_begin = function(npc)
+        log.info("npc_hold begin id=%s state=%s", npc:id(), tostring(_held[npc:id()]))
+    end,
+    on_release = function(npc)
+        npc:clear_animations()
+        npc:movement_enabled(true)
+        log.info("npc_hold release id=%s", npc:id())
+    end,
+}
+
+local function _show_tip(msg)
+    if db.actor then news_manager.send_tip(db.actor, "tz_anim: " .. msg, nil, nil, 4000) end
+    log.info("%s", msg)
+end
+
+-- The crosshair target via level.get_target_obj (xray-extensions name), or nil.
+local function _get_target()
+    local obj = level.get_target_obj and level.get_target_obj() or nil
+    if not obj then _show_tip("aim at a target NPC or mutant") end
+    return obj
+end
+
+--- Play a first-person HUD motion on the actor.
+--- @param section string HUD item section in system ltx (carries the motion)
+--- @param anm string motion name in that section
+function play_hud_anim(section, anm)
+    if not (section and anm) then return _show_tip("play_hud_anim(section, anm)") end
+    if game.hud_motion_allowed and not game.hud_motion_allowed() then
+        return _show_tip("HUD busy (weapon pending/bore or another script anim)")
+    end
+    local len = game.get_motion_length(section, anm, 1)
+    game.play_hud_motion(2, section, anm, false, 1)
+    _show_tip(string_format("actor HUD %s/%s len=%.2fs", section, anm, (len or 0) / 1000))
+end
+
+--- Stop any actor HUD motion.
+function stop_hud_anim()
+    if game.stop_hud_motion then game.stop_hud_motion() end
+    _show_tip("actor HUD stopped")
+end
+
+--- Override a targeted mutant's current motion, re-asserted each tick until stopped (the engine FSM reclaims between cycles).
+--- @param name string motion name in the mutant's omf
+function play_mutant_anim(name)
+    if not name then return _show_tip("play_mutant_anim(name) - aim at a mutant") end
+    local obj = _get_target()
+    if not obj then return end
+    local id = obj:id()
+    _override[id] = name
+    obj:set_override_animation(name)
+    _show_tip(string_format("mutant override id=%s %s", id, name))
+    RemoveTimeEvent("tz_anim_ovr_" .. id, "reassert")
+    CreateTimeEvent("tz_anim_ovr_" .. id, "reassert", REASSERT_TICK, function()
+        local mob = _override[id] and xobject.get_go(id) or nil
+        if not (mob and mob:alive()) then _override[id] = nil; return true end
+        mob:set_override_animation(_override[id])
+        return false
+    end)
+end
+
+--- Stop the override on the targeted mutant.
+function stop_mutant_anim()
+    local obj = _get_target()
+    if not obj then return end
+    local id = obj:id()
+    _override[id] = nil
+    RemoveTimeEvent("tz_anim_ovr_" .. id, "reassert")
+    if obj.clear_override_animation then obj:clear_override_animation() end
+    _show_tip(string_format("mutant override cleared id=%s", id))
+end
+
+--- Play a cosmetic torso overlay on a targeted NPC via the script queue, probing first whether the motion exists in the omf.
+--- Does NOT hold - suspends locomotion for its duration and is wiped by any combat transition.
+--- @param name string torso motion name
+function play_npc_overlay(name)
+    if not name then return _show_tip("play_npc_overlay(name) - aim at an NPC") end
+    local obj = _get_target()
+    if not obj then return end
+    obj:clear_animations()
+    local before = obj:animation_count()
+    local hand_usage, use_movement = true, false
+    obj:add_animation(name, hand_usage, use_movement)
+    local after = obj:animation_count()
+    if after > before then
+        _show_tip(string_format("npc overlay id=%s %s EXISTS, playing", obj:id(), name))
+    else
+        _show_tip(string_format("npc overlay id=%s %s MISSING in omf", obj:id(), name))
+    end
+end
+
+--- Hold a full-body state on a targeted NPC via the xgraft take-over, re-asserting each tick; asserts if AlifeTactics owns the slot.
+--- @param state string state_mgr state name
+function start_npc_hold(state)
+    if not state then return _show_tip("start_npc_hold(state) - aim at an NPC") end
+    local obj = _get_target()
+    if not obj then return end
+    local id = obj:id()
+    xgraft.register_takeover(obj, BENCH_SPEC)
+    _held[id] = state
+    _show_tip(string_format("npc hold id=%s state=%s", id, state))
+    RemoveTimeEvent("tz_anim_hold_" .. id, "reassert")
+    CreateTimeEvent("tz_anim_hold_" .. id, "reassert", REASSERT_TICK, function()
+        local npc_obj = _held[id] and xobject.get_go(id) or nil
+        if not (npc_obj and npc_obj:alive()) then _held[id] = nil; return true end
+        state_mgr.set_state(npc_obj, _held[id], nil, nil, nil, { fast_set = true, animation = true })
+        return false
+    end)
+end
+
+--- Release the hold on the targeted NPC; the gate drops and xgraft returns it to normal logic.
+function stop_npc_hold()
+    local obj = _get_target()
+    if not obj then return end
+    local id = obj:id()
+    _held[id] = nil
+    RemoveTimeEvent("tz_anim_hold_" .. id, "reassert")
+    xgraft.release_takeover(obj)
+    _show_tip(string_format("npc hold released id=%s", id))
+end
+
+--- Spawn any creature section at `dist` metres ahead, frozen in place, as a bench target.
+--- @param section string creature section (dog_normal, chimera, boar_strong, ...)
+--- @param dist number metres ahead
+function spawn_mob(section, dist)
+    local actor = db.actor
+    if not actor then return _show_tip("not in game") end
+    if not (section and ini_sys:section_exist(section)) then return _show_tip("spawn_mob(section, dist) - unknown section " .. tostring(section)) end
+    if not dist then return _show_tip("spawn_mob(section, dist) - pass a distance in metres") end
+    local lvid = level.vertex_in_direction(actor:level_vertex_id(), actor:direction(), dist)
+    if not lvid or lvid >= INVALID_VERTEX then lvid = actor:level_vertex_id() end
+    local se = alife():create(section, level.vertex_position(lvid), lvid, actor:game_vertex_id())
+    if not se then return _show_tip("spawn failed: " .. section) end
+    _spawned[se.id] = true
+    RemoveTimeEvent("tz_anim_freeze", "loop")
+    CreateTimeEvent("tz_anim_freeze", "loop", 0, function()
+        local any = false
+        for id in pairs(_spawned) do
+            local mob = xobject.get_go(id)
+            if mob and mob:alive() then mob:movement_enabled(false); any = true else _spawned[id] = nil end
+        end
+        return not any
+    end)
+    _show_tip(string_format("spawned %s id=%s at %dm (frozen) - aim + play_mutant_anim/start_npc_hold", section, se.id, dist))
+end
+
+--- Release every bench-spawned mob.
+function clear_mobs()
+    local count = 0
+    for id in pairs(_spawned) do
+        local se = xobject.get_se(id)
+        if se then alife():release(se, true); count = count + 1 end
+        _spawned[id] = nil
+    end
+    RemoveTimeEvent("tz_anim_freeze", "loop")
+    _show_tip(string_format("released %d spawned mobs", count))
+end
+
+--- List the bench commands.
+function show_anim_help()
+    local lines = {
+        "tz_anim bench (aim at target, run_string tz_anim.<cmd>):",
+        "  spawn_mob(section, dist)      - spawn a frozen mob (dog_normal, chimera, ...)",
+        "  clear_mobs()                  - release spawned mobs",
+        "  play_hud_anim(section, anm)   - actor first-person HUD motion",
+        "  stop_hud_anim()",
+        "  play_mutant_anim(name)        - mutant override, held by re-assert",
+        "  stop_mutant_anim()",
+        "  play_npc_overlay(name)        - NPC torso cue, probes EXISTS, no hold",
+        "  start_npc_hold(state)         - NPC full-body hold via xgraft take-over",
+        "  stop_npc_hold()",
+    }
+    for i = 1, #lines do log.info("%s", lines[i]) end
+    _show_tip("commands logged to testzone.log")
+end
