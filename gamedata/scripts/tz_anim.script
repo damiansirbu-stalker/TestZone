@@ -5,37 +5,22 @@
 local tostring, string_format, pairs = tostring, string.format, pairs
 local level, game = level, game
 local alife, ini_sys = alife, ini_sys
-local news_manager, state_mgr, xgraft, xobject = news_manager, state_mgr, xgraft, xobject
+local news_manager, state_mgr, state_lib, xobject = news_manager, state_mgr, state_lib, xobject
+local IsStalker, IsMonster = IsStalker, IsMonster
 
 local INVALID_VERTEX = 4294967295
 
 local log = xlog.get_logger("TestZone.anim", { outfile = "testzone.log", buffer_size = 1 })
 
--- Mutant override re-assert cadence and the NPC-hold re-assert cadence, both in time-event seconds.
+-- Re-assert cadence (seconds) for the mutant override and the NPC scheme hold; re-asserting the same value is an engine no-op.
 local REASSERT_TICK = 1
 
--- NPC ids currently held open through xgraft, id -> state name. The bench's gate reads this.
+-- NPC ids currently held in a scheme state by re-assert, id -> state name.
 local _held = {}
 -- Monster ids currently override-driven, id -> motion name, re-asserted each tick.
 local _override = {}
 -- Bench-spawned mob ids, kept movement-frozen by the freeze loop until clear_mobs.
 local _spawned = {}
-
--- The bench's single xgraft consumer spec; gate reads _held, registered lazily since xgraft is single-consumer (AT may own the slot).
-local BENCH_SPEC
-BENCH_SPEC = {
-    gate = function(npc)
-        return _held[npc:id()] ~= nil
-    end,
-    on_begin = function(npc)
-        log.info("npc_hold begin id=%s state=%s", npc:id(), tostring(_held[npc:id()]))
-    end,
-    on_release = function(npc)
-        npc:clear_animations()
-        npc:movement_enabled(true)
-        log.info("npc_hold release id=%s", npc:id())
-    end,
-}
 
 local function _show_tip(msg)
     if db.actor then news_manager.send_tip(db.actor, "tz_anim: " .. msg, nil, nil, 4000) end
@@ -57,6 +42,9 @@ function play_hud_anim(section, anm)
     if game.hud_motion_allowed and not game.hud_motion_allowed() then
         return _show_tip("HUD busy (weapon pending/bore or another script anim)")
     end
+    if game.motion_exists and not game.motion_exists(section, anm) then
+        return _show_tip(string_format("HUD motion missing: %s/%s", section, anm))
+    end
     local len = game.get_motion_length(section, anm, 1)
     game.play_hud_motion(2, section, anm, false, 1)
     _show_tip(string_format("actor HUD %s/%s len=%.2fs", section, anm, (len or 0) / 1000))
@@ -68,16 +56,18 @@ function stop_hud_anim()
     _show_tip("actor HUD stopped")
 end
 
---- Override a targeted mutant's current motion, re-asserted each tick until stopped (the engine FSM reclaims between cycles).
---- @param name string motion name in the mutant's omf
+--- Force a motion type+index on a targeted mutant, re-asserted each tick since a state switch clears the override.
+--- Attack types deal real damage at the marked frame; a name with no matching prefix logs "not found" to xray.log.
+--- @param name string motion name (prefix + index, e.g. stand_attack_0)
 function play_mutant_anim(name)
     if not name then return _show_tip("play_mutant_anim(name) - aim at a mutant") end
     local obj = _get_target()
     if not obj then return end
+    if not IsMonster(obj) then return _show_tip("override needs a monster (set_override_animation is monster-only)") end
     local id = obj:id()
     _override[id] = name
     obj:set_override_animation(name)
-    _show_tip(string_format("mutant override id=%s %s", id, name))
+    _show_tip(string_format("mutant override id=%s %s (attack types hit for real; missing -> xray.log 'not found')", id, name))
     RemoveTimeEvent("tz_anim_ovr_" .. id, "reassert")
     CreateTimeEvent("tz_anim_ovr_" .. id, "reassert", REASSERT_TICK, function()
         local mob = _override[id] and xobject.get_go(id) or nil
@@ -98,35 +88,41 @@ function stop_mutant_anim()
     _show_tip(string_format("mutant override cleared id=%s", id))
 end
 
---- Play a cosmetic torso overlay on a targeted NPC via the script queue, probing first whether the motion exists in the omf.
---- Does NOT hold - suspends locomotion for its duration and is wiped by any combat transition.
+--- Queue a cosmetic torso overlay on a stalker, reading the queue-size delta as an existence probe; combat wipes it, no hold.
+--- A set global selector returns before the push so a real motion can read as no-queue; a smart_cover NPC queues but may not play.
 --- @param name string torso motion name
 function play_npc_overlay(name)
     if not name then return _show_tip("play_npc_overlay(name) - aim at an NPC") end
     local obj = _get_target()
     if not obj then return end
+    if not IsStalker(obj) then return _show_tip("overlay needs a stalker (add_animation is stalker-only)") end
+    if obj:in_smart_cover() then _show_tip("note: NPC in smart_cover - overlay may not play cleanly") end
     obj:clear_animations()
     local before = obj:animation_count()
     local hand_usage, use_movement = true, false
     obj:add_animation(name, hand_usage, use_movement)
     local after = obj:animation_count()
     if after > before then
-        _show_tip(string_format("npc overlay id=%s %s EXISTS, playing", obj:id(), name))
+        _show_tip(string_format("npc overlay id=%s %s EXISTS, queued", obj:id(), name))
     else
-        _show_tip(string_format("npc overlay id=%s %s MISSING in omf", obj:id(), name))
+        _show_tip(string_format("npc overlay id=%s %s no-queue (missing motion, OR global-selector early-return; see xray.log)", obj:id(), name))
     end
 end
 
---- Hold a full-body state on a targeted NPC via the xgraft take-over, re-asserting each tick; asserts if AlifeTactics owns the slot.
---- @param state string state_mgr state name
+--- Hold a scheme state on a stalker by re-asserting set_state each tick (no takeover, peacetime only); combat outranks the pose.
+--- set_state only sets the requested target_state, so the verdict flags best_enemy() as IN COMBAT when the pose would be hidden.
+--- @param state string state_mgr state name (must exist in state_lib.states)
 function start_npc_hold(state)
     if not state then return _show_tip("start_npc_hold(state) - aim at an NPC") end
+    if state_lib.states[state] == nil then return _show_tip("unknown state: " .. tostring(state)) end
     local obj = _get_target()
     if not obj then return end
+    if not IsStalker(obj) then return _show_tip("hold needs a stalker (set_state is stalker-only)") end
     local id = obj:id()
-    xgraft.register_takeover(obj, BENCH_SPEC)
     _held[id] = state
-    _show_tip(string_format("npc hold id=%s state=%s", id, state))
+    state_mgr.set_state(obj, state, nil, nil, nil, { fast_set = true, animation = true })
+    local in_combat = obj:best_enemy() ~= nil
+    _show_tip(string_format("npc hold id=%s state=%s set%s", id, state, in_combat and " (IN COMBAT - pose hidden until it ends)" or ""))
     RemoveTimeEvent("tz_anim_hold_" .. id, "reassert")
     CreateTimeEvent("tz_anim_hold_" .. id, "reassert", REASSERT_TICK, function()
         local npc_obj = _held[id] and xobject.get_go(id) or nil
@@ -136,14 +132,13 @@ function start_npc_hold(state)
     end)
 end
 
---- Release the hold on the targeted NPC; the gate drops and xgraft returns it to normal logic.
+--- Release the hold; re-assert stops and the NPC's own logic sets its next state on its following update.
 function stop_npc_hold()
     local obj = _get_target()
     if not obj then return end
     local id = obj:id()
     _held[id] = nil
     RemoveTimeEvent("tz_anim_hold_" .. id, "reassert")
-    xgraft.release_takeover(obj)
     _show_tip(string_format("npc hold released id=%s", id))
 end
 
@@ -195,7 +190,7 @@ function show_anim_help()
         "  play_mutant_anim(name)        - mutant override, held by re-assert",
         "  stop_mutant_anim()",
         "  play_npc_overlay(name)        - NPC torso cue, probes EXISTS, no hold",
-        "  start_npc_hold(state)         - NPC full-body hold via xgraft take-over",
+        "  start_npc_hold(state)         - NPC scheme hold by re-assert (peacetime)",
         "  stop_npc_hold()",
     }
     for i = 1, #lines do log.info("%s", lines[i]) end
