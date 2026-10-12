@@ -165,7 +165,7 @@ function log_smarts()
         if xsmart.is_territory(smart) then flags[#flags + 1] = "territory"; by_type.territory = by_type.territory + 1 end
         if xsmart.has_campfire(smart) then flags[#flags + 1] = "campfire"; by_type.campfire = by_type.campfire + 1 end
         if xsmart.has_surge_shelter(smart) then flags[#flags + 1] = "surge"; by_type.surge = by_type.surge + 1 end
-        if xsmart.has_anomaly(smart) then flags[#flags + 1] = "anomaly"; by_type.anomaly = by_type.anomaly + 1 end
+        if xsmart.has_hazard_anomaly(smart) then flags[#flags + 1] = "anomaly"; by_type.anomaly = by_type.anomaly + 1 end
         if xsmart.has_stalker_jobs(smart, xsmart.JOB_TYPE_TRADER) then flags[#flags + 1] = "trader"; by_type.trader = by_type.trader + 1 end
         if #flags == 0 then flags[#flags + 1] = "other"; by_type.other = by_type.other + 1 end
 
