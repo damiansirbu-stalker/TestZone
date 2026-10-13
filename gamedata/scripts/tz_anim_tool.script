@@ -1,0 +1,333 @@
+--- tz_anim_tool: the animation review remote. Forces each dig candidate on the aimed NPC and logs a verdict. Dev-only, opens on HOME.
+
+local table_sort, string_format, table_concat = table.sort, string.format, table.concat
+local tostring, IsStalker = tostring, IsStalker
+local RegisterScriptCallback = RegisterScriptCallback
+
+local HOME_KEY      = 199
+local LOGS_MOUNT    = "$logs$"
+local CONFIG_MOUNT  = "$game_config$"
+local ANIM_DIR      = "testzone\\anim\\"
+local CURATION_FILE = "tz_anim_curation.txt"
+local VIEW_ROOT, VIEW_POOL = "root", "pool"
+
+local COL_MOTION, COL_STATE, COL_NAME = "motion", "state", "name"
+local COL_CATEGORY, COL_VERDICT = "category", "verdict"
+
+-- How the next motion play is forced. A state item ignores these (it carries its own movement/props).
+local MODES = {
+    { label = "pose",       moving = false, prop = nil },
+    { label = "moving",     moving = true,  prop = nil },
+    { label = "prop vodka", moving = false, prop = "vodka" },
+}
+
+local _view    = VIEW_ROOT
+local _sources = {}
+local _row     = nil
+local _cur     = nil
+local _mode_i  = 1
+local _npc_id  = nil
+local _npc_name = nil
+local _box     = nil
+-- RemoveAll on the empty, not-yet-attached list (the first fill) CTDs in CUIScrollView::Clear.
+local _built   = false
+
+local function _get_mode() return MODES[_mode_i] end
+
+-- Split a TSV line on tabs, preserving empty fields so columns stay aligned.
+local function _split_tab(line)
+    local out = {}
+    for field in (line .. "\t"):gmatch("(.-)\t") do out[#out + 1] = field end
+    return out
+end
+
+-- Find every source file (.tsv or .txt) shipped or dropped in configs\testzone\anim.
+local function _find_sources()
+    local out = {}
+    local exts = { ".tsv", ".txt" }
+    for e = 1, #exts do
+        local found = (xfs and xfs.read_files and xfs.read_files(CONFIG_MOUNT, ANIM_DIR, exts[e])) or {}
+        for i = 1, #found do out[#out + 1] = found[i] end
+    end
+    table_sort(out)
+    return out
+end
+
+-- Read one source file into a candidate pool, auto-detecting a TSV header or a plain one-name-per-line txt.
+-- A TSV with a "state" column holds states (held directly); anything else is motions (a temp state is built).
+local function _read_source(file)
+    local base = getFS and getFS():update_path(CONFIG_MOUNT, "")
+    if not base then return nil end
+    local data = xfs and xfs.read_file and xfs.read_file(base .. ANIM_DIR .. file)
+    if not data then return nil end
+    local lines = {}
+    for line in data:gmatch("[^\r\n]+") do lines[#lines + 1] = line end
+    local header = lines[1] and _split_tab(lines[1]) or {}
+    local is_tsv = #header > 1
+    local name_i, cat_i, verdict_i, is_state = 1, nil, nil, false
+    if is_tsv then
+        for i = 1, #header do
+            local col = header[i]
+            if col == COL_MOTION or col == COL_STATE or col == COL_NAME then name_i = i end
+            if col == COL_STATE then is_state = true end
+            if col == COL_CATEGORY then cat_i = i end
+            if col == COL_VERDICT then verdict_i = i end
+        end
+    end
+    local pool = {}
+    for k = (is_tsv and 2 or 1), #lines do
+        local name, label
+        if is_tsv then
+            local cols = _split_tab(lines[k])
+            name = cols[name_i]
+            local extra = {}
+            if cat_i and cols[cat_i] and cols[cat_i] ~= "" then extra[#extra + 1] = cols[cat_i] end
+            if verdict_i and cols[verdict_i] and cols[verdict_i] ~= "" then extra[#extra + 1] = cols[verdict_i] end
+            label = name and (#extra > 0 and string_format("%s  [%s]", name, table_concat(extra, " ")) or name)
+        else
+            name = lines[k]:match("^%s*(.-)%s*$")
+            if name == "" or name:sub(1, 1) == "#" then name = nil end
+            label = name
+        end
+        if name and name ~= "" then pool[#pool + 1] = { name = name, is_state = is_state, label = label } end
+    end
+    table_sort(pool, function(left, right) return left.name < right.name end)
+    return { label = file, pool = pool }
+end
+
+local function _write_verdict(name, verdict, note)
+    local base = getFS and getFS():update_path(LOGS_MOUNT, "")
+    if not base then return false end
+    return xfs.write_file(base .. CURATION_FILE,
+        string_format("%s\t%s\t%s\t%s\n", verdict, name, _get_mode().label, note or ""), true)
+end
+
+--- Open the remote, binding whatever stalker the player is aiming at NOW (before the dialog takes input).
+local function try_open()
+    if _box and _box:IsShown() then return end
+    if not db.actor then return end
+    local tgt = level.get_target_obj and level.get_target_obj() or nil
+    if tgt and IsStalker(tgt) then _npc_id, _npc_name = tgt:id(), tgt:name()
+    else _npc_id, _npc_name = nil, nil end
+    _box = tz_anim_tool_wnd()
+    _box:ShowDialog(true)
+    Register_UI("tz_anim_tool_wnd", "tz_anim_tool", _box)
+end
+
+class "tz_anim_tool_wnd" (CUIScriptWnd)
+
+function tz_anim_tool_wnd:__init() super()
+    self:SetWndRect(Frect():set(0, 0, 1024, 768))
+    self:SetAutoDelete(true)
+    self:init_controls()
+    self:init_callbacks()
+    _built = false
+    _view, _row, _cur = VIEW_ROOT, nil, nil
+    self:build_list()
+    self:render()
+end
+
+function tz_anim_tool_wnd:init_controls()
+    local xml = CScriptXmlInit()
+    xml:ParseFile("tz_anim_tool.xml")
+    xml:InitStatic("background", self)
+    xml:InitStatic("hdr_player", self)
+    xml:InitStatic("line_player", self)
+    xml:InitStatic("screen", self)
+    xml:InitStatic("hdr_verdict", self)
+    xml:InitStatic("hdr_snote", self)
+    xml:InitFrame("list_frame", self)
+    self.list = xml:InitListBox("list", self)
+    self.list:ShowSelectedItem(true)
+    self:Register(self.list, "list")
+    self.lbl_path = xml:InitStatic("lbl_path", self):TextControl()
+    self.lbl_now  = xml:InitStatic("lbl_now", self):TextControl()
+    self.lbl_mode = xml:InitStatic("lbl_mode", self):TextControl()
+    self.status   = xml:InitStatic("status", self):TextControl()
+    self.snote = xml:InitEditBox("snote", self)
+    self:Register(self.snote, "snote")
+    local buttons = { "btn_pos_down", "btn_pos_up", "btn_prior", "btn_play", "btn_stop", "btn_next",
+                      "btn_v1", "btn_v2", "btn_v3", "btn_v4", "btn_v5", "btn_note" }
+    for i = 1, #buttons do self:Register(xml:Init3tButton(buttons[i], self), buttons[i]) end
+end
+
+function tz_anim_tool_wnd:init_callbacks()
+    self:AddCallback("list",         ui_events.LIST_ITEM_CLICKED, self.select_row,      self)
+    self:AddCallback("btn_pos_down", ui_events.BUTTON_CLICKED,    self.select_prev_mode, self)
+    self:AddCallback("btn_pos_up",   ui_events.BUTTON_CLICKED,    self.select_next_mode, self)
+    self:AddCallback("btn_prior",    ui_events.BUTTON_CLICKED,    self.select_prev_item, self)
+    self:AddCallback("btn_play",     ui_events.BUTTON_CLICKED,    self.play,            self)
+    self:AddCallback("btn_stop",     ui_events.BUTTON_CLICKED,    self.stop,            self)
+    self:AddCallback("btn_next",     ui_events.BUTTON_CLICKED,    self.select_next_item, self)
+    self:AddCallback("btn_v1", ui_events.BUTTON_CLICKED, function() self:add_verdict("good") end, self)
+    self:AddCallback("btn_v2", ui_events.BUTTON_CLICKED, function() self:add_verdict("shit") end, self)
+    self:AddCallback("btn_v3", ui_events.BUTTON_CLICKED, function() self:add_verdict("prop") end, self)
+    self:AddCallback("btn_v4", ui_events.BUTTON_CLICKED, function() self:add_verdict("moves") end, self)
+    self:AddCallback("btn_v5", ui_events.BUTTON_CLICKED, function() self:add_verdict("pose") end, self)
+    self:AddCallback("btn_note", ui_events.BUTTON_CLICKED, function() self:add_verdict("note") end, self)
+end
+
+function tz_anim_tool_wnd:build_list()
+    if xslice then xslice.stop_queue("tz_anim_fill") end
+    if _built then self.list:RemoveAll() end
+    _built = true
+    if _view == VIEW_ROOT then self:add_source_rows() else self:add_pool_rows(_row) end
+end
+
+--- Fill the root list with the source files in the anim folder, or a hint when none are present.
+function tz_anim_tool_wnd:add_source_rows()
+    _sources = _find_sources()
+    if #_sources == 0 then
+        self.list:AddTextItem("(empty - drop a .tsv or .txt in configs\\testzone\\anim)")
+        return
+    end
+    for i = 1, #_sources do self.list:AddTextItem(_sources[i]) end
+end
+
+--- Fill one source's pool, frame-spread by xslice so a large motion list never builds in one frame.
+function tz_anim_tool_wnd:add_pool_rows(row)
+    if not row then return end
+    self.list:AddTextItem("..")
+    local list = self.list
+    if not xslice then
+        for i = 1, #row.pool do list:AddTextItem(row.pool[i].label) end
+        return
+    end
+    xslice.start("tz_anim_fill", row.pool, { step = 20, func = function(entry)
+        list:AddTextItem(entry.label)
+        return true
+    end })
+end
+
+function tz_anim_tool_wnd:render()
+    if _view == VIEW_ROOT then
+        self.lbl_path:SetText("sources in configs\\testzone\\anim    (click one)")
+        self.status:SetText("pick a source file, or drop a .tsv / .txt in that folder")
+    else
+        self.lbl_path:SetText(string_format("%s    (%d)", _row and _row.label or "?", _row and #_row.pool or 0))
+        self.status:SetText("click a candidate to play on the bound NPC    -    verdict button logs it")
+    end
+    self.lbl_now:SetText(_npc_id
+        and string_format("NPC:  %s    now:  %s", tostring(_npc_name), _cur and _cur.name or "(none)")
+        or "NPC:  none - aim at a stalker and reopen (HOME)")
+    self.lbl_mode:SetText("mode:  " .. self:_get_mode_label())
+end
+
+--- The mode label; it reads "(state - as wired)" for a state item, since modes only shape a raw motion.
+function tz_anim_tool_wnd:_get_mode_label()
+    if _cur and _cur.is_state then return _get_mode().label .. "  (state - as wired)" end
+    return _get_mode().label
+end
+
+function tz_anim_tool_wnd:_play_current()
+    if not (_cur and _npc_id and tz_anim) then return end
+    local mode = _get_mode()
+    local item = { name = _cur.name, is_state = _cur.is_state, moving = mode.moving, prop = mode.prop }
+    if tz_anim.start_review_hold(_npc_id, item) then
+        self.status:SetText(string_format("playing:  %s", _cur.name))
+    end
+end
+
+function tz_anim_tool_wnd:select_row()
+    local idx = self.list:GetSelectedIndex()
+    if not idx or idx < 0 then return end
+    if _view == VIEW_ROOT then self:select_root(idx) else self:select_pool(idx) end
+end
+
+--- ROOT click: load the chosen source TSV into a pool and switch to the candidate list.
+function tz_anim_tool_wnd:select_root(idx)
+    local file = _sources[idx + 1]
+    if not file then return end
+    local row = _read_source(file)
+    if not (row and #row.pool > 0) then self.status:SetText("empty or unreadable: " .. file); return end
+    _row, _view = row, VIEW_POOL
+    self:build_list(); self:render()
+end
+
+--- POOL click: index 0 returns to the source list; any other index plays that candidate on the bound NPC.
+function tz_anim_tool_wnd:select_pool(idx)
+    if idx == 0 then
+        _view, _cur = VIEW_ROOT, nil
+        if tz_anim then tz_anim.stop_review_hold() end
+        self:build_list(); self:render()
+        return
+    end
+    local entry = _row and _row.pool[idx]
+    if not entry then return end
+    _cur = entry
+    self:_play_current()
+    self:render()
+end
+
+function tz_anim_tool_wnd:play() self:_play_current() end
+
+function tz_anim_tool_wnd:stop()
+    if tz_anim then tz_anim.stop_review_hold() end
+    self.status:SetText("stopped")
+end
+
+--- Mode steppers cycle how a motion is forced and replay the current item so the change is visible at once.
+function tz_anim_tool_wnd:select_prev_mode()
+    _mode_i = _mode_i - 1
+    if _mode_i < 1 then _mode_i = #MODES end
+    self:_play_current(); self:render()
+end
+function tz_anim_tool_wnd:select_next_mode()
+    _mode_i = _mode_i % #MODES + 1
+    self:_play_current(); self:render()
+end
+
+--- The pool index of the loaded candidate, or 1 when none is loaded.
+function tz_anim_tool_wnd:find_pool_index()
+    if not (_cur and _row) then return 1 end
+    for k = 1, #_row.pool do
+        if _row.pool[k].name == _cur.name then return k end
+    end
+    return 1
+end
+
+--- Step to a neighbouring candidate and play it (curation steps through and sees each in turn).
+function tz_anim_tool_wnd:_select_neighbor(delta)
+    if _view ~= VIEW_POOL or not (_row and #_row.pool > 0) then return end
+    local at = (self:find_pool_index() - 1 + delta) % #_row.pool + 1
+    _cur = _row.pool[at]
+    self.list:SetSelectedIndex(at)
+    self:_play_current()
+    self:render()
+end
+
+function tz_anim_tool_wnd:select_prev_item() self:_select_neighbor(-1) end
+function tz_anim_tool_wnd:select_next_item() self:_select_neighbor(1) end
+
+--- Write a verdict line for the current candidate; the typed note combines with the verdict word.
+--- Verdicts: good keep, shit cut, prop needs a hand prop, moves needs a gait, pose the pose is off.
+function tz_anim_tool_wnd:add_verdict(verdict)
+    if not _cur then return end
+    local note = self.snote:GetText()
+    local written = _write_verdict(_cur.name, verdict, note)
+    self.snote:SetText("")
+    self.status:SetText(written and string_format("VERDICT %s = %s", _cur.name, verdict)
+        or "verdict FAILED (no logs mount?)")
+end
+
+--- Esc closes the window when no edit box has focus, so game binds are never shadowed.
+function tz_anim_tool_wnd:OnKeyboard(dik, action)
+    local res = CUIScriptWnd.OnKeyboard(self, dik, action)
+    if action ~= ui_events.WINDOW_KEY_PRESSED then return res end
+    if res or dik ~= DIK_keys.DIK_ESCAPE then return res end
+    self:hide()
+    return true
+end
+
+function tz_anim_tool_wnd:hide()
+    if xslice then xslice.stop_queue("tz_anim_fill") end
+    if tz_anim then tz_anim.stop_review_hold() end
+    self:HideDialog()
+    Unregister_UI("tz_anim_tool_wnd")
+end
+
+function on_game_start()
+    RegisterScriptCallback("on_key_press", function(key)
+        if key == HOME_KEY then try_open() end
+    end)
+end

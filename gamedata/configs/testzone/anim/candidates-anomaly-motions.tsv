@@ -1,0 +1,1184 @@
+omf	motion	category	needs_verify	bytes	md5	dup_of	fragment
+bandits_animation.omf	idle_9_idle_0	other		61807	38dc5c2a57		
+bandits_animation.omf	idle_9_idle_1	other		68431	a2635ed7ee		
+bandits_animation.omf	idle_9_idle_2	other		66035	db7248ee84		
+bandits_animation.omf	idle_9_idle_3	other		78579	07d64935e8		
+bandits_animation.omf	idle_9_idle_4	other		61807	38dc5c2a57	idle_9_idle_0	
+barman_animation.omf	_komandir_3	guard		105777	c62fd4dee9		
+barman_animation.omf	_komandir_4	guard		130379	702f5d751e		
+barman_animation.omf	after_prisluh	listen		5947	b2bf8cc8c5		frag
+barman_animation.omf	bar_3_idle_0	other		9703	d2a9c94aa3		frag
+barman_animation.omf	bar_3_idle_in	other		16869	69e6ce36b1		
+barman_animation.omf	bar_3_idle_out	other		16473	f3543f4768		
+barman_animation.omf	bar_4_idle_0	other		67275	16a81c1d68		
+barman_animation.omf	bar_4_idle_in	other		17661	4eb5e961ab		
+barman_animation.omf	bar_4_idle_out	other		17661	aec0be0825		
+barman_animation.omf	chest_2	other		10291	f0df538193		frag
+barman_animation.omf	chest_3	other		10428	84e3b42995		frag
+barman_animation.omf	chest_4	other		11453	680f685e6b		frag
+barman_animation.omf	chistit ruje_1	other		99303	3179803570		
+barman_animation.omf	cl_idle_1	other		3533	1460971745		frag
+barman_animation.omf	cl_run_ls_0	other		3737	e1678eaa0c		frag
+barman_animation.omf	cl_run_rs_0	other		3533	2086733dea		frag
+barman_animation.omf	cl_torso_0_aim_0	other		3533	ac4595644f		frag
+barman_animation.omf	cr_all_5_attack_0	other		10961	f8b0b14985		frag
+barman_animation.omf	cr_all_5_attack_1	other		10961	7e41eed41f		frag
+barman_animation.omf	cr_all_6_attack_0	other		14830	fe7abe91dc		frag
+barman_animation.omf	cr_all_6_attack_1	other		4295	90a851f6af		frag
+barman_animation.omf	cr_all_6_attack_2	other		15703	b085805681		
+barman_animation.omf	cr_all_7_attack_0	other		15638	2ee3d6cbba		
+barman_animation.omf	cr_all_7_attack_1	other		4401	d19d3d5c30		frag
+barman_animation.omf	cr_all_7_attack_2	other		15703	0a4a1e1e8b		
+barman_animation.omf	cr_death_0	eat		18057	f99f30e223		
+barman_animation.omf	cr_loock_left_0	other		4849	14b8bce6aa		frag
+barman_animation.omf	cr_loock_left_1	other		4743	ad2953d7d6		frag
+barman_animation.omf	cr_loock_left_2	other		4849	3b3189b6d6		frag
+barman_animation.omf	cr_loock_right_0	other		4849	918253bba8		frag
+barman_animation.omf	cr_loock_right_1	other		4613	7d8a41f650		frag
+barman_animation.omf	cr_loock_right_2	other		5085	408bb49c7f		frag
+barman_animation.omf	cr_torso_trans_0	other		991	1d493375ca		frag
+barman_animation.omf	cr_torso_trans_1	other		991	6c4bd8b7f2		frag
+barman_animation.omf	cr_torso_trans_2	other		991	ff1bee48f6		frag
+barman_animation.omf	death_init	eat		991	3f8482a725		frag
+barman_animation.omf	dmg_norm_torso_0_hello_0	other		11855	7e3059d014		frag
+barman_animation.omf	dmg_norm_torso_1_hello_0	other		11491	2824f9ab65		frag
+barman_animation.omf	dmg_norm_torso_2_hello_0	other		11783	89b3462203		frag
+barman_animation.omf	dmg_norm_torso_2_idle_0_	other		8803	b70a0e14d7		frag
+barman_animation.omf	dmg_norm_torso_3_hello_0	other		11783	c77e1a23fd		frag
+barman_animation.omf	dmg_norm_torso_4_hello_0	other		10427	337dc7faa9		frag
+barman_animation.omf	dmg_norm_torso_6_hello_0	other		12723	08bfd1d7e7		frag
+barman_animation.omf	dmg_norm_torso_8_hello_0	other		11783	89b3462203	dmg_norm_torso_2_hello_0	frag
+barman_animation.omf	dmg_norm_torso_8_idle_0_	other		8803	b70a0e14d7	dmg_norm_torso_2_idle_0_	frag
+barman_animation.omf	dmg_norm_torso_trans_0	other		991	e8cc5d77e7		frag
+barman_animation.omf	dmg_norm_torso_trans_1	other		991	6c4bd8b7f2	cr_torso_trans_1	frag
+barman_animation.omf	dmg_norm_torso_trans_2	other		991	ff1bee48f6	cr_torso_trans_2	frag
+barman_animation.omf	drink_idle_0_0	drink		28739	2eec2f72ed		
+barman_animation.omf	drink_idle_0_talk_0	drink		30951	5dc7a4f7db		
+barman_animation.omf	drink_idle_10	drink		19397	8ff194ebf7		
+barman_animation.omf	drink_idle_11	drink		17051	dc3654aef9		
+barman_animation.omf	drink_idle_12	drink		7375	a7908a5aba		frag
+barman_animation.omf	drink_idle_13	drink		36147	21a78a8781		
+barman_animation.omf	drink_idle_1_0	drink		24391	adaa1fbaed		
+barman_animation.omf	drink_idle_1_1	drink		16431	1c34ec4626		
+barman_animation.omf	drink_idle_1_2	drink		24391	8332904631		
+barman_animation.omf	drink_idle_2_0	drink		20411	2f793cddb5		
+barman_animation.omf	drink_idle_2_1	drink		66127	e2d937a373		
+barman_animation.omf	drink_idle_2_2	drink		21207	f089250dfe		
+barman_animation.omf	drink_idle_3_2	drink		17227	d97d564f80		
+barman_animation.omf	drink_idle_3_3	drink		73735	25fc0085c3		
+barman_animation.omf	drink_idle_3_4	drink		10291	1f5f1c57dc		frag
+barman_animation.omf	drink_idle_4	drink		66127	4f2a444562		
+barman_animation.omf	drink_idle_5_1	drink		7375	391a455bb3		frag
+barman_animation.omf	drink_idle_6	drink		46951	9727a66b1f		
+barman_animation.omf	drink_idle_7	drink		22255	a5ca2db9d1		
+barman_animation.omf	drink_idle_8	drink		13759	2922c42f8b		frag
+barman_animation.omf	head_talk_	chat		2179	2dce0aa4a6		frag
+barman_animation.omf	hleb_1	eat		22319	394cdb3d47		
+barman_animation.omf	hleb_2	eat		11451	9eb690b2c8		frag
+barman_animation.omf	hleb_3	eat		18675	768b4326f0		
+barman_animation.omf	hleb_4	eat		15155	bbb715fa4e		
+barman_animation.omf	hleb_5	eat		5451	c319dce8db		frag
+barman_animation.omf	hleb_6	eat		22319	14842bc0aa		
+barman_animation.omf	idle_0_3	other		49827	833c6440f3		
+barman_animation.omf	idle_0_idle_5	other		99985	6b93432494		
+barman_animation.omf	idle_0_idle_6	other		26771	836fafd8fb		
+barman_animation.omf	idle_0_idle_7	other		28921	4ffad1dccc		
+barman_animation.omf	idle_talk_0	chat		144499	9908c42656		
+barman_animation.omf	idle_to_sit_0	sit		22915	1d1c03e9a9		
+barman_animation.omf	idle_tv_0	tv		70295	7389274873		
+barman_animation.omf	idle_tv_1	tv		16895	8177afccdf		
+barman_animation.omf	idle_tv_2	tv		87035	782f12b336		
+barman_animation.omf	idle_tv_3	tv		44587	4f3c7b245c		
+barman_animation.omf	idle_tv_4	tv		41143	6712d283bd		
+barman_animation.omf	idle_tv_5	tv		65471	1d6173eb19		
+barman_animation.omf	idle_tv_in_0	tv		18155	fc1f896add		
+barman_animation.omf	idle_tv_out_0	tv		12731	68c3903165		frag
+barman_animation.omf	k stene	other		9639	bdecb103a4		frag
+barman_animation.omf	kamikadze_0	other		31813	d8832d36f4		
+barman_animation.omf	kamikadze_1	other		1143	2d03cdca50		frag
+barman_animation.omf	kolbasa_1	eat		22319	42ee32f078		
+barman_animation.omf	kolbasa_2	eat		11451	99ce22e5b1		frag
+barman_animation.omf	kolbasa_3	eat		18675	71a9263593		
+barman_animation.omf	kolbasa_4	eat		15155	2ab06fa8be		
+barman_animation.omf	kolbasa_5	eat		5451	f695027e1b		frag
+barman_animation.omf	kolbasa_6	eat		22319	ad1b530b59		
+barman_animation.omf	kurit sidya_ 0	smoke		105039	514fbf335a		
+barman_animation.omf	kurit_3	smoke		6159	3b41b58705		frag
+barman_animation.omf	myach_1	other		15383	e7127ba825		
+barman_animation.omf	myach_2	other		15859	ed2d801a7d		
+barman_animation.omf	norm_all_5_attack_0	other		8837	9a7186699f		frag
+barman_animation.omf	norm_all_5_attack_1	other		8861	3374f54279		frag
+barman_animation.omf	norm_all_6_attack_0	other		14426	9951a08aec		frag
+barman_animation.omf	norm_all_6_attack_1	other		5345	faf79fe88b		frag
+barman_animation.omf	norm_all_6_attack_2	other		16051	b3ba7efd8c		
+barman_animation.omf	norm_all_7_attack_0	other		14426	14425f277e		frag
+barman_animation.omf	norm_all_7_attack_1	other		5817	9d3088239e		frag
+barman_animation.omf	norm_all_7_attack_2	other		12571	f682e0d3c9		frag
+barman_animation.omf	norm_death_0	eat		13679	35fa06a186		frag
+barman_animation.omf	norm_escape_0_	other		7463	44024688dc		frag
+barman_animation.omf	norm_idle_1_	other		8803	69be881a44		frag
+barman_animation.omf	norm_idle_1__	other		5471	57fedce539		frag
+barman_animation.omf	norm_jump_begin_	other		991	f5beb4fe22		frag
+barman_animation.omf	norm_jump_idle----	other		1813	09b207ae94		frag
+barman_animation.omf	norm_jump_idle_	other		2783	2b8d0ec25f		frag
+barman_animation.omf	norm_run_back_0_	other		3403	cdde12322f		frag
+barman_animation.omf	norm_run_fwd_0_	other		5149	95e2f539a3		frag
+barman_animation.omf	norm_run_fwd_1_	other		5149	95e2f539a3	norm_run_fwd_0_	frag
+barman_animation.omf	norm_torso_0_aim_0_	other		10903	2ee8288960		frag
+barman_animation.omf	norm_torso_0_aim_1_	other		6227	a08763438f		frag
+barman_animation.omf	norm_torso_0_hello_0	other		14039	0e2101b77b		frag
+barman_animation.omf	norm_torso_0_walk_1_	other		9246	fcb30f56b4		frag
+barman_animation.omf	norm_torso_1_hello_0	other		15383	2149565768		
+barman_animation.omf	norm_torso_2_hello_0	other		25819	baf28a549f		
+barman_animation.omf	norm_torso_3_hello_0	other		14991	08e57bea89		frag
+barman_animation.omf	norm_torso_4_hello_0	other		16139	b5042a2503		
+barman_animation.omf	norm_torso_7_hello_0	other		15383	2149565768	norm_torso_1_hello_0	
+barman_animation.omf	norm_torso_8_hello_0	other		28207	7ce4fc5cc9		
+barman_animation.omf	norm_torso_trans_0	other		991	e8cc5d77e7	dmg_norm_torso_trans_0	frag
+barman_animation.omf	norm_torso_trans_1	other		991	6c4bd8b7f2	cr_torso_trans_1	frag
+barman_animation.omf	norm_torso_trans_2	other		991	ff1bee48f6	cr_torso_trans_2	frag
+barman_animation.omf	norm_walk_fwd_1_	other		8566	12711538e7		frag
+barman_animation.omf	plechi	other		9805	6a2bfd8b97		frag
+barman_animation.omf	poisk_2_idle_5	search		36355	ccf70f162e		
+barman_animation.omf	poisk_walk_0	search		50655	8df1422d6d		
+barman_animation.omf	poisk_walk_1	search		50655	aeb6bee474		
+barman_animation.omf	poisk_walk_2	search		52571	0f686c0b76		
+barman_animation.omf	poisk_walk_3	search		50655	d00d3853a7		
+barman_animation.omf	pprisluh_8_0	listen		15422	94fa83dc34		
+barman_animation.omf	pprisluh_8_1	listen		90630	1a25eef635		
+barman_animation.omf	pprisluh_8_2	listen		61312	02a7592e37		
+barman_animation.omf	pprisluh_8_3	listen		112722	338b997180		
+barman_animation.omf	prisluh_7	listen		78147	b608ef0415		
+barman_animation.omf	prisluh_9_3	listen		17859	a1610f55da		
+barman_animation.omf	prisluh_v_torso_idle_2	listen		22999	a85cbf699f		
+barman_animation.omf	prohodi_2_0	other		15486	2cdce85af7		
+barman_animation.omf	proverka_dver	other		45205	8b223875e3		
+barman_animation.omf	raciya_komandir_0	radio		8530	331a43fc32		frag
+barman_animation.omf	raciya_komandir_1	radio		6839	d7c35ce5be		frag
+barman_animation.omf	raciya_komandir_2	radio		13037	ec5b7ba092		frag
+barman_animation.omf	raciya_komandir_3	radio		8646	1885d59619		frag
+barman_animation.omf	raciya_komandir_4	radio		4754	9e99ad4e7e		frag
+barman_animation.omf	sidya_boltaet_ 0	sit		164475	b26e1622b1		
+barman_animation.omf	sidya_kurit_1	smoke		105039	701627ffcb		
+barman_animation.omf	sidya_kurit_2	smoke		105039	08d458a853		
+barman_animation.omf	sit_to_idle_0	sit		11433	4f31439839		frag
+barman_animation.omf	spetsnaz_0	guard		17063	31e96f5ef0		
+barman_animation.omf	spetsnaz_1	guard		17318	29287fb5ea		
+barman_animation.omf	spetsnaz_2	guard		16267	56f344abcb		
+barman_animation.omf	spetsnaz_3	guard		23917	4dc158bebf		
+barman_animation.omf	spetsnaz_4	guard		31931	4c24207f92		
+barman_animation.omf	spetsnaz_5	guard		30335	80c5417156		
+barman_animation.omf	spetsnaz_6	guard		31931	5b90e33360		
+barman_animation.omf	spetsnaz_7	guard		28739	6002555baf		
+barman_animation.omf	spit_4	sleep		99803	5524f4ca5d		
+barman_animation.omf	stalker_1_1	chat		105039	7aa48e337b		
+barman_animation.omf	stalker_1_down	chat		37595	6bfce03d67		
+barman_animation.omf	stalker_1_up	chat		37595	eacb1627cc		
+barman_animation.omf	stalker_2_2	chat		86519	0300df2d97		
+barman_animation.omf	stalker_2_3	chat		103639	be9b249a41		
+barman_animation.omf	stalker_3_3	chat		42587	d8e27891a2		
+barman_animation.omf	stalker_3_down_	chat		44935	4da2f3b365		
+barman_animation.omf	stalker_3_s_1	chat		30423	60779d0384		
+barman_animation.omf	stalker_3_s_2	chat		10753	85293b6ddf		frag
+barman_animation.omf	stalker_3_up_	chat		36003	ee0ce4857e		
+barman_animation.omf	steering_idle_0_0	drive		4951	4cf5756fd7		frag
+barman_animation.omf	steering_idle_0_1	drive		36147	123aef236c		
+barman_animation.omf	steering_idle_0_2	drive		88499	8ef9e5be98		
+barman_animation.omf	steering_idle_0_ls	drive		2359	1aae4cfb74		frag
+barman_animation.omf	steering_idle_0_rs	drive		2283	8c367a34e9		frag
+barman_animation.omf	steering_idle_1_0	drive		5743	37c856abd2		frag
+barman_animation.omf	steering_idle_1_1	drive		71391	b1fad5f9ad		
+barman_animation.omf	steering_idle_1_ls	drive		2359	ab7d1da5d7		frag
+barman_animation.omf	steering_idle_1_rs	drive		2359	5c880c3c7f		frag
+barman_animation.omf	steering_legs_idle	drive		6703	9a131fa14e		frag
+barman_animation.omf	steering_torso_idle	drive		6703	9a131fa14e	steering_legs_idle	frag
+barman_animation.omf	steering_torso_ls	drive		3099	4da07b3a6b		frag
+barman_animation.omf	steering_torso_rs	drive		3223	237f7339d0		frag
+barman_animation.omf	stend	tower		24455	58eadb1d43		
+barman_animation.omf	stoya_ 0	other		172407	1e619af058		
+barman_animation.omf	stoya_boltaet_ 0	chat		94223	2669fc0ab7		
+barman_animation.omf	stoya_kurit_2_ 0	smoke		147579	54aa9c77de		
+barman_animation.omf	stoya_nos	other		96619	05c7fc0337		
+barman_animation.omf	stoya_ruje_ 0	other		118825	73602e535b		
+barman_animation.omf	stoya_sopli	other		66679	2eee663a2f		
+barman_animation.omf	stul_ 0	sit		105695	a2d4dcc92e		
+barman_animation.omf	stul_podyem	sit		14355	073819fe51		frag
+barman_animation.omf	torg_0	trade		11197	25f99cf4e5		frag
+barman_animation.omf	torg_1	trade		31635	2156e771a8		
+barman_animation.omf	torg_2	trade		32983	1c7e2d9aae		
+barman_animation.omf	torg_3	trade		51881	128f9bc57c		
+barman_animation.omf	torg_4	trade		49763	fab11092a3		
+barman_animation.omf	torg_5	trade		6168	f63c3e0001		frag
+barman_animation.omf	torg_6	trade		35050	275e0f66a7		
+barman_animation.omf	universal_boltovnya	chat		2179	2dce0aa4a6	head_talk_	frag
+barman_animation.omf	uslishal	listen		52681	57941e0603		
+barman_animation.omf	uslishal_ 0	listen		52681	57941e0603	uslishal	
+barman_animation.omf	vishka_1	tower		30993	4e1d50a3c8		
+barman_animation.omf	vishka_2	tower		23965	3bb1a6277d		
+barman_animation.omf	vishka_3	tower		52751	5582623f35		
+barman_animation.omf	vodka_6	drink		6471	c335babde7		frag
+barman_animation.omf	wait_idle	other		279081	41d2e22ecd		
+barman_animation.omf	walck	other		23068	88937568fa		
+barman_animation.omf	walk_beak	other		33103	73b1c14fe8		
+barman_animation.omf	walk_fwd_crawl	other		39547	aab57fde6e		
+barman_animation.omf	walk_fwd_crawl_0	other		16387	2562547b68		
+barman_animation.omf	walk_fwd_crawl_stop	other		8351	167451f47d		frag
+barman_animation.omf	walk_poisk_0	search		61527	938e93ac42		
+barman_animation.omf	wedro	other		12527	e56744bd02		frag
+barman_animation.omf	wounded_holster_0	other		3665	829e9e260d		frag
+barman_animation.omf	wounded_monser_0	other		6051	dbe6f97d2c		frag
+barman_animation.omf	wounded_monser_1	other		16251	ab49399248		
+barman_animation.omf	wounded_monser_2	other		18801	b94a1a4085		
+barman_animation.omf	wounded_opasno_0	other		59915	75aa3d883f		
+barman_animation.omf	wounded_perehod_0	other		19931	57113c5143		
+barman_animation.omf	wounded_pomosh_0	other		13563	bc6d18e8fd		frag
+barman_animation.omf	wounded_ruka_0	other		19335	e0aab95b80		
+critical_hit_grup_2.omf	norm_2_critical_hit_head_1	other		23436	5dc034e737		
+critical_hit_grup_2.omf	norm_2_critical_hit_head_2	other		10201	a34e4aa057		frag
+critical_hit_grup_2.omf	norm_2_critical_hit_hend_left_1	other		9741	e6ec50c245		frag
+critical_hit_grup_2.omf	norm_2_critical_hit_hend_left_2	other		8153	c87c4529bc		frag
+critical_hit_grup_2.omf	norm_2_critical_hit_hend_right_1	other		13369	9c839339fe		frag
+critical_hit_grup_2.omf	norm_2_critical_hit_hend_right_2	other		6265	4b3fc02243		frag
+critical_hit_grup_2.omf	norm_2_critical_hit_legs_left_1	other		5581	5f2c6e35c0		frag
+critical_hit_grup_2.omf	norm_2_critical_hit_legs_right_1	other		6029	ee2a252f7d		frag
+critical_hit_grup_2.omf	norm_2_critical_hit_torso_2	other		12051	fd98c3b6db		frag
+critical_hit_grup_3.omf	norm_2_critical_hit_head_1	other		23436	5dc034e737		
+critical_hit_grup_3.omf	norm_2_critical_hit_head_2	other		10201	a34e4aa057		frag
+critical_hit_grup_3.omf	norm_2_critical_hit_hend_left_1	other		11491	f626709abb		frag
+critical_hit_grup_3.omf	norm_2_critical_hit_hend_left_2	other		9741	e6ec50c245		frag
+critical_hit_grup_3.omf	norm_2_critical_hit_hend_right_1	other		11221	bdfc6a4e3f		frag
+critical_hit_grup_3.omf	norm_2_critical_hit_hend_right_2	other		13369	9c839339fe		frag
+critical_hit_grup_3.omf	norm_2_critical_hit_legs_left_1	other		12443	978e874ce3		frag
+critical_hit_grup_3.omf	norm_2_critical_hit_legs_left_2	other		9741	091d62fe63		frag
+critical_hit_grup_3.omf	norm_2_critical_hit_legs_right_1	other		12051	602ea23918		frag
+critical_hit_grup_3.omf	norm_2_critical_hit_legs_right_2	other		9805	efa409b562		frag
+critical_hit_grup_4.omf	norm_2_critical_hit_head_1	other		10201	a34e4aa057		frag
+critical_hit_grup_4.omf	norm_2_critical_hit_head_2	other		23436	ba6fa7a96b		
+critical_hit_grup_4.omf	norm_2_critical_hit_hend_left_1	other		9741	e6ec50c245		frag
+critical_hit_grup_4.omf	norm_2_critical_hit_hend_left_2	other		8153	c87c4529bc		frag
+critical_hit_grup_4.omf	norm_2_critical_hit_hend_right_1	other		13369	9c839339fe		frag
+critical_hit_grup_4.omf	norm_2_critical_hit_hend_right_2	other		6265	4b3fc02243		frag
+critical_hit_grup_4.omf	norm_2_critical_hit_legs_left_1	other		9741	091d62fe63		frag
+critical_hit_grup_4.omf	norm_2_critical_hit_legs_left_2	other		27247	68c10af209		
+critical_hit_grup_4.omf	norm_2_critical_hit_legs_right_1	other		9805	efa409b562		frag
+critical_hit_grup_4.omf	norm_2_critical_hit_legs_right_2	other		25819	e66286ada6		
+critical_hit_grup_5.omf	norm_2_critical_hit_head_1	other		10201	a34e4aa057		frag
+critical_hit_grup_5.omf	norm_2_critical_hit_head_2	other		23436	ba6fa7a96b		
+critical_hit_grup_5.omf	norm_2_critical_hit_hend_left_1	other		11491	f626709abb		frag
+critical_hit_grup_5.omf	norm_2_critical_hit_hend_left_2	other		8153	c87c4529bc		frag
+critical_hit_grup_5.omf	norm_2_critical_hit_hend_right_1	other		11221	bdfc6a4e3f		frag
+critical_hit_grup_5.omf	norm_2_critical_hit_hend_right_2	other		6265	4b3fc02243		frag
+critical_hit_grup_5.omf	norm_2_critical_hit_legs_left_1	other		12443	978e874ce3		frag
+critical_hit_grup_5.omf	norm_2_critical_hit_legs_left_2	other		27247	68c10af209		
+critical_hit_grup_5.omf	norm_2_critical_hit_legs_right_1	other		12051	602ea23918		frag
+critical_hit_grup_5.omf	norm_2_critical_hit_legs_right_2	other		25819	e66286ada6		
+critical_hit_grup_5.omf	norm_2_critical_hit_torso_2	other		5184	d3aacf373c		frag
+critical_hit_grup_6.omf	norm_2_critical_hit_head_1	other		23436	2ff1f11581		
+critical_hit_grup_6.omf	norm_2_critical_hit_head_2	other		23436	5dc034e737		
+critical_hit_grup_6.omf	norm_2_critical_hit_hend_left_1	other		9741	e6ec50c245		frag
+critical_hit_grup_6.omf	norm_2_critical_hit_hend_left_2	other		11491	f626709abb		frag
+critical_hit_grup_6.omf	norm_2_critical_hit_hend_right_1	other		11221	bdfc6a4e3f		frag
+critical_hit_grup_6.omf	norm_2_critical_hit_hend_right_2	other		13369	9c839339fe		frag
+critical_hit_grup_6.omf	norm_2_critical_hit_legs_left_1	other		9741	091d62fe63		frag
+critical_hit_grup_6.omf	norm_2_critical_hit_legs_left_2	other		12443	978e874ce3		frag
+critical_hit_grup_6.omf	norm_2_critical_hit_legs_right_1	other		9805	efa409b562		frag
+critical_hit_grup_6.omf	norm_2_critical_hit_legs_right_2	other		12051	602ea23918		frag
+critical_hit_grup_6.omf	norm_2_critical_hit_torso_2	other		9077	7a6a1e1d0d		frag
+exoskeleton_animation.omf	norm_run_back_0-	other		5557	e1862dd246		frag
+exoskeleton_animation.omf	norm_run_fwd_0-	other		5557	cc9ac2f1a3		frag
+exoskeleton_animation.omf	norm_run_ls_0-	other		6153	6e426cf254		frag
+exoskeleton_animation.omf	norm_run_rs_0-	other		6153	a334e1114f		frag
+exoskeleton_animation.omf	norm_torso_0_aim_3-	other		8413	c3c133d9b8		frag
+exoskeleton_animation.omf	norm_torso_0_run_1	other		8413	f3209abe56		frag
+exoskeleton_animation.omf	norm_torso_10_aim_3-	other		5557	ab763239e9		frag
+exoskeleton_animation.omf	norm_torso_10_attack_3-	other		3327	23b8dd59d7		frag
+exoskeleton_animation.omf	norm_torso_10_run_1	other		5761	64303eb64e		frag
+exoskeleton_animation.omf	norm_torso_1_aim_3-	other		5557	258fe69faf		frag
+exoskeleton_animation.omf	norm_torso_1_attack_3-	other		2035	c0ff751c08		frag
+exoskeleton_animation.omf	norm_torso_1_run_1	other		8413	ac2a13a183		frag
+exoskeleton_animation.omf	norm_torso_2_aim_3-	other		5557	514fca9857		frag
+exoskeleton_animation.omf	norm_torso_2_attack_3-	other		2737	a4f24e3c41		frag
+exoskeleton_animation.omf	norm_torso_2_run_1	other		5761	55e50561d2		frag
+exoskeleton_animation.omf	norm_torso_3_aim_3-	other		5557	fbc920a50b		frag
+exoskeleton_animation.omf	norm_torso_3_attack_3-	other		2499	41365a69fe		frag
+exoskeleton_animation.omf	norm_torso_3_run_1	other		5761	a1ab760576		frag
+exoskeleton_animation.omf	norm_torso_4_aim_3-	other		5557	a6d153f315		frag
+exoskeleton_animation.omf	norm_torso_4_attack_3-	other		2863	be3f4f08d4		frag
+exoskeleton_animation.omf	norm_torso_4_run_1	other		7393	67fff179ee		frag
+exoskeleton_animation.omf	norm_torso_8_aim_3-	other		5557	acc23dc377		frag
+exoskeleton_animation.omf	norm_torso_8_attack_3-	other		2499	dbdaef34ad		frag
+exoskeleton_animation.omf	norm_torso_8_run_1	other		5761	2206888fcb		frag
+exoskeleton_animation.omf	norm_torso_9_aim_3-	other		5557	a0069b7c73		frag
+exoskeleton_animation.omf	norm_torso_9_attack_3-	other		2499	f70285fe7c		frag
+exoskeleton_animation.omf	norm_torso_9_run_1	other		5761	3edde07474		frag
+stalker_actor_anims.omf	norm_all_5_attack_0	other		11659	8116170db7		frag
+stalker_actor_anims.omf	norm_all_5_attack_1	other		10119	ae44626425		frag
+stalker_actor_anims.omf	norm_all_6_attack_0	other		16216	10cac81477		
+stalker_actor_anims.omf	norm_all_6_attack_1	other		6899	62a030b596		frag
+stalker_actor_anims.omf	norm_all_6_attack_2	other		17469	8d085ceecc		
+stalker_actor_anims.omf	norm_all_7_attack_0	other		13052	43dc2c2cae		frag
+stalker_actor_anims.omf	norm_all_7_attack_1	other		991	1b2e9a7699		frag
+stalker_actor_anims.omf	norm_all_7_attack_2	other		6472	caeba8f839		frag
+stalker_actor_anims.omf	norm_escape_jump_00	other		5357	fae29b3421		frag
+stalker_actor_anims.omf	norm_run_back_ls_0	other		6351	af46dad9dd		frag
+stalker_actor_anims.omf	norm_run_back_rs_0	other		6351	157d5d8eda		frag
+stalker_actor_anims.omf	norm_run_fwd_ls_0	other		6791	7236a6d6c7		frag
+stalker_actor_anims.omf	norm_run_fwd_rs_0	other		6791	ca12256df5		frag
+lesnik_animation.omf	head_idle	other		4453	c45dd699a8		frag
+lesnik_animation.omf	head_talk	chat		5245	14e53dbf10		frag
+stalker_animation.omf	animpoin_sit_low_weapon_idle_1	sit	verify	8611	6d7a714cfa		frag
+stalker_animation.omf	animpoin_sit_low_weapon_idle_rnd_1	sit	verify	28883	58e05721b1		
+stalker_animation.omf	animpoin_sit_low_weapon_idle_rnd_2	sit	verify	28007	6fa5a1388a		
+stalker_animation.omf	animpoin_sit_low_weapon_idle_rnd_3	sit	verify	9815	c46039c782		frag
+stalker_animation.omf	animpoin_sit_low_weapon_idle_rnd_4	sit	verify	36807	f0ea4faf3a		
+stalker_animation.omf	animpoin_sit_low_weapon_idle_rnd_5	sit	verify	85399	48b05d2acb		
+stalker_animation.omf	animpoin_sit_low_weapon_idle_rnd_6	sit	verify	61379	03d21901e2		
+stalker_animation.omf	animpoin_sit_low_weapon_in_1	sit	verify	24239	3ea428b6d3		
+stalker_animation.omf	animpoin_sit_low_weapon_out_1	sit	verify	18979	77cf61c388		
+stalker_animation.omf	bar_0_stakan_0	other		3439	fe26bdd3df		frag
+stalker_animation.omf	bar_0_stakan_1	other		8819	ce73cd0e4d		frag
+stalker_animation.omf	bar_0_stakan_2	other		9123	a5e2e3524a		frag
+stalker_animation.omf	bar_0_stakan_3	other		5527	2d854f1823		frag
+stalker_animation.omf	cl_idle_1	other		3632	d852caaa4b		frag
+stalker_animation.omf	cl_run_ls_0	other		3844	536909b5a6		frag
+stalker_animation.omf	cl_run_rs_0	other		3632	9b77674a62		frag
+stalker_animation.omf	cl_torso_0_aim_0	other		3632	9c59df1761		frag
+stalker_animation.omf	cr_all_5_attack_0	other		10834	3f508458e9		frag
+stalker_animation.omf	cr_all_5_attack_1	other		10590	0c46cd9056		frag
+stalker_animation.omf	cr_all_6_attack_0	other		15103	e04d07e566		
+stalker_animation.omf	cr_all_6_attack_1	other		4407	75e8897ecf		frag
+stalker_animation.omf	cr_all_6_attack_2	other		16040	ab3e25bb0d		
+stalker_animation.omf	cr_all_7_attack_0	other		12439	7b457328b1		frag
+stalker_animation.omf	cr_all_7_attack_1	other		991	a73b343f63		frag
+stalker_animation.omf	cr_all_7_attack_2	other		6019	374546041a		frag
+stalker_animation.omf	cr_death_0	eat		18400	131eed9e9d		
+stalker_animation.omf	cr_loock_left_0	other		4978	2911c5c9f4		frag
+stalker_animation.omf	cr_loock_left_1	other		4869	72ed3e3000		frag
+stalker_animation.omf	cr_loock_left_2	other		4978	7ac299b507		frag
+stalker_animation.omf	cr_loock_right_0	other		4978	d487009770		frag
+stalker_animation.omf	cr_loock_right_1	other		4734	a4a50cb3ca		frag
+stalker_animation.omf	cr_loock_right_2	other		5222	6b72a88395		frag
+stalker_animation.omf	cr_torso_0_check_corps_0	other		30669	d7d19f58ee		
+stalker_animation.omf	cr_torso_10_check_corps_0	other		32433	b515599f66		
+stalker_animation.omf	cr_torso_11_aim_0	other		65109	8ce5420d89		
+stalker_animation.omf	cr_torso_11_aim_1	other		4223	572fa59c8d		frag
+stalker_animation.omf	cr_torso_11_aim_2	other		18415	32ba7c235c		
+stalker_animation.omf	cr_torso_11_aim_3	other		10380	4a0f3e9ecf		frag
+stalker_animation.omf	cr_torso_11_attack_0	other		65109	8ce5420d89	cr_torso_11_aim_0	
+stalker_animation.omf	cr_torso_11_attack_1	other		65109	8ce5420d89	cr_torso_11_aim_0	
+stalker_animation.omf	cr_torso_11_attack_2	other		4223	572fa59c8d	cr_torso_11_aim_1	frag
+stalker_animation.omf	cr_torso_11_attack_3	other		4223	572fa59c8d	cr_torso_11_aim_1	frag
+stalker_animation.omf	cr_torso_11_draw_0	other		10327	e55fb106a3		frag
+stalker_animation.omf	cr_torso_11_drop_0	other		7503	cd9d1d8e8b		frag
+stalker_animation.omf	cr_torso_11_holster_0	other		8529	845316962f		frag
+stalker_animation.omf	cr_torso_12_aim_0	other		3967	8fc0106f2e		frag
+stalker_animation.omf	cr_torso_12_attack_0	other		21029	001fb7712c		
+stalker_animation.omf	cr_torso_12_draw_0	other		6075	efb11a13cf		frag
+stalker_animation.omf	cr_torso_12_holster_0	other		3056	59d389728a		frag
+stalker_animation.omf	cr_torso_12_reload_0	other		4271	0afd5ce9b1		frag
+stalker_animation.omf	cr_torso_13_aim_0	other		5031	777045668a		frag
+stalker_animation.omf	cr_torso_13_aim_1	other		4627	637a6801c8		frag
+stalker_animation.omf	cr_torso_13_draw_0	other		4259	eb8dcf5eac		frag
+stalker_animation.omf	cr_torso_13_drop_0	other		4259	8fb01a055d		frag
+stalker_animation.omf	cr_torso_13_holster_0	other		4259	8fb01a055d	cr_torso_13_drop_0	frag
+stalker_animation.omf	cr_torso_1_check_corps_0	other		32433	3eb7eedfcd		
+stalker_animation.omf	cr_torso_2_check_corps_0	other		35321	cc3aab7768		
+stalker_animation.omf	cr_torso_3_check_corps_0	other		32433	f614e246b8		
+stalker_animation.omf	cr_torso_4_check_corps_0	other		32433	513c04c50f		
+stalker_animation.omf	cr_torso_6_attack_3_ 0	other		10610	4d15630601		frag
+stalker_animation.omf	cr_torso_8_check_corps_0	other		32433	30adaafb55		
+stalker_animation.omf	cr_torso_9_check_corps_0	other		35321	cc3aab7768	cr_torso_2_check_corps_0	
+stalker_animation.omf	cr_torso_trans_0	other		991	221c78f17d		frag
+stalker_animation.omf	cr_torso_trans_1	other		991	ef42ef5d39		frag
+stalker_animation.omf	cr_torso_trans_2	other		991	fd1855c6dc		frag
+stalker_animation.omf	cr_walk_back_0_	other		7315	956e9169ae		frag
+stalker_animation.omf	cr_walk_fwd_0_	other		8571	b55fc893cb		frag
+stalker_animation.omf	cr_walk_ls_0_	other		5867	d765832b04		frag
+stalker_animation.omf	cr_walk_rs_0_	other		3655	a01b627d65		frag
+stalker_animation.omf	death_init	eat		991	7c6e3b4ba8		frag
+stalker_animation.omf	dmg_norm_torso_0_hello_0	other		12037	a9ee4b427a		frag
+stalker_animation.omf	dmg_norm_torso_10_hello_0	other		12054	6c28271d5c		frag
+stalker_animation.omf	dmg_norm_torso_11_aim_0	other		3471	23f23a1c45		frag
+stalker_animation.omf	dmg_norm_torso_11_attack_0	other		22689	158ad1e2d2		
+stalker_animation.omf	dmg_norm_torso_11_draw_0	other		5259	87018a774f		frag
+stalker_animation.omf	dmg_norm_torso_11_holster_0	other		2769	13aeb34260		frag
+stalker_animation.omf	dmg_norm_torso_11_reload_0	other		4429	4a7b54b916		frag
+stalker_animation.omf	dmg_norm_torso_12_aim_0	other		3967	aeb5eafe57		frag
+stalker_animation.omf	dmg_norm_torso_12_attack_0	other		21029	8b93667408		
+stalker_animation.omf	dmg_norm_torso_12_draw_0	other		6075	0cbc964186		frag
+stalker_animation.omf	dmg_norm_torso_12_holster_0	other		3105	d1ddb6d08d		frag
+stalker_animation.omf	dmg_norm_torso_12_reload_0	other		4350	de68f3d944		frag
+stalker_animation.omf	dmg_norm_torso_1_hello_0	other		11666	b5b307400b		frag
+stalker_animation.omf	dmg_norm_torso_2_hello_0	other		12054	937bbc43a0		frag
+stalker_animation.omf	dmg_norm_torso_3_hello_0	other		12054	83fdaf442f		frag
+stalker_animation.omf	dmg_norm_torso_4_hello_0	other		10585	0c2b3b61b4		frag
+stalker_animation.omf	dmg_norm_torso_6_hello_0	other		12919	23bb3fbc0d		frag
+stalker_animation.omf	dmg_norm_torso_8_hello_0	other		12054	937bbc43a0	dmg_norm_torso_2_hello_0	frag
+stalker_animation.omf	dmg_norm_torso_8_idle_0_	other		8999	4a2831a88c		frag
+stalker_animation.omf	dmg_norm_torso_9_hello_0	other		12054	937bbc43a0	dmg_norm_torso_2_hello_0	frag
+stalker_animation.omf	dmg_norm_torso_trans_0	other		991	a149ec1ee6		frag
+stalker_animation.omf	dmg_norm_torso_trans_1	other		991	ef42ef5d39	cr_torso_trans_1	frag
+stalker_animation.omf	dmg_norm_torso_trans_2	other		991	fd1855c6dc	cr_torso_trans_2	frag
+stalker_animation.omf	drink_idle_0_0	drink		29295	1d90a4ac7c		
+stalker_animation.omf	drink_idle_0_talk_0	drink		31551	7f784501ab		
+stalker_animation.omf	drink_idle_10	drink		19889	8966ce2a56		
+stalker_animation.omf	drink_idle_11	drink		17511	7d0ef3bd4d		
+stalker_animation.omf	drink_idle_12	drink		7803	bce1f547b9		frag
+stalker_animation.omf	drink_idle_13	drink		36499	c2aa9a9da6		
+stalker_animation.omf	drink_idle_1_0	drink		25331	f85a4b811f		
+stalker_animation.omf	drink_idle_1_1	drink		17051	74012e3d97		
+stalker_animation.omf	drink_idle_1_2	drink		25331	a8273d4e3b		
+stalker_animation.omf	drink_idle_2_0	drink		21191	ab9476d388		
+stalker_animation.omf	drink_idle_2_1	drink		66779	ead5a50fc4		
+stalker_animation.omf	drink_idle_2_2	drink		22019	eb60a33f1c		
+stalker_animation.omf	drink_idle_3_2	drink		17879	3729cb9f53		
+stalker_animation.omf	drink_idle_3_3	drink		74463	ada95dc3b4		
+stalker_animation.omf	drink_idle_3_4	drink		11231	a1af12c015		frag
+stalker_animation.omf	drink_idle_4	drink		66779	237e67c87b		
+stalker_animation.omf	drink_idle_5_1	drink		7803	9b13c8ba29		frag
+stalker_animation.omf	drink_idle_6	drink		47411	81883f1b37		
+stalker_animation.omf	drink_idle_7	drink		22823	56a5c4731d		
+stalker_animation.omf	drink_idle_8	drink		14015	b47daf0071		frag
+stalker_animation.omf	head_talk_	chat		2203	8cf9d74b2a		frag
+stalker_animation.omf	hit_downl	other		2650	e9b6a5be44		frag
+stalker_animation.omf	hit_downr	other		2650	d4ab480bba		frag
+stalker_animation.omf	hit_left_shoulder17	other		1579	79e927e28e		frag
+stalker_animation.omf	hit_right_shoulder17	other		1579	b1e251fa6e		frag
+stalker_animation.omf	hitback17	other		1775	a554604c91		frag
+stalker_animation.omf	hitf_down17	other		2258	90b0c3efe4		frag
+stalker_animation.omf	hitf_left17	other		1775	bf7874b764		frag
+stalker_animation.omf	hitf_right17	other		1775	1108f1f2b6		frag
+stalker_animation.omf	hitfront17	other		1579	6dee689e06		frag
+stalker_animation.omf	item_5_drop_1_0	other		37992	c3c43cf241		
+stalker_animation.omf	kurit sidya_ 0	smoke		105767	26100414a9		
+stalker_animation.omf	kurit_3	smoke		6855	837d5975a5		frag
+stalker_animation.omf	norm_8_critical_hit_head_0	other		6904	272cfecab6		frag
+stalker_animation.omf	norm_8_critical_hit_head_1	other		11194	5380a515fa		frag
+stalker_animation.omf	norm_8_critical_hit_hend_left_0	other		5911	391935add1		frag
+stalker_animation.omf	norm_8_critical_hit_hend_left_1	other		10724	bed0fef49c		frag
+stalker_animation.omf	norm_8_critical_hit_hend_left_2	other		8638	a7bea18c87		frag
+stalker_animation.omf	norm_8_critical_hit_hend_right_0	other		5149	2f8b616af8		frag
+stalker_animation.omf	norm_8_critical_hit_hend_right_1	other		14426	8bab69c8ec		frag
+stalker_animation.omf	norm_8_critical_hit_hend_right_2	other		6686	2e28a533c6		frag
+stalker_animation.omf	norm_8_critical_hit_legs_left_0	other		5980	0e131e0f8a		frag
+stalker_animation.omf	norm_8_critical_hit_legs_left_1	other		10133	fe319f3eab		frag
+stalker_animation.omf	norm_8_critical_hit_legs_right_0	other		6442	588241af91		frag
+stalker_animation.omf	norm_8_critical_hit_legs_right_1	other		6442	aa4f20c87d		frag
+stalker_animation.omf	norm_8_critical_hit_torso_0	other		5353	ed72a4b6d4		frag
+stalker_animation.omf	norm_8_critical_hit_torso_1	other		5149	eb17db6df9		frag
+stalker_animation.omf	norm_8_critical_hit_torso_2	other		6442	ee6bb21938		frag
+stalker_animation.omf	norm_all_5_attack_0	other		10834	13cba594ef		frag
+stalker_animation.omf	norm_all_5_attack_1	other		9100	78611acad7		frag
+stalker_animation.omf	norm_all_6_attack_0	other		14691	c52919d509		frag
+stalker_animation.omf	norm_all_6_attack_1	other		5492	87df1b6638		frag
+stalker_animation.omf	norm_all_6_attack_2	other		16396	e8b7616512		
+stalker_animation.omf	norm_all_7_attack_0	other		12155	3383876a9b		frag
+stalker_animation.omf	norm_all_7_attack_1	other		991	0ac305f033		frag
+stalker_animation.omf	norm_all_7_attack_2	other		5895	fdce470cb5		frag
+stalker_animation.omf	norm_check_corps_0	other		9769	ee51285abe		frag
+stalker_animation.omf	norm_critical_hit_head_0	other		23701	b2e15f0e4e		
+stalker_animation.omf	norm_critical_hit_hend_left_0	other		11666	e031852b0d		frag
+stalker_animation.omf	norm_critical_hit_hend_right_0	other		11398	ba7cc135dd		frag
+stalker_animation.omf	norm_critical_hit_legs_left_0	other		12634	bf65fb8079		frag
+stalker_animation.omf	norm_critical_hit_legs_right_0	other		12236	9235767292		frag
+stalker_animation.omf	norm_critical_hit_torso_0	other		12236	27a89eeef2		frag
+stalker_animation.omf	norm_critical_hit_torso_1	other		21088	3070c7b795		
+stalker_animation.omf	norm_death_0	eat		13998	268636cf3a		frag
+stalker_animation.omf	norm_escape_jump_00	other		4830	812550c0f1		frag
+stalker_animation.omf	norm_escape_ls_jump_00	other		4994	2cb031d8f9		frag
+stalker_animation.omf	norm_escape_rs_jump_00	other		4994	32eb1f9d5f		frag
+stalker_animation.omf	norm_idle_0_ 0	other		7482	af04396a3a		frag
+stalker_animation.omf	norm_idle_1_	other		8934	a693076146		frag
+stalker_animation.omf	norm_idle_1__	other		5546	e8f1c4c0c1		frag
+stalker_animation.omf	norm_idle_m134	other		9902	60a26b981f		frag
+stalker_animation.omf	norm_jump_begin_	other		991	5a72918919		frag
+stalker_animation.omf	norm_jump_idle----	other		1894	3136605e3d		frag
+stalker_animation.omf	norm_jump_idle_	other		2874	515c7ce458		frag
+stalker_animation.omf	norm_run_back_0_	other		3826	b9504c88e9		frag
+stalker_animation.omf	norm_run_back_ls_0	other		5522	6f1155b6c6		frag
+stalker_animation.omf	norm_run_back_rs_0	other		5522	16f9ec6e55		frag
+stalker_animation.omf	norm_run_fwd_0_	other		5734	749c56821b		frag
+stalker_animation.omf	norm_run_fwd_ls_0	other		6158	4e46162ef6		frag
+stalker_animation.omf	norm_run_fwd_rs_0	other		6158	ad2fd2e4af		frag
+stalker_animation.omf	norm_run_ls_0=	other		6158	cc17288e1b		frag
+stalker_animation.omf	norm_run_ls_0_	other		5522	f7cfbda191		frag
+stalker_animation.omf	norm_run_rs_0=	other		5734	8c02064a81		frag
+stalker_animation.omf	norm_run_rs_0_	other		4886	bb362305c8		frag
+stalker_animation.omf	norm_run_rs_0__	other		4886	9fb64a1476		frag
+stalker_animation.omf	norm_torso_0_hello_0	other		14258	c6a49a3b38		frag
+stalker_animation.omf	norm_torso_10_hello_0	other		33942	5fc50b4aac		
+stalker_animation.omf	norm_torso_11_aim_0	other		44269	f75a513fe6		
+stalker_animation.omf	norm_torso_11_aim_1	other		5604	94cefe193d		frag
+stalker_animation.omf	norm_torso_11_aim_2	other		8048	b5578d9e6e		frag
+stalker_animation.omf	norm_torso_11_aim_3	other		6140	ff382aea36		frag
+stalker_animation.omf	norm_torso_11_attack_0	other		44269	f75a513fe6	norm_torso_11_aim_0	
+stalker_animation.omf	norm_torso_11_attack_1	other		44269	f75a513fe6	norm_torso_11_aim_0	
+stalker_animation.omf	norm_torso_11_attack_2	other		5604	94cefe193d	norm_torso_11_aim_1	frag
+stalker_animation.omf	norm_torso_11_attack_3	other		5604	94cefe193d	norm_torso_11_aim_1	frag
+stalker_animation.omf	norm_torso_11_draw_0	other		8285	38434d02ac		frag
+stalker_animation.omf	norm_torso_11_drop_0	other		4715	3cc9c00133		frag
+stalker_animation.omf	norm_torso_11_holster_0	other		4715	f2153897fb		frag
+stalker_animation.omf	norm_torso_12_aim_0	other		3967	aeb5eafe57	dmg_norm_torso_12_aim_0	frag
+stalker_animation.omf	norm_torso_12_attack_0	other		21029	8b93667408	dmg_norm_torso_12_attack_0	
+stalker_animation.omf	norm_torso_12_draw_0	other		6075	0cbc964186	dmg_norm_torso_12_draw_0	frag
+stalker_animation.omf	norm_torso_12_holster_0	other		3105	d1ddb6d08d	dmg_norm_torso_12_holster_0	frag
+stalker_animation.omf	norm_torso_12_reload_0	other		4350	de68f3d944	dmg_norm_torso_12_reload_0	frag
+stalker_animation.omf	norm_torso_13_aim_0	other		4631	37718a68ee		frag
+stalker_animation.omf	norm_torso_13_aim_1	other		4631	2756189bc4		frag
+stalker_animation.omf	norm_torso_13_draw_0	other		4423	58c1566137		frag
+stalker_animation.omf	norm_torso_13_drop_0	other		4251	3094d6b9c8		frag
+stalker_animation.omf	norm_torso_13_holster_0	other		4251	3094d6b9c8	norm_torso_13_drop_0	frag
+stalker_animation.omf	norm_torso_1_hello_0	other		15624	5d7be46591		
+stalker_animation.omf	norm_torso_2_hello_0	other		26068	9eb57da84d		
+stalker_animation.omf	norm_torso_3_hello_0	other		15226	2ac7846895		
+stalker_animation.omf	norm_torso_4_hello_0	other		16393	3bc2e8ffcc		
+stalker_animation.omf	norm_torso_7_hello_0	other		15624	5d7be46591	norm_torso_1_hello_0	
+stalker_animation.omf	norm_torso_8_hello_0	other		28480	4f13eef061		
+stalker_animation.omf	norm_torso_9_hello_0	other		26068	9eb57da84d	norm_torso_2_hello_0	
+stalker_animation.omf	norm_torso_m134_aim_0	other		9902	60a26b981f	norm_idle_m134	frag
+stalker_animation.omf	norm_torso_m134_attack_0	other		4663	b38170824a		frag
+stalker_animation.omf	norm_torso_trans_0	other		991	a149ec1ee6	dmg_norm_torso_trans_0	frag
+stalker_animation.omf	norm_torso_trans_1	other		991	ef42ef5d39	cr_torso_trans_1	frag
+stalker_animation.omf	norm_torso_trans_2	other		991	fd1855c6dc	cr_torso_trans_2	frag
+stalker_animation.omf	norm_walk_back_0_	other		6140	35c4243bc8		frag
+stalker_animation.omf	norm_walk_fwd_0_	other		6140	688e11511b		frag
+stalker_animation.omf	norm_walk_ls_0_	other		6140	239cbeab6f		frag
+stalker_animation.omf	norm_walk_rs_0_	other		6140	8516d5b460		frag
+stalker_animation.omf	otdacha_chesti	other		6347	68b1a33d2e		frag
+stalker_animation.omf	otzimani_2_idle	other		9566	0c44e5a576		frag
+stalker_animation.omf	otzimani_2_in	other		11696	543bb163fd		frag
+stalker_animation.omf	otzimani_2_out	other		11196	4265323406		frag
+stalker_animation.omf	ragdoll_anomaly_electra_0	other		91122	05706b0f37		
+stalker_animation.omf	ragdoll_anomaly_jarka_0	other		123830	0483c3ac42		
+stalker_animation.omf	ragdoll_anomaly_puh_0	other		146810	fc9aab0c5c		
+stalker_animation.omf	ragdoll_grenade_back_1	other		6047	1d1a11a018		frag
+stalker_animation.omf	ragdoll_grenade_front_1	other		6047	93bf4a44e8		frag
+stalker_animation.omf	ragdoll_grenade_front_2	other		6047	73ac6d922f		frag
+stalker_animation.omf	ragdoll_grenade_front_3	other		5585	03616eb65b		frag
+stalker_animation.omf	ragdoll_grenade_left_1	other		8487	11e8964810		frag
+stalker_animation.omf	ragdoll_grenade_right_1	other		10439	e84d179422		frag
+stalker_animation.omf	soldier_kam_cam_3	other		34975	d16910b92c		
+stalker_animation.omf	soldier_kam_cam_4	other		134539	31b69ee151		
+stalker_animation.omf	steering_idle_0_0	drive		4223	4599b88291		frag
+stalker_animation.omf	steering_idle_0_1	drive		36235	94f907438f		
+stalker_animation.omf	steering_idle_0_2	drive		88718	de59c4c81a		
+stalker_animation.omf	steering_idle_0_ls	drive		2251	78174659d8		frag
+stalker_animation.omf	steering_idle_0_rs	drive		2167	0fb5d59555		frag
+stalker_animation.omf	steering_idle_1_0	drive		4627	5499c548e7		frag
+stalker_animation.omf	steering_idle_1_1	drive		71626	28cd98a249		
+stalker_animation.omf	steering_idle_1_ls	drive		2419	9a82387bbe		frag
+stalker_animation.omf	steering_idle_1_rs	drive		2419	799a468ea0		frag
+stalker_animation.omf	steering_legs_idle	drive		6799	f35bf757e5		frag
+stalker_animation.omf	steering_torso_idle	drive		6799	f35bf757e5	steering_legs_idle	frag
+stalker_animation.omf	steering_torso_ls	drive		3235	eca028a6a2		frag
+stalker_animation.omf	steering_torso_rs	drive		3367	3db0e18fa8		frag
+stalker_animation.omf	stoya_kurit_111	smoke		210401	fd8d8cd159		
+stalker_animation.omf	stoya_kurit_222	smoke		60401	8466a507be		
+stalker_animation.omf	stoya_kurit_3	smoke		599133	1a3543f744		
+stalker_animation.omf	stoya_kurit_333	smoke		83067	b8047d7cf0		
+stalker_animation.omf	stoya_kurit_4	smoke		331277	2bb74c7ec7		
+stalker_animation.omf	stoya_nos	other		97895	15845eca03		
+stalker_animation.omf	turnik_idle	other		13946	a811a944e0		frag
+stalker_animation.omf	turnik_in	other		14696	ab2a8933b2		frag
+stalker_animation.omf	turnik_out	other		15441	17ad39a43f		
+stalker_animation.omf	zulus_cam_4	other		91419	4ddc16da59		
+stalker_animation.omf	zulus_cam_5	other		23503	0d32722f87		
+stalker_animation.omf	zulus_cam_6	other		24413	fd665ea61d		
+stalker_animation.omf	zulus_cam_7	other		31147	2a6885a925		
+stalker_scenario_animation.omf	pri_a15_igrok_cam12_1	other		19947	08ca5754d8		
+stalker_scenario_animation.omf	pri_a15_igrok_cam12_2	other		1521	22797499ec		frag
+stalker_scenario_animation.omf	pri_a28_kirillov_radio_on_old	radio		56341	92a54b69d2		
+stalker_scenario_animation.omf	zat_b14_sit_on_border	sit		31751	0281d78429		
+stalker_scenario_animation.omf	zat_b14_stand_from_border	other		22023	7f70b6800f		
+stalker_scenario_animation.omf	zat_b38_stalker_jump_lift_idle_0	chat		14901	95dd848590		frag
+stalker_scenario_animation.omf	zat_b38_stalker_jump_lift_in_0	chat		37071	bbbfabb956		
+stalker_scenario_animation.omf	zat_b38_stalker_jump_lift_out_0	chat		95151	6d43a306dd		
+stalker_scenario_animation.omf	zat_b38_stalker_jump_lift_out_1	chat		94299	7fde98cb78		
+stalker_scenario_animation.omf	zat_b38_stalker_jump_lift_out_r	chat		97419	4c776e5e0d		
+stalker_scenario_animation.omf	zat_b3_tech_surprise_old	other		62836	08fb4c9d36		
+stalker_scripts_animation.omf	arena_jump_0	other		65440	a28b595769		
+stalker_scripts_animation.omf	arena_jump_1	other		66559	4f18292388		
+stalker_scripts_animation.omf	arena_jump_1_crop	other		24037	34a720214d		
+stalker_scripts_animation.omf	arena_jump_2	other		72154	a19394c3a8		
+stalker_scripts_animation.omf	bar_3_idle_0	other		9879	121038f0eb		frag
+stalker_scripts_animation.omf	bar_3_idle_in	other		17188	eab60c7cbb		
+stalker_scripts_animation.omf	bar_3_idle_out	other		16784	e43bd06078		
+stalker_scripts_animation.omf	bar_4_idle_0	other		67377	4172ed74f9		
+stalker_scripts_animation.omf	bar_4_idle_in	other		17996	1e2bbf1874		
+stalker_scripts_animation.omf	bar_4_idle_out	other		17996	3d85de71af		
+stalker_scripts_animation.omf	binoculars_idle_0	other		12247	c09f0b6ab6		frag
+stalker_scripts_animation.omf	binoculars_idle_talk_0	chat		6647	b3eced4329		frag
+stalker_scripts_animation.omf	cut_scene_0_kalancha	other		351936	f09e8f645a		
+stalker_scripts_animation.omf	cut_scene_0_lebedev	other		322596	7fcae417fd		
+stalker_scripts_animation.omf	cut_scene_idle_1	other		39121	50d234a52e		
+stalker_scripts_animation.omf	cut_scene_walk_0	other		107457	1e95f4ca18		
+stalker_scripts_animation.omf	cut_scene_walk_cykl_0	other		63848	3a21cde6e9		
+stalker_scripts_animation.omf	cut_scene_walk_in_cykl_0	other		56312	2e374a7522		
+stalker_scripts_animation.omf	cut_scene_walk_out_0	other		113121	634c350511		
+stalker_scripts_animation.omf	cut_scene_walk_out_cykl_0	other		93012	d88114cbed		
+stalker_scripts_animation.omf	dinamit_0	other		75350	84ea37acdd		
+stalker_scripts_animation.omf	free_facer_0	other		17996	b20448dd1c		
+stalker_scripts_animation.omf	free_facer_1	other		14360	6eee46ba6e		frag
+stalker_scripts_animation.omf	free_facer_10	other		13618	f1de77c10d		frag
+stalker_scripts_animation.omf	free_facer_2	other		17254	73693f1073		
+stalker_scripts_animation.omf	free_facer_3	other		18062	5e6ba41fae		
+stalker_scripts_animation.omf	free_facer_4	other		15168	ad80b1c1ee		
+stalker_scripts_animation.omf	free_facer_8	other		17254	ddb4c878d9		
+stalker_scripts_animation.omf	free_facer_9	other		17254	425df89fe5		
+stalker_scripts_animation.omf	guitar_1	other		42977	75ca3e2433		
+stalker_scripts_animation.omf	guitar_3	other		8735	eadccb97ff		frag
+stalker_scripts_animation.omf	harmonica_2	other		76761	8134d393d6		
+stalker_scripts_animation.omf	harmonica_3	other		55717	687bffc4aa		
+stalker_scripts_animation.omf	idle_9_idle_0	other		20606	ba322488a2		
+stalker_scripts_animation.omf	idle_9_idle_1	other		16586	2102e63795		
+stalker_scripts_animation.omf	idle_9_idle_2	other		31222	63c46ffceb		
+stalker_scripts_animation.omf	idle_9_idle_3	other		37158	7beb7a1572		
+stalker_scripts_animation.omf	idle_9_idle_4	other		25274	4d76cd4ec0		
+stalker_scripts_animation.omf	idle_to_sit_0	sit		18062	0fa76be803		
+stalker_scripts_animation.omf	item_2_sit_0	sit		33568	6f854d9a81		
+stalker_scripts_animation.omf	item_2_sit_2	sit		29978	1936853aba		
+stalker_scripts_animation.omf	item_4_sit_0	sit		46266	641e7eddbd		
+stalker_scripts_animation.omf	item_4_sit_1	sit		37324	9c05292811		
+stalker_scripts_animation.omf	item_4_sit_2	sit		37962	82dff4d61a		
+stalker_scripts_animation.omf	item_4_sit_2_0	sit		19612	68212e4b28		
+stalker_scripts_animation.omf	item_4_sit_2_1	sit		19612	f96f2e5e04		
+stalker_scripts_animation.omf	norm_alert_idle_2	other		14174	0e306eed5d		frag
+stalker_scripts_animation.omf	psy_0_idle_to_shot_0	other		33304	0f49b38c2b		
+stalker_scripts_animation.omf	psy_0_shot_0	other		32012	cf4918b436		
+stalker_scripts_animation.omf	sit_0_item_1	sit		37158	928c4a1408		
+stalker_scripts_animation.omf	sit_0_item_4	sit		37962	057b47e342		
+stalker_scripts_animation.omf	sit_0_to_sleep_0	sit		38282	c33f3edbe6		
+stalker_scripts_animation.omf	sit_1_item_4	sit		37324	1a6cf6be27		
+stalker_scripts_animation.omf	sit_2_item_1_0	sit		19612	dbfc6030e6		
+stalker_scripts_animation.omf	sit_2_item_1_1	sit		15572	977b299010		
+stalker_scripts_animation.omf	sit_2_item_2	sit		37962	ba15bef567		
+stalker_scripts_animation.omf	sit_2_item_4	sit		37962	63a630de35		
+stalker_scripts_animation.omf	sit_2_item_4_0	sit		15942	be009d4ca4		
+stalker_scripts_animation.omf	sit_2_item_4_1	sit		18528	63e3537eaf		
+stalker_scripts_animation.omf	sit_2_lazy_idle_0	sit		68290	36e03aace0		
+stalker_scripts_animation.omf	sit_2_to_sleep_0	sit		39166	6f66be4126		
+stalker_scripts_animation.omf	sit_idle_0_to_sit_idle_1	sit		22798	0eec65365d		
+stalker_scripts_animation.omf	sit_idle_0_to_sit_idle_2	sit		24238	d8e9e6d40e		
+stalker_scripts_animation.omf	sit_idle_1_to_sit_idle_0	sit		17413	0bf589d61f		
+stalker_scripts_animation.omf	sit_idle_1_to_sit_idle_2	sit		12028	dd33674c65		frag
+stalker_scripts_animation.omf	sit_idle_1_to_sleep_0	sit		40748	ceac717cdd		
+stalker_scripts_animation.omf	sit_idle_2_to_sit_idle_0	sit		24238	bb45dcaa20		
+stalker_scripts_animation.omf	sit_idle_2_to_sit_idle_1	sit		12028	eb583978b7		frag
+stalker_scripts_animation.omf	sit_to_idle_0	sit		7952	c36bc85692		frag
+stalker_scripts_animation.omf	sleep_0_to_sit_0	sit		41652	407055b8ff		
+stalker_scripts_animation.omf	sleep_0_to_sit_2	sit		39166	66fe847df2		
+stalker_scripts_animation.omf	sleep_0_to_sit_idle_1	sit		29978	2472e25a27		
+stalker_scripts_animation.omf	stn_coverture_1	other		150798	72394b2772		
+stalker_scripts_animation.omf	stn_coverture_2	other		110421	c26a553e8c		
+stalker_scripts_animation.omf	stn_coverture_3	other		93970	d5572ca8ae		
+stalker_scripts_animation.omf	stn_coverture_3_run	other		32962	82f49424c1		
+stalker_scripts_animation.omf	stn_coverture_4	other		34890	1033adbe37		
+stalker_scripts_animation.omf	stn_coverture_5	other		54558	aba3fec8a6		
+stalker_scripts_animation.omf	stn_coverture_6	other		52591	8baf06b8cb		
+stalker_scripts_animation.omf	stn_run	other		206429	2e39c52269		
+stalker_scripts_animation.omf	stn_stairway_run	other		357828	0b8c37258d		
+stalker_scripts_animation.omf	stn_stairway_run_1	other		316617	d6446f9e6b		
+stalker_scripts_animation.omf	waunded_1_in	other		31530	5b8afd3647		
+stalker_scripts_animation.omf	wounded_holster_0	other		3847	24cf2b23db		frag
+stalker_scripts_animation.omf	wounded_monser_0	other		6306	a8a8ea2350		frag
+stalker_scripts_animation.omf	wounded_monser_1	other		16506	befa826a31		
+stalker_scripts_animation.omf	wounded_monser_2	other		19056	b91e2133af		
+stalker_scripts_animation.omf	wounded_opasno_0	other		60142	8eae3dffdb		
+stalker_scripts_animation.omf	wounded_perehod_0	other		20121	17219fe511		
+stalker_scripts_animation.omf	wounded_pomosh_0	other		13689	26a48db74f		frag
+stalker_scripts_animation.omf	wounded_ruka_0	other		22325	0f1a35f711		
+stalker_scripts_animation.omf	yan_zabor_0	other		17372	087b108837		
+stalker_scripts_animation.omf	yan_zabor_1	other		99841	369c12b702		
+stalker_scripts_animation.omf	yan_zabor_2	other		78625	99f4c71ca3		
+stalker_scripts_animation.omf	yan_zabor_3	other		13573	dbf952869e		frag
+stalker_smart_cover_animation.omf	animpoint_sit_high_visual	sit	verify	46667	0eb4159636		
+stalker_smart_cover_animation.omf	animpoint_sit_high_weapon_visual	sit	verify	58687	aa96da0cc3		
+stalker_smart_cover_animation.omf	animpoint_sit_low_drink_idle_rnd_1_ 0	drink	verify	9667	0dbcbbc53b		frag
+stalker_smart_cover_animation.omf	animpoint_sit_low_eat_idle_rnd_1	eat	verify	41859	7867715a50		
+stalker_smart_cover_animation.omf	animpoint_sit_low_eat_idle_rnd_2	eat	verify	41859	28e7300faa		
+stalker_smart_cover_animation.omf	animpoint_sit_low_guitar_idle_rnd_1	sit	verify	42867	4390f5066a		
+stalker_smart_cover_animation.omf	animpoint_sit_low_visual	sit	verify	68303	c060b93928		
+stalker_smart_cover_animation.omf	animpoint_sit_low_weapon_visual	sit	verify	46667	0715c84ecb		
+stalker_smart_cover_animation.omf	animpoint_sit_normal_guitar_idle_270_rnd_1	sit	verify	72403	49065d21d7		
+stalker_smart_cover_animation.omf	animpoint_sit_normal_visual	sit	verify	8735	f6163f88dd		frag
+stalker_smart_cover_animation.omf	animpoint_sit_normal_weapon_visual	sit	verify	46667	1036c50080		
+stalker_smart_cover_animation.omf	animpoint_stay_table_visual	other	verify	55602	cb854b6960		
+stalker_smart_cover_animation.omf	animpoint_stay_table_weapon_visual	other	verify	46522	ce078b80b6		
+stalker_smart_cover_animation.omf	animpoint_stay_wall_visual	other	verify	54798	8cde9e8316		
+stalker_smart_cover_animation.omf	animpoint_stay_wall_weapon_visual	other	verify	69222	3686cf2067		
+stalker_smart_cover_animation.omf	barricade_0_attack_idle_0	other	verify	9174	6b690a3777		frag
+stalker_smart_cover_animation.omf	barricade_0_attack_in_0	other	verify	18492	aa329879d2		
+stalker_smart_cover_animation.omf	barricade_0_attack_out_0	other	verify	11082	002ab71e4c		frag
+stalker_smart_cover_animation.omf	barricade_0_attack_shoot_0	other	verify	2734	9e06dd9304		frag
+stalker_smart_cover_animation.omf	barricade_0_reload_0	other	verify	27776	2f7e4b537e		
+stalker_smart_cover_animation.omf	barricade_1_attack_in_0	other	verify	9982	aa388cfdb9		frag
+stalker_smart_cover_animation.omf	barricade_1_attack_out_0	other	verify	6686	3029bf5739		frag
+stalker_smart_cover_animation.omf	barricade_1_attack_shoot_0	other	verify	3415	0312702e83		frag
+stalker_smart_cover_animation.omf	barricade_1_reload_0	other	verify	25750	b353f4e7ae		
+stalker_smart_cover_animation.omf	barricade_1_run_0	other	verify	60765	3de2d47be1		
+stalker_smart_cover_animation.omf	barricade_1_run_deadh_idle_0	other	verify	991	06d6f4ebba		frag
+stalker_smart_cover_animation.omf	barricade_2_attack_idle_0	other	verify	7624	1ba7ca7365		frag
+stalker_smart_cover_animation.omf	barricade_2_attack_in_0	other	verify	8860	826f037f4b		frag
+stalker_smart_cover_animation.omf	barricade_2_attack_out_0	other	verify	7906	6f3e00f6ba		frag
+stalker_smart_cover_animation.omf	barricade_2_attack_shoot_0	other	verify	3539	c27108bf8a		frag
+stalker_smart_cover_animation.omf	barricade_2_reload_0	other	verify	22854	7be6383026		
+stalker_smart_cover_animation.omf	barricade_3_attack_idle_0	other	verify	9005	7cc8490f2c		frag
+stalker_smart_cover_animation.omf	barricade_3_attack_in_0	other	verify	10320	22ec225c40		frag
+stalker_smart_cover_animation.omf	barricade_3_attack_out_0	other	verify	8814	21ae2da76d		frag
+stalker_smart_cover_animation.omf	barricade_3_attack_shoot_0	other	verify	3415	7176698a7d		frag
+stalker_smart_cover_animation.omf	barricade_3_reload_0	other	verify	24880	b474833f7c		
+stalker_smart_cover_animation.omf	barricade_commander_idle_1	other	verify	29136	6e38cf2a1a		
+stalker_smart_cover_animation.omf	barricade_commander_reload_0	other	verify	23578	516aff02ab		
+stalker_smart_cover_animation.omf	barricade_commander_talk_idle_0	chat	verify	18656	ad804a47b0		
+stalker_smart_cover_animation.omf	barricade_commander_talk_in_0	chat	verify	7148	31b7cdebd1		frag
+stalker_smart_cover_animation.omf	barricade_commander_talk_out_0	chat	verify	7148	62995b2d73		frag
+stalker_smart_cover_animation.omf	del_my	other	verify	9138	e39b093a8a		frag
+stalker_smart_cover_animation.omf	lead_0_idle_0	other	verify	56081	dd2de0670f		
+stalker_smart_cover_animation.omf	lead_0_idle_mechanic_0	other	verify	11871	3cc9c04173		frag
+stalker_smart_cover_animation.omf	lead_0_idle_mechanic_1	other	verify	106421	38ca9088f0		
+stalker_smart_cover_animation.omf	lead_0_idle_mechanic_2	other	verify	11747	17448d629e		frag
+stalker_smart_cover_animation.omf	lead_0_idle_to_type_0	other	verify	31696	999ed5cf8a		
+stalker_smart_cover_animation.omf	lead_0_sit_down_0	sit	verify	28172	f883c0ab79		
+stalker_smart_cover_animation.omf	lead_0_sleep_idle_0	sleep	verify	17379	7f2f8fb8fa		
+stalker_smart_cover_animation.omf	lead_0_sleep_in_0	sleep	verify	70029	1994181f9c		
+stalker_smart_cover_animation.omf	lead_0_sleep_out_0	sleep	verify	70029	3991e62733		
+stalker_smart_cover_animation.omf	lead_0_stand_up_0	other	verify	24802	0fdbafc020		
+stalker_smart_cover_animation.omf	lead_0_type_idle_0	other	verify	8719	08da752338		frag
+stalker_smart_cover_animation.omf	lead_0_type_idle_1	other	verify	9031	e8e7385ef6		frag
+stalker_smart_cover_animation.omf	lead_0_type_to_idle_0	other	verify	27121	565042eaec		
+stalker_smart_cover_animation.omf	lead_1_bar_idle_0	other	verify	51828	19b9b9f363		
+stalker_smart_cover_animation.omf	lead_1_bar_to_idle_0	other	verify	26884	6d777c9afb		
+stalker_smart_cover_animation.omf	lead_1_bar_to_idle_1	other	verify	28172	8ebe3c1263		
+stalker_smart_cover_animation.omf	lead_1_idle_to_bar_0	other	verify	17592	6f9371135c		
+stalker_smart_cover_animation.omf	lead_1_idle_to_bar_1	other	verify	18400	c991bcef74		
+stalker_smart_cover_animation.omf	lead_1_idle_to_look_map_0	other	verify	33942	aeac8782c5		
+stalker_smart_cover_animation.omf	lead_1_look_map_idle_0	other	verify	83520	332454a60b		
+stalker_smart_cover_animation.omf	lead_1_look_map_to_idle_0	other	verify	21830	4d6aa8de35		
+stalker_smart_cover_animation.omf	lead_2_idle_0	other	verify	38481	d0ea01930c		
+stalker_smart_cover_animation.omf	lead_2_sit_down_0	sit	verify	17658	2e29a118fd		
+stalker_smart_cover_animation.omf	lead_2_stand_up_0	other	verify	20464	003319c0e3		
+stalker_smart_cover_animation.omf	lead_3_idle_0	other	verify	991	29f12a97b8		frag
+stalker_smart_cover_animation.omf	lead_3_sit_down_0	sit	verify	19807	637b1a5e23		
+stalker_smart_cover_animation.omf	lead_3_stand_up_0	other	verify	8704	3a2da3f096		frag
+stalker_smart_cover_animation.omf	loophole_10_attack_idle_0	other	verify	2874	a836ddf561		frag
+stalker_smart_cover_animation.omf	loophole_10_attack_in_0	other	verify	14515	5292ea387d		frag
+stalker_smart_cover_animation.omf	loophole_10_attack_out_0	other	verify	13947	9d0efe1a68		frag
+stalker_smart_cover_animation.omf	loophole_10_attack_shoot_0	other	verify	3937	12cc7ecf3b		frag
+stalker_smart_cover_animation.omf	loophole_11_attack_idle_0	other	verify	991	a6744cb5dd		frag
+stalker_smart_cover_animation.omf	loophole_11_attack_in_0	other	verify	7989	e8129517c4		frag
+stalker_smart_cover_animation.omf	loophole_11_attack_out_0	other	verify	7989	31af085230		frag
+stalker_smart_cover_animation.omf	loophole_11_attack_shoot_0	other	verify	6391	58a58e813e		frag
+stalker_smart_cover_animation.omf	loophole_1_attack_idle_0	other	verify	1495	3a90d40275		frag
+stalker_smart_cover_animation.omf	loophole_1_attack_in_0	other	verify	10573	8c2ca0f0fc		frag
+stalker_smart_cover_animation.omf	loophole_1_attack_out_0	other	verify	10573	d54689cb49		frag
+stalker_smart_cover_animation.omf	loophole_1_attack_shoot_0	other	verify	3787	2bbc9f1a41		frag
+stalker_smart_cover_animation.omf	loophole_1_attack_shoot_1	other	verify	6442	8bfed6f494		frag
+stalker_smart_cover_animation.omf	loophole_1_grenade_0	other	verify	4008	4d20fd5f35		frag
+stalker_smart_cover_animation.omf	loophole_1_grenade_1	other	verify	13276	c43b2ecc1c		frag
+stalker_smart_cover_animation.omf	loophole_1_grenade_2	other	verify	9030	64627078cb		frag
+stalker_smart_cover_animation.omf	loophole_1_idle_0	other	verify	11037	ebe143a335		frag
+stalker_smart_cover_animation.omf	loophole_1_in_front_0	other	verify	7361	d38a3250f4		frag
+stalker_smart_cover_animation.omf	loophole_1_look_idle_0	other	verify	8258	43fc67e25c		frag
+stalker_smart_cover_animation.omf	loophole_1_look_in_0	other	verify	7501	4ac6afc8b8		frag
+stalker_smart_cover_animation.omf	loophole_1_look_out_0	other	verify	7501	1e7b924e26		frag
+stalker_smart_cover_animation.omf	loophole_1_reload_0	other	verify	22854	6f94910446		
+stalker_smart_cover_animation.omf	loophole_2_attack_idle_0	other	verify	991	12b79ce838		frag
+stalker_smart_cover_animation.omf	loophole_2_attack_in_0	other	verify	6391	2e451162d2		frag
+stalker_smart_cover_animation.omf	loophole_2_attack_out_0	other	verify	6391	3fede6f170		frag
+stalker_smart_cover_animation.omf	loophole_2_attack_shoot_0	other	verify	3911	7332026777		frag
+stalker_smart_cover_animation.omf	loophole_2_attack_shoot_1	other	verify	6686	48bafd46c9		frag
+stalker_smart_cover_animation.omf	loophole_2_grenade_0	other	verify	3574	9d2d0ff916		frag
+stalker_smart_cover_animation.omf	loophole_2_grenade_1	other	verify	13618	f29b441085		frag
+stalker_smart_cover_animation.omf	loophole_2_grenade_2	other	verify	6148	4a17643411		frag
+stalker_smart_cover_animation.omf	loophole_2_idle_0	other	verify	11372	626130bb59		frag
+stalker_smart_cover_animation.omf	loophole_2_in_front_0	other	verify	8391	0b640e6450		frag
+stalker_smart_cover_animation.omf	loophole_2_look_idle_0	other	verify	11372	be3f252050		frag
+stalker_smart_cover_animation.omf	loophole_2_look_in_0	other	verify	8019	7f2ebaaadc		frag
+stalker_smart_cover_animation.omf	loophole_2_look_out_0	other	verify	8019	5131d62857		frag
+stalker_smart_cover_animation.omf	loophole_2_no_look_in_0	other	verify	6148	b3ab2e24cf		frag
+stalker_smart_cover_animation.omf	loophole_2_no_look_out_0	other	verify	6148	03492a01e0		frag
+stalker_smart_cover_animation.omf	loophole_2_reload_0	other	verify	18034	2a7f1ab7b9		
+stalker_smart_cover_animation.omf	loophole_3_attack_idle_0	other	verify	2959	7c0a47bd4f		frag
+stalker_smart_cover_animation.omf	loophole_3_attack_in_0	other	verify	8856	af5be9eb26		frag
+stalker_smart_cover_animation.omf	loophole_3_attack_out_0	other	verify	8856	8f06b484c7		frag
+stalker_smart_cover_animation.omf	loophole_3_attack_shoot_0	other	verify	3415	b59bcee452		frag
+stalker_smart_cover_animation.omf	loophole_3_attack_shoot_1	other	verify	5710	ba165f8842		frag
+stalker_smart_cover_animation.omf	loophole_3_attack_shoot_1s	other	verify	5710	e63ed22e85		frag
+stalker_smart_cover_animation.omf	loophole_3_grenade_0	other	verify	4779	1a8bf289b0		frag
+stalker_smart_cover_animation.omf	loophole_3_grenade_1	other	verify	12250	25453e51be		frag
+stalker_smart_cover_animation.omf	loophole_3_grenade_2	other	verify	6752	46c1037994		frag
+stalker_smart_cover_animation.omf	loophole_3_idle_0	other	verify	23018	ba4007fb6f		
+stalker_smart_cover_animation.omf	loophole_3_in_front_0	other	verify	7221	0d096af512		frag
+stalker_smart_cover_animation.omf	loophole_3_look_idle_0	other	verify	23018	c242329e2b		
+stalker_smart_cover_animation.omf	loophole_3_look_in_0	other	verify	7451	3aa6c83c6b		frag
+stalker_smart_cover_animation.omf	loophole_3_look_out_0	other	verify	7451	2213ced018		frag
+stalker_smart_cover_animation.omf	loophole_3_no_look_in_0	other	verify	4593	cf61744015		frag
+stalker_smart_cover_animation.omf	loophole_3_no_look_out_0	other	verify	4593	121b15d831		frag
+stalker_smart_cover_animation.omf	loophole_3_reload_0	other	verify	23578	5b14d290cd		
+stalker_smart_cover_animation.omf	loophole_4_attack_idle_0	other	verify	991	cddd8979de		frag
+stalker_smart_cover_animation.omf	loophole_4_attack_in_0	other	verify	9403	2ba676154c		frag
+stalker_smart_cover_animation.omf	loophole_4_attack_out_0	other	verify	9403	9da80d36b4		frag
+stalker_smart_cover_animation.omf	loophole_4_attack_shoot_0	other	verify	3415	7ac8115613		frag
+stalker_smart_cover_animation.omf	loophole_4_attack_shoot_1	other	verify	5710	a8cb852120		frag
+stalker_smart_cover_animation.omf	loophole_4_grenade_0	other	verify	4845	4a64564fee		frag
+stalker_smart_cover_animation.omf	loophole_4_grenade_1	other	verify	12378	6f3678a2d2		frag
+stalker_smart_cover_animation.omf	loophole_4_grenade_2	other	verify	8531	c941c240ff		frag
+stalker_smart_cover_animation.omf	loophole_4_idle_0	other	verify	13370	9edb345536		frag
+stalker_smart_cover_animation.omf	loophole_4_in_front_0	other	verify	3851	115d8edafe		frag
+stalker_smart_cover_animation.omf	loophole_4_look_idle_0	other	verify	14493	203222356d		frag
+stalker_smart_cover_animation.omf	loophole_4_look_in_0	other	verify	6904	6f1dc51d73		frag
+stalker_smart_cover_animation.omf	loophole_4_look_out_0	other	verify	8814	051a90572a		frag
+stalker_smart_cover_animation.omf	loophole_4_reload_0	other	verify	23578	30d940eeac		
+stalker_smart_cover_animation.omf	loophole_5_attack_idle_0	other	verify	991	8ffe72acde		frag
+stalker_smart_cover_animation.omf	loophole_5_attack_in_0	other	verify	8965	089b5ffa27		frag
+stalker_smart_cover_animation.omf	loophole_5_attack_out_0	other	verify	10539	ebbf7b444c		frag
+stalker_smart_cover_animation.omf	loophole_5_attack_shoot_0	other	verify	3163	6146bf5a23		frag
+stalker_smart_cover_animation.omf	loophole_5_attack_shoot_1	other	verify	5248	3300622cbd		frag
+stalker_smart_cover_animation.omf	loophole_5_grenade_0	other	verify	3658	4c64477b8a		frag
+stalker_smart_cover_animation.omf	loophole_5_grenade_1	other	verify	10381	7d3f04c5c4		frag
+stalker_smart_cover_animation.omf	loophole_5_grenade_2	other	verify	6895	dcef607a87		frag
+stalker_smart_cover_animation.omf	loophole_5_idle_0	other	verify	13689	b449ae62c8		frag
+stalker_smart_cover_animation.omf	loophole_5_in_front_0	other	verify	2867	f7608f54b2		frag
+stalker_smart_cover_animation.omf	loophole_5_look_idle_0	other	verify	13689	ef8acdfba3		frag
+stalker_smart_cover_animation.omf	loophole_5_look_in_0	other	verify	7327	f8c9bb6575		frag
+stalker_smart_cover_animation.omf	loophole_5_look_out_0	other	verify	7327	f450e6ebfd		frag
+stalker_smart_cover_animation.omf	loophole_5_no_look_in_0	other	verify	5820	6ab270d30a		frag
+stalker_smart_cover_animation.omf	loophole_5_no_look_out_0	other	verify	5820	814eb72835		frag
+stalker_smart_cover_animation.omf	loophole_5_reload_0	other	verify	24880	b350ee618a		
+stalker_smart_cover_animation.omf	loophole_6_attack_idle_0	other	verify	991	912b8006ef		frag
+stalker_smart_cover_animation.omf	loophole_6_attack_in_0	other	verify	9403	b768cabc6d		frag
+stalker_smart_cover_animation.omf	loophole_6_attack_out_0	other	verify	9403	1479b263e5		frag
+stalker_smart_cover_animation.omf	loophole_6_attack_shoot_0	other	verify	3415	870052a5a9		frag
+stalker_smart_cover_animation.omf	loophole_6_attack_shoot_1	other	verify	5710	8a38848d4a		frag
+stalker_smart_cover_animation.omf	loophole_7_attack_idle_0	other	verify	991	9686a11a2d		frag
+stalker_smart_cover_animation.omf	loophole_7_attack_in_0	other	verify	9209	a9402a38bd		frag
+stalker_smart_cover_animation.omf	loophole_7_attack_out_0	other	verify	10539	1d27a56a4d		frag
+stalker_smart_cover_animation.omf	loophole_7_attack_shoot_0	other	verify	3163	3d7cc244b9		frag
+stalker_smart_cover_animation.omf	loophole_7_attack_shoot_1	other	verify	5248	eb7637986d		frag
+stalker_smart_cover_animation.omf	loophole_8_attack_idle_0	other	verify	4163	c82325bf6b		frag
+stalker_smart_cover_animation.omf	loophole_8_attack_in_0	other	verify	5583	8df4efa1da		frag
+stalker_smart_cover_animation.omf	loophole_8_attack_out_0	other	verify	5905	8323c7277f		frag
+stalker_smart_cover_animation.omf	loophole_8_attack_shoot_0	other	verify	2915	cca2cf5ff1		frag
+stalker_smart_cover_animation.omf	loophole_8_attack_shoot_1	other	verify	4760	b954a744bd		frag
+stalker_smart_cover_animation.omf	loophole_8_grenade_0	other	verify	4056	2417bb8c18		frag
+stalker_smart_cover_animation.omf	loophole_8_grenade_1	other	verify	12732	631fddb5e0		frag
+stalker_smart_cover_animation.omf	loophole_8_grenade_2	other	verify	5984	53fd8ba997		frag
+stalker_smart_cover_animation.omf	loophole_8_idle_0	other	verify	13051	61d108191c		frag
+stalker_smart_cover_animation.omf	loophole_8_in_front_0	other	verify	7771	ace914b712		frag
+stalker_smart_cover_animation.omf	loophole_8_jump_0	other	verify	18243	542420ba3f		
+stalker_smart_cover_animation.omf	loophole_8_jump_1	other	verify	12563	6ff7704b48		frag
+stalker_smart_cover_animation.omf	loophole_8_look_idle_0	other	verify	13855	4f5845c8b4		frag
+stalker_smart_cover_animation.omf	loophole_8_look_in_0	other	verify	4265	fa311b1b9f		frag
+stalker_smart_cover_animation.omf	loophole_8_look_out_0	other	verify	4265	fdddbcf8aa		frag
+stalker_smart_cover_animation.omf	loophole_8_reload_0	other	verify	18034	79f9d0391c		
+stalker_smart_cover_animation.omf	loophole_9_grenade_0	other	verify	26706	f9433d5c5d		
+stalker_smart_cover_animation.omf	loophole_9_grenade_0_ 0	other	verify	5978	7406e3b67c		frag
+stalker_smart_cover_animation.omf	loophole_9_grenade_1	other	verify	13446	641d9feab9		frag
+stalker_smart_cover_animation.omf	loophole_9_grenade_2	other	verify	9366	42c53e92f4		frag
+stalker_smart_cover_animation.omf	loophole_9_jump_0	other	verify	16081	7bde4fbfb6		
+stalker_smart_cover_animation.omf	loophole_animpoint_pri_a15_visual	other	verify	1241	1d8ec1d39f		frag
+stalker_smart_cover_animation.omf	loophole_animpoint_sit_high_visual	sit	verify	46667	27415d050b		
+stalker_smart_cover_animation.omf	loophole_animpoint_sit_high_weapon_visual	sit	verify	35647	d26dec6ca3		
+stalker_smart_cover_animation.omf	loophole_animpoint_sit_low_visual	sit	verify	68303	c99f838ecc		
+stalker_smart_cover_animation.omf	loophole_animpoint_sit_low_weapon_visual	sit	verify	28427	0cc1264692		
+stalker_smart_cover_animation.omf	loophole_animpoint_sit_normal_visual	sit	verify	8735	9af1e9473c		frag
+stalker_smart_cover_animation.omf	loophole_animpoint_sit_normal_weapon_visual	sit	verify	37547	00e25c3581		
+stalker_smart_cover_animation.omf	loophole_animpoint_stay_table_visual	other	verify	55602	0626d23147		
+stalker_smart_cover_animation.omf	loophole_animpoint_stay_table_weapon_visual	other	verify	46522	9036db26b3		
+stalker_smart_cover_animation.omf	loophole_animpoint_stay_wall_visual	other	verify	54798	51a8a23203		
+stalker_smart_cover_animation.omf	loophole_animpoint_stay_wall_weapon_visual	other	verify	69222	ce671ea4dd		
+stalker_smart_cover_animation.omf	loophole_crouch_back_visual	other	verify	7425	47af248825		frag
+stalker_smart_cover_animation.omf	loophole_crouch_front_left_visual	other	verify	7749	9d5dbb5800		frag
+stalker_smart_cover_animation.omf	loophole_crouch_front_right_visual	other	verify	7749	c55364c059		frag
+stalker_smart_cover_animation.omf	loophole_crouch_front_visual	other	verify	10989	9bd04a5a39		frag
+stalker_smart_cover_animation.omf	loophole_crouch_left_visual	other	verify	7425	3afad7dd13		frag
+stalker_smart_cover_animation.omf	loophole_crouch_right_visual	other	verify	7425	2978ab873d		frag
+stalker_smart_cover_animation.omf	loophole_prone_visual	other	verify	4429	8081fa05c1		frag
+stalker_smart_cover_animation.omf	loophole_stand_back_visual	other	verify	5845	b1404f286d		frag
+stalker_smart_cover_animation.omf	loophole_stand_front_left_visual	other	verify	7065	4c81376ad3		frag
+stalker_smart_cover_animation.omf	loophole_stand_front_right_visual	other	verify	6821	ce6095342d		frag
+stalker_smart_cover_animation.omf	loophole_stand_left_visual	other	verify	5845	4bfe60ed41		frag
+stalker_smart_cover_animation.omf	loophole_stand_right_visual	other	verify	5845	a2e97a95bd		frag
+stalker_smart_cover_animation.omf	loophole_transition_1_to_3	sit	verify	10959	ff676b9311		frag
+stalker_smart_cover_animation.omf	loophole_transition_3_to_1	sit	verify	11363	14f5181e7f		frag
+stalker_smart_cover_animation.omf	stand_to_crouch	other	verify	6333	7799232a6a		frag
+trader_animation.omf	che_stoish	other		8599	81f4ad5b61		frag
+trader_animation.omf	cheshit	other		31285	4bc93f0ec5		
+trader_animation.omf	davay	other		8630	0614972bae		frag
+trader_animation.omf	death_init	eat		29693	edb6f8f1c0		
+trader_animation.omf	idle_looped	other		29693	edb6f8f1c0	death_init	
+trader_animation.omf	idle_non_stop	other		29693	edb6f8f1c0	death_init	
+trader_animation.omf	molodec	other		8464	1fbb0bec4c		frag
+trader_animation.omf	pereday_svoim_ya__	other		33336	9070d2a25d		
+trader_animation.omf	prines	other		18331	acb177a080		
+trader_animation.omf	rot_5	other		7703	cd58af2a5b		frag
+trader_animation.omf	spinka_non_stop	other		17753	cb977e7bfb		
+trader_animation.omf	spinka_talk_0	chat		6681	611b1c3bf0		frag
+trader_animation.omf	spinka_talk_1	chat		10705	74980aaef6		frag
+trader_animation.omf	stand_die	other		29693	edb6f8f1c0	death_init	
+trader_animation.omf	stand_die_0	other		29693	edb6f8f1c0	death_init	
+trader_animation.omf	talk_angry_0	chat		4036	475d0e8f2d		frag
+trader_animation.omf	talk_kind_0	chat		6077	15361df18a		frag
+trader_animation.omf	vstuplenie_2	other		402974	b51445d226		
+ucheniy_animation.omf	idle_0_idle_5	other		61243	ea0dd00018		
+ucheniy_animation.omf	idle_shlem_0	other		88011	1b005d184b		
+ucheniy_animation.omf	idle_talk_0	chat		29431	76d4fe1870		
+ucheniy_animation.omf	idle_talk_1	chat		32755	8c3e7f5577		
+ucheniy_animation.omf	idle_talk_2	chat		30627	cb32daee0b		
+ucheniy_animation.omf	idle_talk_3	chat		49661	baf4351d4e		
+ucheniy_animation.omf	idle_talk_4	chat		32755	34f9746612		
+ucheniy_animation.omf	idle_talk_5	chat		28965	c198326b54		
+zombie_animation.omf	_check_corpse_0n	other		84217	8374d04d33		
+zombie_animation.omf	_sit_idle_to_stand_up_0	sit		16874	a2ac857834		
+zombie_animation.omf	_stand_eat_to_stand_up_0n	eat		22671	4caa378b0c		
+zombie_animation.omf	_stand_idle_0	other		19489	580c11a0fd		
+zombie_animation.omf	_stand_idle_1	other		39603	f6af811617		
+zombie_animation.omf	_stand_idle_2	other		40535	ba37da6f35		
+zombie_animation.omf	_stand_idle_to_eat_0n	eat		22671	b91b8dcec0		
+zombie_animation.omf	_stand_idle_to_sit_down_0	sit		17369	1006fe4c15		
+zombie_animation.omf	_stand_run_0	other		7189	25f634699e		frag
+zombie_animation.omf	_stand_run_1	other		10965	08fed166c5		frag
+zombie_animation.omf	check_corpse_0n	other		76709	8a11d18d1b		
+zombie_animation.omf	death_init	eat		1701	d766b6fae0		frag
+zombie_animation.omf	eat_idle_0n	eat		20241	3feff20963		
+zombie_animation.omf	eat_idle_1n	eat		50593	b8dc3819f9		
+zombie_animation.omf	eat_idle_2n	eat		50593	6456d13982		
+zombie_animation.omf	fake_death_0_0	eat		13353	b43146fde1		frag
+zombie_animation.omf	fake_death_0_1	eat		865	32c8c633e5		frag
+zombie_animation.omf	fake_death_0_2	eat		28183	1ce6ad37cd		
+zombie_animation.omf	fake_death_1_0	eat		11716	279b997598		frag
+zombie_animation.omf	fake_death_1_1	eat		941	0d78b45118		frag
+zombie_animation.omf	fake_death_1_2	eat		49276	00b1516f88		
+zombie_animation.omf	fake_death_2_0	eat		16065	c22ccca4dd		
+zombie_animation.omf	fake_death_2_1	eat		1225	e1c086a6b4		frag
+zombie_animation.omf	fake_death_2_2	eat		34765	9434b44711		
+zombie_animation.omf	fake_death_3_0	eat		12268	aaf11b324d		frag
+zombie_animation.omf	fake_death_3_1	eat		865	9b8afa480a		frag
+zombie_animation.omf	fake_death_3_2	eat		46597	5688608506		
+zombie_animation.omf	fx_stand_b	other		865	532bb05a09		frag
+zombie_animation.omf	fx_stand_f	other		865	c44db06328		frag
+zombie_animation.omf	fx_stand_l	other		865	d9643c8d7b		frag
+zombie_animation.omf	fx_stand_r	other		865	1b35a329da		frag
+zombie_animation.omf	sit_idle_1	sit		20483	e9b570b896		
+zombie_animation.omf	sit_idle_2	sit		66553	a6ff4c6f65		
+zombie_animation.omf	sit_idle_3	sit		60169	7ee3246323		
+zombie_animation.omf	sit_idle_4	sit		52805	005abe4314		
+zombie_animation.omf	sit_idle_look_around_2	sit		61765	c15a3ed3ff		
+zombie_animation.omf	sit_idle_to_sleep_down_0	sit		6139	4b9608aebe		frag
+zombie_animation.omf	sit_idle_to_stand_up_0	sit		17425	51e049485c		
+zombie_animation.omf	sleep_idle_to_sit_up_0	sit		6139	aec3073f36		frag
+zombie_animation.omf	stand_attack_4_	other		5633	76dabf96f9		frag
+zombie_animation.omf	stand_attack_5_	other		7697	fe9fa2dc7f		frag
+zombie_animation.omf	stand_attack_6_	other		7253	c34fdf6861		frag
+zombie_animation.omf	stand_die_0	other		1701	5f88c3f439		frag
+zombie_animation.omf	stand_eat_to_stand_up_0n	eat		17337	a986fe4137		
+zombie_animation.omf	stand_idle_0	other		40321	aa4550502d		
+zombie_animation.omf	stand_idle_1	other		35613	9f2c0bb4d2		
+zombie_animation.omf	stand_idle_2	other		52805	0e0851d5a7		
+zombie_animation.omf	stand_idle_attack_0	other		23893	e89c667b15		
+zombie_animation.omf	stand_idle_to_eat_0n	eat		20673	a609ac2391		
+zombie_animation.omf	stand_idle_to_sit_down_0	sit		17369	da47056b31		
+zombie_animation.omf	stand_look_around_0	other		81007	9100fd9c23		
+zombie_animation.omf	stand_run_1	other		20357	4dc5c0a06a		
+zombie_animation.omf	stand_run_2	other		12829	0f54509543		frag
+zombie_animation.omf	stand_run_atak_0	other		14049	7a511c07ad		frag
+zombie_animation.omf	stand_run_atak_1	other		14049	0d20c0ccd4		frag
+zombie_animation.omf	stand_turn_ls_0	other		9283	de59ecc3cd		frag
+zombie_animation.omf	stand_turn_ls_0_	other		9283	e18b4814d2		frag
+zombie_animation.omf	stand_turn_rs_0	other		8491	13c84db9fb		frag
+zombie_animation.omf	stand_turn_rs_0_	other		8491	ff02c582b0		frag
+zombie_animation.omf	stand_walk_fwd_1	other		39329	54ff733444		
+zombied_animation.omf	head_idle_0	other		4175	4dfc514077		frag
+zombied_animation.omf	head_talk_0	chat		2575	cfd8aa6fb7		frag
+zombied_animation.omf	idle_9_idle_0	other		25819	07cf9ff0ff		
+zombied_animation.omf	idle_9_idle_1	other		25819	812bd3aa13		
+zombied_animation.omf	idle_9_idle_2	other		25819	ef2d454657		
+zombied_animation.omf	idle_9_idle_3	other		33779	e3dc4eee04		
+zombied_animation.omf	idle_9_idle_4	other		25819	07cf9ff0ff	idle_9_idle_0	
+zombied_animation.omf	norm_damage_0	other		1067	f2cd68d97e		frag
+zombied_animation.omf	norm_damage_1	other		1067	1d487772b1		frag
+zombied_animation.omf	norm_damage_10	other		1067	f2cd68d97e	norm_damage_0	frag
+zombied_animation.omf	norm_damage_11	other		1067	1d487772b1	norm_damage_1	frag
+zombied_animation.omf	norm_damage_2	other		1067	f2cd68d97e	norm_damage_0	frag
+zombied_animation.omf	norm_damage_3	other		1067	1d487772b1	norm_damage_1	frag
+zombied_animation.omf	norm_damage_4	other		1067	f2cd68d97e	norm_damage_0	frag
+zombied_animation.omf	norm_damage_5	other		1067	1d487772b1	norm_damage_1	frag
+zombied_animation.omf	norm_damage_6	other		1067	f2cd68d97e	norm_damage_0	frag
+zombied_animation.omf	norm_damage_7	other		1067	1d487772b1	norm_damage_1	frag
+zombied_animation.omf	norm_damage_8	other		1067	f2cd68d97e	norm_damage_0	frag
+zombied_animation.omf	norm_damage_9	other		1067	1d487772b1	norm_damage_1	frag
+zombied_animation.omf	norm_idle_0	other		33779	30406ecc0f		
+zombied_animation.omf	norm_idle_1	other		33779	30406ecc0f	norm_idle_0	
+zombied_animation.omf	norm_torso_0_aim_0	other		33779	30406ecc0f	norm_idle_0	
+zombied_animation.omf	norm_torso_0_aim_1	other		33779	30406ecc0f	norm_idle_0	
+zombied_animation.omf	norm_torso_0_aim_2	other		8625	48464d3c86		frag
+zombied_animation.omf	norm_torso_0_aim_3	other		8625	48464d3c86	norm_torso_0_aim_2	frag
+zombied_animation.omf	norm_torso_0_idle_0	other		33779	30406ecc0f	norm_idle_0	
+zombied_animation.omf	norm_torso_0_idle_1	other		33779	30406ecc0f	norm_idle_0	
+zombied_animation.omf	norm_torso_0_run_0	other		8625	3463865f18		frag
+zombied_animation.omf	norm_torso_0_run_1	other		8625	3463865f18	norm_torso_0_run_0	frag
+zombied_animation.omf	norm_torso_0_walk_0	other		8625	3463865f18	norm_torso_0_run_0	frag
+zombied_animation.omf	norm_torso_0_walk_1	other		8625	3463865f18	norm_torso_0_run_0	frag
+zombied_animation.omf	norm_torso_10_aim_0	other		13843	5c14fdb138		frag
+zombied_animation.omf	norm_torso_10_aim_1	other		13843	5c14fdb138	norm_torso_10_aim_0	frag
+zombied_animation.omf	norm_torso_10_aim_2	other		6265	d5986f5c11		frag
+zombied_animation.omf	norm_torso_10_aim_3	other		6265	d5986f5c11	norm_torso_10_aim_2	frag
+zombied_animation.omf	norm_torso_10_attack_0	other		2035	fd7bc9661f		frag
+zombied_animation.omf	norm_torso_10_attack_1	other		2035	fd7bc9661f	norm_torso_10_attack_0	frag
+zombied_animation.omf	norm_torso_10_attack_2	other		7209	55eb83844c		frag
+zombied_animation.omf	norm_torso_10_attack_3	other		7209	55eb83844c	norm_torso_10_attack_2	frag
+zombied_animation.omf	norm_torso_10_draw_0	other		19471	858e8cfd86		
+zombied_animation.omf	norm_torso_10_idle_0	other		13843	5c14fdb138	norm_torso_10_aim_0	frag
+zombied_animation.omf	norm_torso_10_idle_1	other		33779	bdf11d2c4d		
+zombied_animation.omf	norm_torso_10_reload_0	other		5979	7e76083482		frag
+zombied_animation.omf	norm_torso_10_reload_1	other		13599	46349bcd93		frag
+zombied_animation.omf	norm_torso_10_reload_2	other		3439	989b995330		frag
+zombied_animation.omf	norm_torso_10_run_0	other		7209	55eb83844c	norm_torso_10_attack_2	frag
+zombied_animation.omf	norm_torso_10_run_1	other		8389	b712bef6c1		frag
+zombied_animation.omf	norm_torso_10_strap_0	other		7263	d5ab6ea262		frag
+zombied_animation.omf	norm_torso_10_strap_1	other		10099	704f258dc7		frag
+zombied_animation.omf	norm_torso_10_unstrap_0	other		8071	bd409b1ffd		frag
+zombied_animation.omf	norm_torso_10_unstrap_1	other		9015	84e2ecafdd		frag
+zombied_animation.omf	norm_torso_10_unstrap_2	other		6759	4c48f03527		frag
+zombied_animation.omf	norm_torso_10_unstrap_3	other		19471	858e8cfd86	norm_torso_10_draw_0	
+zombied_animation.omf	norm_torso_10_walk_0	other		7209	55eb83844c	norm_torso_10_attack_2	frag
+zombied_animation.omf	norm_torso_10_walk_1	other		8389	b712bef6c1	norm_torso_10_run_1	frag
+zombied_animation.omf	norm_torso_1_aim_0	other		6619	e0c72294fb		frag
+zombied_animation.omf	norm_torso_1_aim_1	other		6619	e0c72294fb	norm_torso_1_aim_0	frag
+zombied_animation.omf	norm_torso_1_aim_2	other		6501	81089a8176		frag
+zombied_animation.omf	norm_torso_1_aim_3	other		6501	81089a8176	norm_torso_1_aim_2	frag
+zombied_animation.omf	norm_torso_1_attack_0	other		2560	83a9f59fd0		frag
+zombied_animation.omf	norm_torso_1_attack_1	other		2560	83a9f59fd0	norm_torso_1_attack_0	frag
+zombied_animation.omf	norm_torso_1_attack_2	other		6501	e140e7b28f		frag
+zombied_animation.omf	norm_torso_1_attack_3	other		6501	e140e7b28f	norm_torso_1_attack_2	frag
+zombied_animation.omf	norm_torso_1_draw_0	other		12639	26d793d3ba		frag
+zombied_animation.omf	norm_torso_1_idle_0	other		6619	e0c72294fb	norm_torso_1_aim_0	frag
+zombied_animation.omf	norm_torso_1_idle_1	other		26615	e3c5321afb		
+zombied_animation.omf	norm_torso_1_reload_0	other		21473	cf8cd87c31		
+zombied_animation.omf	norm_torso_1_run_0	other		6501	e140e7b28f	norm_torso_1_attack_2	frag
+zombied_animation.omf	norm_torso_1_run_1	other		6737	074a395886		frag
+zombied_animation.omf	norm_torso_1_strap_0	other		3119	05af2ad8cc		frag
+zombied_animation.omf	norm_torso_1_strap_1	other		4211	2821665eaf		frag
+zombied_animation.omf	norm_torso_1_unstrap_0	other		3604	88ff97606e		frag
+zombied_animation.omf	norm_torso_1_unstrap_1	other		3543	0025c7ec31		frag
+zombied_animation.omf	norm_torso_1_unstrap_2	other		3999	8beeaee96b		frag
+zombied_animation.omf	norm_torso_1_unstrap_3	other		5541	02c9c7c9d3		frag
+zombied_animation.omf	norm_torso_1_walk_0	other		6501	e140e7b28f	norm_torso_1_attack_2	frag
+zombied_animation.omf	norm_torso_1_walk_1	other		6737	074a395886	norm_torso_1_run_1	frag
+zombied_animation.omf	norm_torso_2_aim_0	other		6703	cd45a117a8		frag
+zombied_animation.omf	norm_torso_2_aim_1	other		6703	cd45a117a8	norm_torso_2_aim_0	frag
+zombied_animation.omf	norm_torso_2_aim_2	other		6265	64633e0a55		frag
+zombied_animation.omf	norm_torso_2_aim_3	other		6265	64633e0a55	norm_torso_2_aim_2	frag
+zombied_animation.omf	norm_torso_2_attack_0	other		2035	32579d877f		frag
+zombied_animation.omf	norm_torso_2_attack_1	other		2035	32579d877f	norm_torso_2_attack_0	frag
+zombied_animation.omf	norm_torso_2_attack_2	other		6265	be338e3efd		frag
+zombied_animation.omf	norm_torso_2_attack_3	other		6265	be338e3efd	norm_torso_2_attack_2	frag
+zombied_animation.omf	norm_torso_2_draw_0	other		19471	3387d090f7		
+zombied_animation.omf	norm_torso_2_idle_0	other		6703	cd45a117a8	norm_torso_2_aim_0	frag
+zombied_animation.omf	norm_torso_2_idle_1	other		28207	4bb435a0c4		
+zombied_animation.omf	norm_torso_2_look_beack_ls_0	other		6265	64633e0a55	norm_torso_2_aim_2	frag
+zombied_animation.omf	norm_torso_2_look_beack_ls_1	other		6265	64633e0a55	norm_torso_2_aim_2	frag
+zombied_animation.omf	norm_torso_2_look_beack_rs_0	other		6265	64633e0a55	norm_torso_2_aim_2	frag
+zombied_animation.omf	norm_torso_2_look_beack_rs_1	other		6265	64633e0a55	norm_torso_2_aim_2	frag
+zombied_animation.omf	norm_torso_2_reload_0	other		17497	2db9969791		
+zombied_animation.omf	norm_torso_2_run_0	other		6265	be338e3efd	norm_torso_2_attack_2	frag
+zombied_animation.omf	norm_torso_2_run_1	other		6737	a24b6d0395		frag
+zombied_animation.omf	norm_torso_2_strap_0	other		7263	fa9d657714		frag
+zombied_animation.omf	norm_torso_2_strap_1	other		10099	d011e5d1ff		frag
+zombied_animation.omf	norm_torso_2_unstrap_0	other		8071	75a0017d9b		frag
+zombied_animation.omf	norm_torso_2_unstrap_1	other		9015	fe0606c872		frag
+zombied_animation.omf	norm_torso_2_unstrap_2	other		6759	7bf8fbfae3		frag
+zombied_animation.omf	norm_torso_2_unstrap_3	other		19471	3387d090f7	norm_torso_2_draw_0	
+zombied_animation.omf	norm_torso_2_walk_0	other		6265	be338e3efd	norm_torso_2_attack_2	frag
+zombied_animation.omf	norm_torso_2_walk_1	other		6737	a24b6d0395	norm_torso_2_run_1	frag
+zombied_animation.omf	norm_torso_3_aim_0	other		6227	c0c6cc254f		frag
+zombied_animation.omf	norm_torso_3_aim_1	other		6227	c0c6cc254f	norm_torso_3_aim_0	frag
+zombied_animation.omf	norm_torso_3_aim_2	other		6265	661a56e4da		frag
+zombied_animation.omf	norm_torso_3_aim_3	other		6265	661a56e4da	norm_torso_3_aim_2	frag
+zombied_animation.omf	norm_torso_3_attack_0	other		2035	453b78f406		frag
+zombied_animation.omf	norm_torso_3_attack_1	other		2035	453b78f406	norm_torso_3_attack_0	frag
+zombied_animation.omf	norm_torso_3_attack_2	other		8153	2a754dbbe4		frag
+zombied_animation.omf	norm_torso_3_attack_3	other		8153	2a754dbbe4	norm_torso_3_attack_2	frag
+zombied_animation.omf	norm_torso_3_draw_0	other		19471	46b62c277e		
+zombied_animation.omf	norm_torso_3_idle_0	other		6227	c0c6cc254f	norm_torso_3_aim_0	frag
+zombied_animation.omf	norm_torso_3_idle_1	other		33779	883d12ea9d		
+zombied_animation.omf	norm_torso_3_reload_0	other		24819	ed428722e6		
+zombied_animation.omf	norm_torso_3_run_0	other		8153	2a754dbbe4	norm_torso_3_attack_2	frag
+zombied_animation.omf	norm_torso_3_run_1	other		7209	3ca85b2d2b		frag
+zombied_animation.omf	norm_torso_3_strap_0	other		7263	c8215e0ade		frag
+zombied_animation.omf	norm_torso_3_strap_1	other		10099	66b5379cd2		frag
+zombied_animation.omf	norm_torso_3_unstrap_0	other		8071	f5a09fee7b		frag
+zombied_animation.omf	norm_torso_3_unstrap_1	other		8779	86bab6b8d4		frag
+zombied_animation.omf	norm_torso_3_unstrap_2	other		6759	7f5600493e		frag
+zombied_animation.omf	norm_torso_3_unstrap_3	other		19471	46b62c277e	norm_torso_3_draw_0	
+zombied_animation.omf	norm_torso_3_walk_0	other		8153	2a754dbbe4	norm_torso_3_attack_2	frag
+zombied_animation.omf	norm_torso_3_walk_1	other		7209	3ca85b2d2b	norm_torso_3_run_1	frag
+zombied_animation.omf	norm_torso_4_aim_0	other		6703	8f554b1c72		frag
+zombied_animation.omf	norm_torso_4_aim_1	other		6703	8f554b1c72	norm_torso_4_aim_0	frag
+zombied_animation.omf	norm_torso_4_aim_2	other		6737	74784278e8		frag
+zombied_animation.omf	norm_torso_4_aim_3	other		6737	74784278e8	norm_torso_4_aim_2	frag
+zombied_animation.omf	norm_torso_4_attack_0	other		5099	7287f21875		frag
+zombied_animation.omf	norm_torso_4_attack_1	other		5099	7287f21875	norm_torso_4_attack_0	frag
+zombied_animation.omf	norm_torso_4_attack_2	other		6737	5a327bf005		frag
+zombied_animation.omf	norm_torso_4_attack_3	other		6737	5a327bf005	norm_torso_4_attack_2	frag
+zombied_animation.omf	norm_torso_4_draw_0	other		7053	793fae54de		frag
+zombied_animation.omf	norm_torso_4_idle_0	other		6703	8f554b1c72	norm_torso_4_aim_0	frag
+zombied_animation.omf	norm_torso_4_idle_1	other		25023	8ce03f8403		
+zombied_animation.omf	norm_torso_4_reload_0	other		26415	d0be076fa0		
+zombied_animation.omf	norm_torso_4_run_0	other		6737	5a327bf005	norm_torso_4_attack_2	frag
+zombied_animation.omf	norm_torso_4_run_1	other		6265	803c6e05fd		frag
+zombied_animation.omf	norm_torso_4_strap_0	other		6603	89cb8c25b0		frag
+zombied_animation.omf	norm_torso_4_strap_1	other		9227	b0f9eb24e3		frag
+zombied_animation.omf	norm_torso_4_unstrap_0	other		8779	a561e51749		frag
+zombied_animation.omf	norm_torso_4_unstrap_1	other		5827	4ab6995f1a		frag
+zombied_animation.omf	norm_torso_4_unstrap_2	other		5983	bdbf32037c		frag
+zombied_animation.omf	norm_torso_4_unstrap_3	other		9251	80c29cc8c2		frag
+zombied_animation.omf	norm_torso_4_walk_0	other		6737	5a327bf005	norm_torso_4_attack_2	frag
+zombied_animation.omf	norm_torso_4_walk_1	other		6265	803c6e05fd	norm_torso_4_run_1	frag
+zombied_animation.omf	norm_torso_8_aim_0	other		7179	abfcc94b26		frag
+zombied_animation.omf	norm_torso_8_aim_1	other		7179	abfcc94b26	norm_torso_8_aim_0	frag
+zombied_animation.omf	norm_torso_8_aim_2	other		6265	16827479be		frag
+zombied_animation.omf	norm_torso_8_aim_3	other		6265	16827479be	norm_torso_8_aim_2	frag
+zombied_animation.omf	norm_torso_8_attack_0	other		2267	7e1067f854		frag
+zombied_animation.omf	norm_torso_8_attack_1	other		2267	7e1067f854	norm_torso_8_attack_0	frag
+zombied_animation.omf	norm_torso_8_attack_2	other		6973	00d24d7ac2		frag
+zombied_animation.omf	norm_torso_8_attack_3	other		6973	00d24d7ac2	norm_torso_8_attack_2	frag
+zombied_animation.omf	norm_torso_8_draw_0	other		19471	60db225086		
+zombied_animation.omf	norm_torso_8_idle_0	other		7179	abfcc94b26	norm_torso_8_aim_0	frag
+zombied_animation.omf	norm_torso_8_idle_1	other		33779	de3b44b7cc		
+zombied_animation.omf	norm_torso_8_reload_0	other		18945	e0cdf5198f		
+zombied_animation.omf	norm_torso_8_run_0	other		6973	00d24d7ac2	norm_torso_8_attack_2	frag
+zombied_animation.omf	norm_torso_8_run_1	other		7445	6118790d99		frag
+zombied_animation.omf	norm_torso_8_strap_0	other		7263	4284c23cf6		frag
+zombied_animation.omf	norm_torso_8_strap_1	other		10099	db54d2a46d		frag
+zombied_animation.omf	norm_torso_8_unstrap_0	other		8543	cd705a51a7		frag
+zombied_animation.omf	norm_torso_8_unstrap_1	other		9015	25292e03dd		frag
+zombied_animation.omf	norm_torso_8_unstrap_2	other		6759	4c11849fb6		frag
+zombied_animation.omf	norm_torso_8_unstrap_3	other		19471	60db225086	norm_torso_8_draw_0	
+zombied_animation.omf	norm_torso_8_walk_0	other		6973	00d24d7ac2	norm_torso_8_attack_2	frag
+zombied_animation.omf	norm_torso_8_walk_1	other		7445	6118790d99	norm_torso_8_run_1	frag
+zombied_animation.omf	norm_torso_9_aim_0	other		7179	ac3032b3b7		frag
+zombied_animation.omf	norm_torso_9_aim_1	other		7179	ac3032b3b7	norm_torso_9_aim_0	frag
+zombied_animation.omf	norm_torso_9_aim_2	other		6265	4cac3c9fd0		frag
+zombied_animation.omf	norm_torso_9_aim_3	other		6265	4cac3c9fd0	norm_torso_9_aim_2	frag
+zombied_animation.omf	norm_torso_9_attack_0	other		2151	e68b206ac6		frag
+zombied_animation.omf	norm_torso_9_attack_1	other		2151	e68b206ac6	norm_torso_9_attack_0	frag
+zombied_animation.omf	norm_torso_9_attack_2	other		8153	c084100f8c		frag
+zombied_animation.omf	norm_torso_9_attack_3	other		8153	c084100f8c	norm_torso_9_attack_2	frag
+zombied_animation.omf	norm_torso_9_draw_0	other		19471	94a921f53f		
+zombied_animation.omf	norm_torso_9_idle_0	other		7179	ac3032b3b7	norm_torso_9_aim_0	frag
+zombied_animation.omf	norm_torso_9_idle_1	other		33779	e3dc4eee04	idle_9_idle_3	
+zombied_animation.omf	norm_torso_9_reload_0	other		4361	04425610ff		frag
+zombied_animation.omf	norm_torso_9_reload_1	other		4754	c0721d88e2		frag
+zombied_animation.omf	norm_torso_9_reload_2	other		2751	bece2da265		frag
+zombied_animation.omf	norm_torso_9_run_0	other		8153	c084100f8c	norm_torso_9_attack_2	frag
+zombied_animation.omf	norm_torso_9_run_1	other		8389	7f816a4bc6		frag
+zombied_animation.omf	norm_torso_9_strap_0	other		7263	d5ab6ea262	norm_torso_10_strap_0	frag
+zombied_animation.omf	norm_torso_9_strap_1	other		10099	704f258dc7	norm_torso_10_strap_1	frag
+zombied_animation.omf	norm_torso_9_unstrap_0	other		8071	bd409b1ffd	norm_torso_10_unstrap_0	frag
+zombied_animation.omf	norm_torso_9_unstrap_1	other		9015	84e2ecafdd	norm_torso_10_unstrap_1	frag
+zombied_animation.omf	norm_torso_9_unstrap_2	other		6759	4c11849fb6	norm_torso_8_unstrap_2	frag
+zombied_animation.omf	norm_torso_9_unstrap_3	other		19471	94a921f53f	norm_torso_9_draw_0	
+zombied_animation.omf	norm_torso_9_walk_0	other		8153	c084100f8c	norm_torso_9_attack_2	frag
+zombied_animation.omf	norm_torso_9_walk_1	other		8389	7f816a4bc6	norm_torso_9_run_1	frag
+zombied_animation.omf	wounded_idle_1_	other		19451	afd438d40e		

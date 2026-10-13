@@ -21,6 +21,10 @@ local _held = {}
 local _override = {}
 -- Bench-spawned mob ids, kept movement-frozen by the freeze loop until clear_mobs.
 local _spawned = {}
+-- The single-slot review hold the animation window drives, and the temp states it builds.
+local _review = nil
+local _review_states = {}
+local _review_n = 0
 
 local function _show_tip(msg)
     if db.actor then news_manager.send_tip(db.actor, "tz_anim: " .. msg, nil, nil, 4000) end
@@ -32,6 +36,36 @@ local function _get_target()
     local obj = level.get_target_obj and level.get_target_obj() or nil
     if not obj then _show_tip("aim at a target NPC or mutant") end
     return obj
+end
+
+-- Build once a temp state looping `motion` so set_state to it is a real state change.
+-- moving drives the movement controller for a gait; prop attaches a hand item (bottle/flask).
+local function _build_review_state(motion, moving, prop)
+    local key = motion .. (moving and "_mv" or "") .. (prop and ("_" .. prop) or "")
+    if _review_states[key] then return _review_states[key] end
+    local anims = state_mgr_animation_list and state_mgr_animation_list.animations
+    if not (state_lib and state_lib.states and anims) then return nil end
+    _review_n = _review_n + 1
+    local name = "tz_sc_" .. _review_n
+    local into = prop and { [0] = { motion, { a = prop } }, [1] = { motion, { a = prop } } } or nil
+    anims[name] = { prop = { maxidle = 5, sumidle = 3, rnd = 0, moving = moving or nil },
+                    into = into, out = nil, idle = { [0] = motion, [1] = motion }, rnd = nil }
+    state_lib.states[name] = { weapon = "strapped", movement = move.stand, mental = anim.free,
+        bodystate = move.standing, animstate = nil, animation = name,
+        direction = CSightParams.eSightTypeAnimationDirection }
+    _review_states[key] = name
+    return name
+end
+
+-- Re-assert the held state each tick, anchored so a staged pose does not drift.
+-- ResetTimeEvent re-arms the interval; it returns true only when the bound NPC is gone, to stop.
+local function _update_review_hold()
+    local run = _review
+    local npc = run and xobject.get_go(run.npc_id)
+    if not (run and npc and npc:alive()) then _review = nil; return true end
+    state_mgr.set_state(npc, run.state, nil, nil, nil,
+        { animation_position = npc:position(), animation_direction = npc:direction() })
+    ResetTimeEvent("tz_anim_review", "reassert", REASSERT_TICK)
 end
 
 --- Play a first-person HUD motion on the actor.
@@ -140,6 +174,36 @@ function stop_npc_hold()
     _held[id] = nil
     RemoveTimeEvent("tz_anim_hold_" .. id, "reassert")
     _show_tip(string_format("npc hold released id=%s", id))
+end
+
+--- Force one review candidate onto the bound NPC and hold it by re-assert, replacing any prior hold.
+--- @param npc_id number the NPC the window bound at open, before the dialog took input
+--- @param item table { name, is_state, moving, prop }; a motion builds a temp state, a state holds directly
+--- @return string|nil the held state name, or nil if the NPC is gone or the state could not be built
+function start_review_hold(npc_id, item)
+    local npc = npc_id and xobject.get_go(npc_id) or nil
+    if not (npc and npc:alive()) then return _show_tip("review: bound NPC gone - reopen aiming at a stalker") end
+    if not IsStalker(npc) then return _show_tip("review: bound target is not a stalker") end
+    local state = item.name
+    if not item.is_state then
+        state = _build_review_state(item.name, item.moving, item.prop)
+        if not state then return _show_tip("review: state tables absent - cannot build") end
+    elseif state_lib.states[state] == nil then
+        return _show_tip("review: unknown state " .. tostring(state))
+    end
+    _review = { npc_id = npc_id, state = state }
+    state_mgr.set_state(npc, state, nil, nil, nil,
+        { fast_set = true, animation = true,
+          animation_position = npc:position(), animation_direction = npc:direction() })
+    RemoveTimeEvent("tz_anim_review", "reassert")
+    CreateTimeEvent("tz_anim_review", "reassert", REASSERT_TICK, _update_review_hold)
+    return state
+end
+
+--- Stop the review hold; the NPC's own logic sets its next state on its following update.
+function stop_review_hold()
+    _review = nil
+    RemoveTimeEvent("tz_anim_review", "reassert")
 end
 
 --- Spawn any creature section at `dist` metres ahead, frozen in place, as a bench target.
