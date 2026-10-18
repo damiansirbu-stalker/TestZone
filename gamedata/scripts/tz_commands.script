@@ -48,6 +48,8 @@ local WEAPONS = {
 local CATALOG = {
     { "combat", "start_arena",       "count, dist, shuffle", "16, 45, 60" },
     { "combat", "stop_arena",        "",                     "" },
+    { "combat", "spawn_mutant",      "species, count, dist", '"boar", 3' },
+    { "combat", "clear_mutants",     "",                     "" },
     { "kit",    "add_kit",           "what, amount",         '"silenced", 3' },
     { "world",  "set_weather",       "key",                  '"rain"' },
     { "world",  "add_hours",         "hours",                "6" },
@@ -77,6 +79,21 @@ local NORTH_FLAGS = {
     "bar_in_done",
 }
 
+local MUTANT_DIST = 30
+
+-- spawn_mutant species words -> one plain spawn section each (squad_descr_default_mutants.ltx npc_random rosters).
+local MUTANTS = {
+    chimera = "chimera_normal", lurker = "lurker_2_normal",
+    bloodsucker = "bloodsucker_green_normal", psysucker = "psysucker_2_normal",
+    burer = "burer_normal", controller = "m_controller_normal",
+    poltergeist = "m_poltergeist_normal_tele", dog = "dog_normal_red",
+    pseudodog = "pseudodog_normal", psy_dog = "psy_dog_normal",
+    boar = "boar_normal", snork = "snork_normal", gigant = "gigant_normal",
+    cat = "cat_normal_a", flesh = "flesh_01a_normal", fracture = "fracture_normal",
+    karlik = "m_karlik_e", tushkano = "tushkano_normal", zombie = "zombie_normal",
+    rat = "rat_normal",
+}
+
 -- Arena faction tier pools and the hostile matchups start_arena rolls.
 local ARENA_POOLS = {
     army     = { "sim_default_military_1", "sim_default_military_2", "sim_default_military_3", "sim_default_military_4" },
@@ -93,6 +110,8 @@ local _arena = { on = false, want = 0, dist = 0, shuffle_sec = 0, shuffle_at = 0
                  spawned = {} }
 
 local _lifepump = { on = false, threshold = LIFEPUMP_THRESHOLD, topups = 0 }
+
+local _mutants = {}
 
 local function _show_tip(msg)
     local actor = db.actor
@@ -188,6 +207,17 @@ local function _update_arena()
     return false
 end
 
+local function _spawn_creature(sim, section, center, gvid)
+    local angle = math_random() * 2 * math_pi
+    local ring = ARENA_RING_MIN + math_random() * (ARENA_RING_MAX - ARENA_RING_MIN)
+    local lvid = level.vertex_in_direction(center, vector():set(math_cos(angle), 0, math_sin(angle)), ring)
+    if not lvid or lvid >= INVALID_VERTEX then return false end
+    local se = sim:create(section, level.vertex_position(lvid), lvid, gvid)
+    if not se then return false end
+    _mutants[se.id] = true
+    return true
+end
+
 local function _update_lifepump()
     if not _lifepump.on then return true end
     ResetTimeEvent("tz_lifepump", "tick", LIFEPUMP_TICK)
@@ -225,6 +255,40 @@ function add_kit(what, amount)
     if not ini_sys:section_exist(what) then return _show_tip("no section " .. tostring(what)) end
     for _ = 1, (amount or 1) do xinventory.create_item(what, id) end
     _show_tip(string_format("%s x%d", what, amount or 1))
+end
+
+--- Spawn count creatures of a species word (or a raw section) on a ring around a point dist metres ahead.
+function spawn_mutant(species, count, dist)
+    local actor = db.actor
+    if not actor then return _show_tip("Not in game") end
+    local section = MUTANTS[species] or species
+    if not section or not ini_sys:section_exist(section) then
+        return _show_tip("no section " .. tostring(species))
+    end
+    local fdir = actor:direction()
+    local apos = actor:position()
+    local ahead = dist or MUTANT_DIST
+    local cvid = level.vertex_id(vector():set(apos.x + fdir.x * ahead, apos.y, apos.z + fdir.z * ahead))
+    local center = (cvid ~= INVALID_VERTEX) and cvid or actor:level_vertex_id()
+    local gvid = actor:game_vertex_id()
+    local sim = alife()
+    local made = 0
+    for _ = 1, (count or 1) do
+        if _spawn_creature(sim, section, center, gvid) then made = made + 1 end
+    end
+    _show_tip(string_format("%s x%d @%dm", section, made, ahead))
+end
+
+--- Release every creature spawn_mutant made.
+function clear_mutants()
+    local sim = alife()
+    local released = 0
+    for id in pairs(_mutants) do
+        local se = xobject.get_se(id)
+        if se then sim:release(se, true); released = released + 1 end
+        _mutants[id] = nil
+    end
+    _show_tip(string_format("released %d", released))
 end
 
 --- Keep count combatants fighting half against half on a ring, reshuffling factions every shuffle seconds.
