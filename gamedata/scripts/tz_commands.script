@@ -8,6 +8,7 @@ local time_global, alife, level, ini_sys = time_global, alife, level, ini_sys
 local news_manager, xinventory, xstash, xlevel, xobject =
     news_manager, xinventory, xstash, xlevel, xobject
 local xfs, getFS = xfs, getFS
+local RegisterScriptCallback, UnregisterScriptCallback = RegisterScriptCallback, UnregisterScriptCallback
 
 local INVALID_VERTEX = 4294967295
 
@@ -24,6 +25,7 @@ local COMMANDS_FILE = "testzone_commands.txt"
 
 local LIFEPUMP_TICK      = 0.5
 local LIFEPUMP_THRESHOLD = 0.5
+local LIFEPUMP_DAMP      = 0.02
 
 local ARENA_TICK       = 2
 local ARENA_DIST       = 45
@@ -109,7 +111,7 @@ local _arena = { on = false, want = 0, dist = 0, shuffle_sec = 0, shuffle_at = 0
                  center_lvid = nil, gvid = nil, side_dir = 0, side_a = "army", side_b = "monolith",
                  spawned = {} }
 
-local _lifepump = { on = false, threshold = LIFEPUMP_THRESHOLD, topups = 0 }
+local _lifepump = { on = false, threshold = LIFEPUMP_THRESHOLD, damp = LIFEPUMP_DAMP, topups = 0 }
 
 local _mutants = {}
 
@@ -218,6 +220,11 @@ local function _spawn_creature(sim, section, center, gvid)
     return true
 end
 
+-- Scale an incoming hit so the tester survives while the hit still fires its callback (god mode zeroes the callback instead).
+local function _apply_damp(s_hit)
+    if s_hit and s_hit.power then s_hit.power = s_hit.power * _lifepump.damp end
+end
+
 local function _update_lifepump()
     if not _lifepump.on then return true end
     ResetTimeEvent("tz_lifepump", "tick", LIFEPUMP_TICK)
@@ -320,22 +327,25 @@ function stop_arena()
     _show_tip(string_format("arena stopped, released %d", _release_arena()))
 end
 
---- Keep the tester alive: below the threshold, refill health, power, and bleeding every half second.
-function start_lifepump(threshold)
+--- Keep the tester alive: scale every incoming hit by damp and refill health, power, and bleeding every half second below the threshold.
+function start_lifepump(threshold, damp)
     if not db.actor then return _show_tip("Not in game") end
     _lifepump.threshold = threshold or LIFEPUMP_THRESHOLD
+    _lifepump.damp = damp or LIFEPUMP_DAMP
     _lifepump.topups = 0
     _lifepump.on = true
     RemoveTimeEvent("tz_lifepump", "tick")
     CreateTimeEvent("tz_lifepump", "tick", LIFEPUMP_TICK, _update_lifepump)
-    _show_tip(string_format("lifepump on @%.2f", _lifepump.threshold))
+    RegisterScriptCallback("actor_on_before_hit", _apply_damp)
+    _show_tip(string_format("lifepump on @%.2f damp=%.2f", _lifepump.threshold, _lifepump.damp))
 end
 
---- Stop the life pump.
+--- Stop the life pump and restore full incoming damage.
 function stop_lifepump()
     if not _lifepump.on then return end
     _lifepump.on = false
     RemoveTimeEvent("tz_lifepump", "tick")
+    UnregisterScriptCallback("actor_on_before_hit", _apply_damp)
     _show_tip(string_format("lifepump off, %d topups", _lifepump.topups))
 end
 
