@@ -52,6 +52,8 @@ local CATALOG = {
     { "combat", "stop_arena",        "",                     "" },
     { "combat", "spawn_mutant",      "species, count, dist", '"boar", 3' },
     { "combat", "clear_mutants",     "",                     "" },
+    { "combat", "start_mutant_arena","count, dist, wave",    "8" },
+    { "combat", "stop_mutant_arena", "",                     "" },
     { "kit",    "add_kit",           "what, amount",         '"silenced", 3' },
     { "world",  "set_weather",       "key",                  '"rain"' },
     { "world",  "add_hours",         "hours",                "6" },
@@ -96,6 +98,12 @@ local MUTANTS = {
     rat = "rat_normal",
 }
 
+-- The mutant arena: maintain a live population on a ring and grow the species mix over time.
+local MARENA_TICK      = 1
+local MARENA_MAX_SPAWN = 3
+local MARENA_WAVE_SEC  = 30
+local MARENA_ROSTER    = { "boar", "dog", "bloodsucker", "snork", "chimera", "burer", "controller", "cat" }
+
 -- Arena faction tier pools and the hostile matchups start_arena rolls.
 local ARENA_POOLS = {
     army     = { "sim_default_military_1", "sim_default_military_2", "sim_default_military_3", "sim_default_military_4" },
@@ -114,6 +122,8 @@ local _arena = { on = false, want = 0, dist = 0, shuffle_sec = 0, shuffle_at = 0
 local _lifepump = { on = false, threshold = LIFEPUMP_THRESHOLD, damp = LIFEPUMP_DAMP, topups = 0 }
 
 local _mutants = {}
+
+local _marena = { on = false, want = 0, center = nil, gvid = nil, pool = {}, stage = 0, wave_sec = 0, wave_at = 0 }
 
 local function _show_tip(msg)
     local actor = db.actor
@@ -239,6 +249,50 @@ local function _update_lifepump()
     return false
 end
 
+-- Census the mutant arena's live creatures, releasing corpses, like the stalker arena's census.
+local function _update_marena_census()
+    local sim = alife()
+    local alive = 0
+    for id in pairs(_mutants) do
+        local se = xobject.get_se(id)
+        if not se then
+            _mutants[id] = nil
+        elseif se:alive() then
+            alive = alive + 1
+        else
+            sim:release(se, true)
+            _mutants[id] = nil
+        end
+    end
+    return alive
+end
+
+-- Add the next roster species to the active spawn pool: the escalation folded in from the wave spawner.
+local function _add_marena_species()
+    if _marena.stage >= #MARENA_ROSTER then return end
+    _marena.stage = _marena.stage + 1
+    local word = MARENA_ROSTER[_marena.stage]
+    _marena.pool[#_marena.pool + 1] = MUTANTS[word] or word
+    _marena.wave_at = time_global() + _marena.wave_sec * 1000
+    _show_tip(string_format("mutant arena: +%s (%d species)", word, #_marena.pool))
+end
+
+local function _update_mutant_arena()
+    if not _marena.on then return true end
+    ResetTimeEvent("tz_marena", "tick", MARENA_TICK)
+    if not db.actor then return false end
+    if _marena.wave_sec > 0 and time_global() >= _marena.wave_at then _add_marena_species() end
+    local alive = _update_marena_census()
+    local sim = alife()
+    local budget = MARENA_MAX_SPAWN
+    while alive < _marena.want and budget > 0 and #_marena.pool > 0 do
+        local section = _marena.pool[math_random(#_marena.pool)]
+        if _spawn_creature(sim, section, _marena.center, _marena.gvid) then alive = alive + 1 end
+        budget = budget - 1
+    end
+    return false
+end
+
 --- Give the actor a keyed kit; guns include ammo, or use the money and rank keys, or a raw item section.
 function add_kit(what, amount)
     local actor = db.actor
@@ -325,6 +379,36 @@ function stop_arena()
     _arena.on = false
     RemoveTimeEvent("tz_arena", "tick")
     _show_tip(string_format("arena stopped, released %d", _release_arena()))
+end
+
+--- Keep count mutants fighting you on a ring, adding a new species to the mix every wave seconds.
+function start_mutant_arena(count, dist, wave)
+    local actor = db.actor
+    if not actor then return _show_tip("Not in game") end
+    if not count or count < 1 then return _show_tip("arena: pass a count like start_mutant_arena(8)") end
+    _marena.want = count
+    _marena.wave_sec = wave or MARENA_WAVE_SEC
+    local fdir = actor:direction()
+    local apos = actor:position()
+    local ahead = dist or MUTANT_DIST
+    local cvid = level.vertex_id(vector():set(apos.x + fdir.x * ahead, apos.y, apos.z + fdir.z * ahead))
+    _marena.center = (cvid ~= INVALID_VERTEX) and cvid or actor:level_vertex_id()
+    _marena.gvid = actor:game_vertex_id()
+    _marena.pool = {}
+    _marena.stage = 0
+    _marena.wave_at = time_global()
+    _marena.on = true
+    RemoveTimeEvent("tz_marena", "tick")
+    CreateTimeEvent("tz_marena", "tick", 1, _update_mutant_arena)
+    _show_tip(string_format("mutant arena: %d mutants @%dm, +species every %ds", count, ahead, _marena.wave_sec))
+end
+
+--- Stop the mutant arena and release every creature it spawned.
+function stop_mutant_arena()
+    if not _marena.on then return end
+    _marena.on = false
+    RemoveTimeEvent("tz_marena", "tick")
+    clear_mutants()
 end
 
 --- Keep the tester alive: scale every incoming hit by damp and refill health, power, and bleeding every half second below the threshold.
