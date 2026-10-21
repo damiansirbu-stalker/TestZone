@@ -137,4 +137,39 @@
     <string id="ui_mcm_tz_profiler_info">
         <text>Profiler wraps 22 suspect functions identified from GAMMA review. Log output: logs/testzone.log</text>
     </string>
+
+    <!-- ==================== DEVELOPMENT TAB ==================== -->
+    <string id="ui_mcm_menu_tz_development">
+        <text>Development</text>
+    </string>
+    <string id="ui_mcm_tz_development_title">
+        <text>TestZone</text>
+    </string>
+    <string id="ui_mcm_tz_development_desc">
+        <text>Logging level and flush for every TestZone subsystem. Output: logs/testzone.log</text>
+    </string>
+    <string id="ui_mcm_tz_development_log_level">
+        <text>Log level</text>
+    </string>
+    <string id="ui_mcm_tz_development_log_level_desc">
+        <text>Minimum severity written to the log. DEBUG shows everything, ERROR almost nothing.</text>
+    </string>
+    <string id="ui_mcm_tz_development_log_flush">
+        <text>Immediate flush</text>
+    </string>
+    <string id="ui_mcm_tz_development_log_flush_desc">
+        <text>Write each line to disk at once instead of buffering. Slower, but the log stays current while you tail it.</text>
+    </string>
+    <string id="tz_development_log_level_lst_error">
+        <text>Error</text>
+    </string>
+    <string id="tz_development_log_level_lst_warn">
+        <text>Warn</text>
+    </string>
+    <string id="tz_development_log_level_lst_info">
+        <text>Info</text>
+    </string>
+    <string id="tz_development_log_level_lst_debug">
+        <text>Debug</text>
+    </string>
 </string_table>

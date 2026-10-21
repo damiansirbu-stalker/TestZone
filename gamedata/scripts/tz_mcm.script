@@ -1,6 +1,14 @@
 --- tz_mcm: MCM configuration for TestZone
 
-local RegisterScriptCallback = RegisterScriptCallback
+local RegisterScriptCallback, xlog = RegisterScriptCallback, xlog
+
+-- Every TestZone logger, so the development tab's level and flush apply across all subsystems.
+local TZ_LOGGERS = {
+    "TestZone.watcher", "TestZone.scanner", "TestZone.profiler",
+    "TestZone.geometry", "TestZone.fx", "TestZone.anim",
+}
+local _levels = xlog.get_levels()
+local KEY_LOG_LEVEL, KEY_LOG_FLUSH = "log_level", "log_flush"
 
 defaults = {
     watcher_enabled = false,
@@ -21,10 +29,14 @@ defaults = {
     profiler_enabled = false,
     profiler_report_interval = 30,
     profiler_spike_threshold = 1000,
+    log_level = "WARN",
+    log_flush = false,
 }
 
 local build_path = function(key)
-    local tab = key:sub(1, 9) == "profiler_" and "profiler" or "main"
+    local tab = "main"
+    if key:sub(1, 9) == "profiler_" then tab = "profiler"
+    elseif key == KEY_LOG_LEVEL or key == KEY_LOG_FLUSH then tab = "development" end
     return "tz/" .. tab .. "/" .. key
 end
 cfg, get_config, load_config = xmcm.create_config("tz", defaults, build_path)
@@ -95,6 +107,20 @@ function on_mcm_load()
                     { id = "info", type = "desc", text = "ui_mcm_tz_profiler_info", clr = {200, 200, 200, 100} },
                 },
             },
+            {
+                id = "development",
+                text = "ui_mcm_menu_tz_development",
+                sh = true,
+                gr = {
+                    { id = "title", type = "slide", link = "tz_mcm_banner",
+                        text = "ui_mcm_tz_development_title", size = {512, 50}, spacing = 20 },
+                    { id = "desc", type = "desc", text = "ui_mcm_tz_development_desc" },
+                    { id = "log_level", type = "list", val = 0, def = "WARN", content = {
+                        {"ERROR", "error"}, {"WARN", "warn"}, {"INFO", "info"}, {"DEBUG", "debug"},
+                    } },
+                    { id = "log_flush", type = "check", val = 1, def = false },
+                },
+            },
         },
     }
 end
@@ -103,8 +129,22 @@ function set_version_text(_anchor, handlers)
     handlers.desc:SetText(_tz_init.get_version())
 end
 
+--- Apply the MCM log level and flush to every TestZone logger; idempotent, re-run on option change.
+function apply_logging()
+    local level = get_config(KEY_LOG_LEVEL) or "WARN"
+    local flush_on = get_config(KEY_LOG_FLUSH) and _levels.TRACE or _levels.ERROR
+    for i = 1, #TZ_LOGGERS do
+        local lg = xlog.get_logger(TZ_LOGGERS[i])
+        lg.set_level(level)
+        lg._logger.flush_on_level = flush_on
+    end
+end
+
 function on_game_start()
     load_config()
     RegisterScriptCallback("on_option_change", load_config)
+    RegisterScriptCallback("on_option_change", apply_logging)
     RegisterScriptCallback("mcm_option_restore_default", load_config)
+    RegisterScriptCallback("mcm_option_restore_default", apply_logging)
+    RegisterScriptCallback("actor_on_first_update", apply_logging)
 end
