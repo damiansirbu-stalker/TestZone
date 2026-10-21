@@ -3,13 +3,17 @@
 
 	<!-- A compact band docked to the right edge. The rest of the screen stays transparent so the
 	     aimed NPC is visible and you watch the motion play while you browse and verdict. -->
-	<background x="790" y="16" width="226" height="736" stretch="1">
+	<background x="790" y="16" width="226" height="620" stretch="1">
 		<texture>ui_inGame2_pda_buttons_background</texture>
 	</background>
 
 	<hdr_player x="798" y="22" width="210" height="20">
 		<text font="letterica18" align="l" r="200" g="170" b="120">ANIM REVIEW</text>
 	</hdr_player>
+	<btn_select x="944" y="20" width="64" height="24" stretch="1">
+		<texture>ui_inGame2_pda_button</texture>
+		<text font="letterica16" align="c" r="66" g="157" b="195">select</text>
+	</btn_select>
 	<line_player x="798" y="44" width="210" height="4" stretch="1">
 		<texture>ui_inGame2_pda_line_horizontal</texture>
 	</line_player>
@@ -54,46 +58,31 @@
 		<texture>ui_inGame2_pda_Filtr_radio_plyr_btn_stop2</texture>
 	</btn_stop>
 
-	<hdr_verdict x="798" y="474" width="210" height="16">
+	<hdr_verdict x="798" y="476" width="210" height="16">
 		<text font="letterica16" align="l" r="200" g="170" b="120">VERDICT</text>
 	</hdr_verdict>
-	<btn_v1 x="798" y="492" width="66" height="26" stretch="1">
+	<btn_good x="798" y="494" width="100" height="28" stretch="1">
 		<texture>ui_inGame2_pda_button</texture>
 		<text font="letterica16" align="c" r="120" g="200" b="120">good</text>
-	</btn_v1>
-	<btn_v2 x="868" y="492" width="66" height="26" stretch="1">
+	</btn_good>
+	<btn_bad x="904" y="494" width="104" height="28" stretch="1">
 		<texture>ui_inGame2_pda_button</texture>
-		<text font="letterica16" align="c" r="210" g="90" b="90">shit</text>
-	</btn_v2>
-	<btn_v3 x="938" y="492" width="66" height="26" stretch="1">
-		<texture>ui_inGame2_pda_button</texture>
-		<text font="letterica16" align="c" r="210" g="200" b="90">prop</text>
-	</btn_v3>
-	<btn_v4 x="798" y="522" width="66" height="26" stretch="1">
-		<texture>ui_inGame2_pda_button</texture>
-		<text font="letterica16" align="c" r="210" g="150" b="80">moves</text>
-	</btn_v4>
-	<btn_v5 x="868" y="522" width="66" height="26" stretch="1">
-		<texture>ui_inGame2_pda_button</texture>
-		<text font="letterica16" align="c" r="200" g="120" b="120">pose</text>
-	</btn_v5>
+		<text font="letterica16" align="c" r="210" g="90" b="90">bad</text>
+	</btn_bad>
 
-	<hdr_snote x="798" y="554" width="210" height="16">
+	<hdr_snote x="798" y="532" width="210" height="16">
 		<text font="letterica16" align="l" r="200" g="170" b="120">NOTE</text>
 	</hdr_snote>
-	<snote x="798" y="574" width="140" height="24" stretch="1">
+	<snote x="798" y="550" width="140" height="26" stretch="1">
 		<text x="5" font="letterica16" vert_align="c" align="l"/>
 		<texture>ui_inGame2_edit_box_2</texture>
 	</snote>
-	<btn_note x="944" y="574" width="62" height="24" stretch="1">
+	<btn_note x="944" y="550" width="62" height="26" stretch="1">
 		<texture>ui_inGame2_pda_button</texture>
 		<text font="letterica16" align="c">note</text>
 	</btn_note>
 
-	<status x="798" y="612" width="210" height="36">
+	<status x="798" y="584" width="210" height="44">
 		<text font="letterica16" align="l" complex_mode="1" r="160" g="160" b="160"/>
 	</status>
-	<legend x="798" y="652" width="210" height="96">
-		<text font="letterica16" align="l" complex_mode="1" r="170" g="160" b="130"/>
-	</legend>
 </w>

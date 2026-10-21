@@ -28,6 +28,8 @@ local _cur     = nil
 local _mode_i  = 1
 local _npc_id  = nil
 local _npc_name = nil
+-- The standing selection: an NPC pinned via the Select button that persists across opens, so the tool binds and shows it until you re-select.
+local _selected_id   = nil
 local _box     = nil
 -- RemoveAll on the empty, not-yet-attached list (the first fill) CTDs in CUIScrollView::Clear.
 local _built   = false
@@ -123,12 +125,24 @@ local function _find_nearest_stalker(actor)
     return best
 end
 
---- Bind the aimed stalker, or the nearest one when the crosshair is on no one, since the dialog grabs the mouse and there is no re-aim once it is up.
+--- The standing-selected stalker's object when it is still a live online stalker, else nil (a despawn or death drops the selection on read).
+local function _get_selected_npc()
+    if not _selected_id then return nil end
+    local st = db.storage[_selected_id]
+    local npc = st and st.object
+    if npc and npc:alive() and IsStalker(npc) then return npc end
+    return nil
+end
+
+--- Bind the standing selection when one is live, else the aimed stalker, else the nearest (the dialog grabs the mouse, so there is no re-aim once it is up).
 local function try_open()
     if _box and _box:IsShown() then return end
     if not db.actor then return end
-    local tgt = level.get_target_obj and level.get_target_obj() or nil
-    if not (tgt and IsStalker(tgt)) then tgt = _find_nearest_stalker(db.actor) end
+    local tgt = _get_selected_npc()
+    if not tgt then
+        tgt = level.get_target_obj and level.get_target_obj() or nil
+        if not (tgt and IsStalker(tgt)) then tgt = _find_nearest_stalker(db.actor) end
+    end
     if tgt then _npc_id, _npc_name = tgt:id(), tgt:name()
     else _npc_id, _npc_name = nil, nil end
     _box = tz_anim_tool_wnd()
@@ -166,29 +180,25 @@ function tz_anim_tool_wnd:init_controls()
     self.lbl_now  = xml:InitStatic("lbl_now", self):TextControl()
     self.lbl_mode = xml:InitStatic("lbl_mode", self):TextControl()
     self.status   = xml:InitStatic("status", self):TextControl()
-    self.legend   = xml:InitStatic("legend", self):TextControl()
-    self.legend:SetText("good = keep it\nshit = cut it\npose = clean standing pose\nprop = needs a hand item\nmoves = a gait, the NPC walks")
     self.snote = xml:InitEditBox("snote", self)
     self:Register(self.snote, "snote")
-    local buttons = { "btn_pos_down", "btn_pos_up", "btn_prior", "btn_play", "btn_stop", "btn_next",
-                      "btn_v1", "btn_v2", "btn_v3", "btn_v4", "btn_v5", "btn_note" }
+    local buttons = { "btn_select", "btn_pos_down", "btn_pos_up", "btn_prior", "btn_play", "btn_stop", "btn_next",
+                      "btn_good", "btn_bad", "btn_note" }
     for i = 1, #buttons do self:Register(xml:Init3tButton(buttons[i], self), buttons[i]) end
 end
 
 function tz_anim_tool_wnd:init_callbacks()
     self:AddCallback("list",         ui_events.LIST_ITEM_CLICKED, self.select_row,      self)
     self:AddCallback("list",         ui_events.WINDOW_LBUTTON_DB_CLICK, function() if _view == VIEW_POOL then self:_play_current() end end, self)
+    self:AddCallback("btn_select",   ui_events.BUTTON_CLICKED,    self.select_npc,      self)
     self:AddCallback("btn_pos_down", ui_events.BUTTON_CLICKED,    self.select_prev_mode, self)
     self:AddCallback("btn_pos_up",   ui_events.BUTTON_CLICKED,    self.select_next_mode, self)
     self:AddCallback("btn_prior",    ui_events.BUTTON_CLICKED,    self.select_prev_item, self)
     self:AddCallback("btn_play",     ui_events.BUTTON_CLICKED,    self.play,            self)
     self:AddCallback("btn_stop",     ui_events.BUTTON_CLICKED,    self.stop,            self)
     self:AddCallback("btn_next",     ui_events.BUTTON_CLICKED,    self.select_next_item, self)
-    self:AddCallback("btn_v1", ui_events.BUTTON_CLICKED, function() self:add_verdict("good") end, self)
-    self:AddCallback("btn_v2", ui_events.BUTTON_CLICKED, function() self:add_verdict("shit") end, self)
-    self:AddCallback("btn_v3", ui_events.BUTTON_CLICKED, function() self:add_verdict("prop") end, self)
-    self:AddCallback("btn_v4", ui_events.BUTTON_CLICKED, function() self:add_verdict("moves") end, self)
-    self:AddCallback("btn_v5", ui_events.BUTTON_CLICKED, function() self:add_verdict("pose") end, self)
+    self:AddCallback("btn_good", ui_events.BUTTON_CLICKED, function() self:add_verdict("good") end, self)
+    self:AddCallback("btn_bad",  ui_events.BUTTON_CLICKED, function() self:add_verdict("bad") end, self)
     self:AddCallback("btn_note", ui_events.BUTTON_CLICKED, function() self:add_verdict("note") end, self)
 end
 
@@ -233,12 +243,14 @@ function tz_anim_tool_wnd:render()
         self.status:SetText("click a candidate to play on the bound NPC    -    verdict button logs it")
     end
     if _npc_id then
-        self.lbl_now:SetText(_cur and ("now:  " .. _get_clipped(_cur.name, 24))
-            or ("npc:  " .. _get_clipped(tostring(_npc_name), 24)))
-        self.lbl_mode:SetText("mode: " .. _get_mode().label)
+        local bound = db.storage[_npc_id] and db.storage[_npc_id].object
+        local live = (bound and bound:alive()) and state_mgr.get_state(bound) or "?"
+        local mark = (_selected_id and _npc_id == _selected_id) and "* " or ""
+        self.lbl_now:SetText(mark .. _get_clipped(tostring(_npc_name), 24))
+        self.lbl_mode:SetText(string_format("%s  |  %s", _get_clipped(tostring(live), 16), _get_mode().label))
     else
-        self.lbl_now:SetText("** NO NPC ** stand near a stalker,")
-        self.lbl_mode:SetText("close + reopen with HOME")
+        self.lbl_now:SetText("** NO NPC **")
+        self.lbl_mode:SetText("stand near a stalker, reopen HOME")
     end
 end
 
@@ -246,6 +258,14 @@ end
 function tz_anim_tool_wnd:_get_mode_label()
     if _cur and _cur.is_state then return _get_mode().label .. "  (state - as wired)" end
     return _get_mode().label
+end
+
+--- Pin the bound NPC as the standing selection, so it survives close and reopen; the band marks it with a leading star.
+function tz_anim_tool_wnd:select_npc()
+    if not _npc_id then self.status:SetText("no NPC bound. reopen with HOME aimed at a stalker"); return end
+    _selected_id = _npc_id
+    self.status:SetText(string_format("selected %s (stays bound on reopen)", tostring(_npc_name)))
+    self:render()
 end
 
 function tz_anim_tool_wnd:_play_current()
@@ -329,7 +349,7 @@ function tz_anim_tool_wnd:select_prev_item() self:_select_neighbor(-1) end
 function tz_anim_tool_wnd:select_next_item() self:_select_neighbor(1) end
 
 --- Write a verdict line for the current candidate; the typed note combines with the verdict word.
---- Verdicts: good keep, shit cut, prop needs a hand prop, moves needs a gait, pose the pose is off.
+--- Verdicts: good (keep), bad (cut), note (a free-text observation only).
 function tz_anim_tool_wnd:add_verdict(verdict)
     if not _cur then return end
     local note = self.snote:GetText()
