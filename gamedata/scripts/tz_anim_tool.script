@@ -34,6 +34,9 @@ local _built   = false
 
 local function _get_mode() return MODES[_mode_i] end
 
+-- Shorten a long name with a trailing ~ so the fixed-width header never runs off the panel.
+local function _get_clipped(s, n) return #s > n and (s:sub(1, n - 1) .. "~") or s end
+
 -- Split a TSV line on tabs, preserving empty fields so columns stay aligned.
 local function _split_tab(line)
     local out = {}
@@ -47,7 +50,7 @@ local function _find_sources()
     local exts = { ".tsv", ".txt" }
     for e = 1, #exts do
         local found = (xfs and xfs.read_files and xfs.read_files(CONFIG_MOUNT, ANIM_DIR, exts[e])) or {}
-        for i = 1, #found do out[#out + 1] = found[i] end
+        for i = 1, #found do out[#out + 1] = found[i] .. exts[e] end
     end
     table_sort(out)
     return out
@@ -102,12 +105,31 @@ local function _write_verdict(name, verdict, note)
         string_format("%s\t%s\t%s\t%s\n", verdict, name, _get_mode().label, note or ""), true)
 end
 
---- Open the remote, binding whatever stalker the player is aiming at NOW (before the dialog takes input).
+-- The nearest alive stalker to the actor (never the actor); the fallback when the crosshair is on no one.
+local function _find_nearest_stalker(actor)
+    local apos = actor:position()
+    local actor_id = actor:id()
+    local best, best_sqr
+    local online = db.OnlineStalkers or {}
+    for i = 1, #online do
+        local id = online[i]
+        local st = id ~= actor_id and db.storage[id]
+        local npc = st and st.object
+        if npc and npc:alive() and IsStalker(npc) then
+            local dist_sqr = apos:distance_to_sqr(npc:position())
+            if not best_sqr or dist_sqr < best_sqr then best, best_sqr = npc, dist_sqr end
+        end
+    end
+    return best
+end
+
+--- Bind the aimed stalker, or the nearest one when the crosshair is on no one, since the dialog grabs the mouse and there is no re-aim once it is up.
 local function try_open()
     if _box and _box:IsShown() then return end
     if not db.actor then return end
     local tgt = level.get_target_obj and level.get_target_obj() or nil
-    if tgt and IsStalker(tgt) then _npc_id, _npc_name = tgt:id(), tgt:name()
+    if not (tgt and IsStalker(tgt)) then tgt = _find_nearest_stalker(db.actor) end
+    if tgt then _npc_id, _npc_name = tgt:id(), tgt:name()
     else _npc_id, _npc_name = nil, nil end
     _box = tz_anim_tool_wnd()
     _box:ShowDialog(true)
@@ -144,6 +166,8 @@ function tz_anim_tool_wnd:init_controls()
     self.lbl_now  = xml:InitStatic("lbl_now", self):TextControl()
     self.lbl_mode = xml:InitStatic("lbl_mode", self):TextControl()
     self.status   = xml:InitStatic("status", self):TextControl()
+    self.legend   = xml:InitStatic("legend", self):TextControl()
+    self.legend:SetText("good = keep it\nshit = cut it\npose = clean standing pose\nprop = needs a hand item\nmoves = a gait, the NPC walks")
     self.snote = xml:InitEditBox("snote", self)
     self:Register(self.snote, "snote")
     local buttons = { "btn_pos_down", "btn_pos_up", "btn_prior", "btn_play", "btn_stop", "btn_next",
@@ -153,6 +177,7 @@ end
 
 function tz_anim_tool_wnd:init_callbacks()
     self:AddCallback("list",         ui_events.LIST_ITEM_CLICKED, self.select_row,      self)
+    self:AddCallback("list",         ui_events.WINDOW_LBUTTON_DB_CLICK, function() if _view == VIEW_POOL then self:_play_current() end end, self)
     self:AddCallback("btn_pos_down", ui_events.BUTTON_CLICKED,    self.select_prev_mode, self)
     self:AddCallback("btn_pos_up",   ui_events.BUTTON_CLICKED,    self.select_next_mode, self)
     self:AddCallback("btn_prior",    ui_events.BUTTON_CLICKED,    self.select_prev_item, self)
@@ -207,10 +232,14 @@ function tz_anim_tool_wnd:render()
         self.lbl_path:SetText(string_format("%s    (%d)", _row and _row.label or "?", _row and #_row.pool or 0))
         self.status:SetText("click a candidate to play on the bound NPC    -    verdict button logs it")
     end
-    self.lbl_now:SetText(_npc_id
-        and string_format("NPC:  %s    now:  %s", tostring(_npc_name), _cur and _cur.name or "(none)")
-        or "NPC:  none - aim at a stalker and reopen (HOME)")
-    self.lbl_mode:SetText("mode:  " .. self:_get_mode_label())
+    if _npc_id then
+        self.lbl_now:SetText(_cur and ("now:  " .. _get_clipped(_cur.name, 24))
+            or ("npc:  " .. _get_clipped(tostring(_npc_name), 24)))
+        self.lbl_mode:SetText("mode: " .. _get_mode().label)
+    else
+        self.lbl_now:SetText("** NO NPC ** stand near a stalker,")
+        self.lbl_mode:SetText("close + reopen with HOME")
+    end
 end
 
 --- The mode label; it reads "(state - as wired)" for a state item, since modes only shape a raw motion.
@@ -255,8 +284,8 @@ function tz_anim_tool_wnd:select_pool(idx)
     local entry = _row and _row.pool[idx]
     if not entry then return end
     _cur = entry
-    self:_play_current()
     self:render()
+    self.status:SetText("selected:  " .. entry.name .. "   (Play or double-click)")
 end
 
 function tz_anim_tool_wnd:play() self:_play_current() end

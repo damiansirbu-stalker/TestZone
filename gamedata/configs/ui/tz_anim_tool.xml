@@ -93,4 +93,7 @@
 	<status x="798" y="612" width="210" height="36">
 		<text font="letterica16" align="l" complex_mode="1" r="160" g="160" b="160"/>
 	</status>
+	<legend x="798" y="652" width="210" height="96">
+		<text font="letterica16" align="l" complex_mode="1" r="170" g="160" b="130"/>
+	</legend>
 </w>

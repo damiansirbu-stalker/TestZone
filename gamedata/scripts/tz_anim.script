@@ -10,9 +10,9 @@ local IsStalker, IsMonster = IsStalker, IsMonster
 
 local INVALID_VERTEX = 4294967295
 
-local log = xlog.get_logger("TestZone.anim", { outfile = "testzone.log", buffer_size = 1 })
+local log = xlog.get_logger("TestZone.anim", { outfile = "testzone.log" })
 
--- Re-assert cadence (seconds) for the mutant override and the NPC scheme hold; re-asserting the same value is an engine no-op.
+-- Re-assert cadence (seconds); a same-state set_state short-circuits and holds (state_mgr.script:388). Tighter re-stages mid-transition into a tremble, so 1s.
 local REASSERT_TICK = 1
 
 -- NPC ids currently held in a scheme state by re-assert, id -> state name.
@@ -192,6 +192,12 @@ function start_review_hold(npc_id, item)
         return _show_tip("review: unknown state " .. tostring(state))
     end
     _review = { npc_id = npc_id, state = state }
+    local npc_name = npc:name()
+    local cur_state = state_mgr.get_state(npc)
+    local has_enemy = npc:best_enemy() ~= nil
+    local in_danger = xr_danger.has_danger(npc)
+    log.info("hold npc=%s id=%d cur_state=%s enemy=%s danger=%s -> %s (motion %s)",
+        npc_name, npc_id, tostring(cur_state), tostring(has_enemy), tostring(in_danger), state, item.name)
     state_mgr.set_state(npc, state, nil, nil, nil,
         { fast_set = true, animation = true,
           animation_position = npc:position(), animation_direction = npc:direction() })
@@ -200,10 +206,15 @@ function start_review_hold(npc_id, item)
     return state
 end
 
---- Stop the review hold; the NPC's own logic sets its next state on its following update.
+--- Stop the review hold and force the NPC to idle so it drops the held pose; its own logic resumes from there.
 function stop_review_hold()
+    local run = _review
     _review = nil
     RemoveTimeEvent("tz_anim_review", "reassert")
+    local npc = run and xobject.get_go(run.npc_id)
+    if npc and npc:alive() then
+        state_mgr.set_state(npc, "idle", nil, nil, nil, { fast_set = true })
+    end
 end
 
 --- Spawn any creature section at `dist` metres ahead, frozen in place, as a bench target.
