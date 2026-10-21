@@ -107,24 +107,6 @@ local function _write_verdict(name, verdict, note)
         string_format("%s\t%s\t%s\t%s\n", verdict, name, _get_mode().label, note or ""), true)
 end
 
--- The nearest alive stalker to the actor (never the actor); the fallback when the crosshair is on no one.
-local function _find_nearest_stalker(actor)
-    local apos = actor:position()
-    local actor_id = actor:id()
-    local best, best_sqr
-    local online = db.OnlineStalkers or {}
-    for i = 1, #online do
-        local id = online[i]
-        local st = id ~= actor_id and db.storage[id]
-        local npc = st and st.object
-        if npc and npc:alive() and IsStalker(npc) then
-            local dist_sqr = apos:distance_to_sqr(npc:position())
-            if not best_sqr or dist_sqr < best_sqr then best, best_sqr = npc, dist_sqr end
-        end
-    end
-    return best
-end
-
 --- The standing-selected stalker's object when it is still a live online stalker, else nil (a despawn or death drops the selection on read).
 local function _get_selected_npc()
     if not _selected_id then return nil end
@@ -134,14 +116,14 @@ local function _get_selected_npc()
     return nil
 end
 
---- Bind the standing selection when one is live, else the aimed stalker, else the nearest (the dialog grabs the mouse, so there is no re-aim once it is up).
+--- Bind the standing selection when one is live, else the stalker directly under the view-ray; nothing when the ray hits a wall, fence, or no stalker.
 local function try_open()
     if _box and _box:IsShown() then return end
     if not db.actor then return end
     local tgt = _get_selected_npc()
     if not tgt then
         tgt = level.get_target_obj and level.get_target_obj() or nil
-        if not (tgt and IsStalker(tgt)) then tgt = _find_nearest_stalker(db.actor) end
+        if not (tgt and IsStalker(tgt)) then tgt = nil end
     end
     if tgt then _npc_id, _npc_name = tgt:id(), tgt:name()
     else _npc_id, _npc_name = nil, nil end
@@ -182,7 +164,7 @@ function tz_anim_tool_wnd:init_controls()
     self.status   = xml:InitStatic("status", self):TextControl()
     self.snote = xml:InitEditBox("snote", self)
     self:Register(self.snote, "snote")
-    local buttons = { "btn_select", "btn_pos_down", "btn_pos_up", "btn_prior", "btn_play", "btn_stop", "btn_next",
+    local buttons = { "btn_select", "btn_reset", "btn_pos_down", "btn_pos_up", "btn_prior", "btn_play", "btn_stop", "btn_next",
                       "btn_good", "btn_bad", "btn_note" }
     for i = 1, #buttons do self:Register(xml:Init3tButton(buttons[i], self), buttons[i]) end
 end
@@ -191,6 +173,7 @@ function tz_anim_tool_wnd:init_callbacks()
     self:AddCallback("list",         ui_events.LIST_ITEM_CLICKED, self.select_row,      self)
     self:AddCallback("list",         ui_events.WINDOW_LBUTTON_DB_CLICK, function() if _view == VIEW_POOL then self:_play_current() end end, self)
     self:AddCallback("btn_select",   ui_events.BUTTON_CLICKED,    self.select_npc,      self)
+    self:AddCallback("btn_reset",    ui_events.BUTTON_CLICKED,    self.clear_selection, self)
     self:AddCallback("btn_pos_down", ui_events.BUTTON_CLICKED,    self.select_prev_mode, self)
     self:AddCallback("btn_pos_up",   ui_events.BUTTON_CLICKED,    self.select_next_mode, self)
     self:AddCallback("btn_prior",    ui_events.BUTTON_CLICKED,    self.select_prev_item, self)
@@ -250,7 +233,7 @@ function tz_anim_tool_wnd:render()
         self.lbl_mode:SetText(string_format("%s  |  %s", _get_clipped(tostring(live), 16), _get_mode().label))
     else
         self.lbl_now:SetText("** NO NPC **")
-        self.lbl_mode:SetText("stand near a stalker, reopen HOME")
+        self.lbl_mode:SetText("look at a stalker, reopen HOME")
     end
 end
 
@@ -262,9 +245,17 @@ end
 
 --- Pin the bound NPC as the standing selection, so it survives close and reopen; the band marks it with a leading star.
 function tz_anim_tool_wnd:select_npc()
-    if not _npc_id then self.status:SetText("no NPC bound. reopen with HOME aimed at a stalker"); return end
+    if not _npc_id then self.status:SetText("no NPC bound. reopen while looking at a stalker"); return end
     _selected_id = _npc_id
     self.status:SetText(string_format("selected %s (stays bound on reopen)", tostring(_npc_name)))
+    self:render()
+end
+
+--- Drop the standing selection and the current binding; the band falls back to NO NPC until the next open.
+function tz_anim_tool_wnd:clear_selection()
+    _selected_id = nil
+    _npc_id, _npc_name = nil, nil
+    self.status:SetText("selection cleared")
     self:render()
 end
 
