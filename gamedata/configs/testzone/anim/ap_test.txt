@@ -1,0 +1,5 @@
+# anim-manager in-game proof: one ap_* motion carved from barman and merged into
+# meshes/actors/modded_stalker_animations/tz_test_anims.omf. Aim at a stalker, press HOME,
+# pick this file, play ap_test_vodka. It plays the drinking idle = the OMF loaded and the
+# bones mapped by name; nothing (log "There is no animation") = it did not load.
+ap_test_vodka
