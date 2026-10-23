@@ -9,16 +9,38 @@ local LOGS_MOUNT    = "$logs$"
 local CONFIG_MOUNT  = "$game_config$"
 local ANIM_DIR      = "testzone\\anim\\"
 local CURATION_FILE = "tz_anim_curation.txt"
-local VIEW_ROOT, VIEW_POOL = "root", "pool"
+local VIEW_ROOT, VIEW_POOL, VIEW_PROP = "root", "pool", "prop"
+
+-- Attachable props the engine spawns + attaches via the `{a=section}` hook (state_mgr_animation.script:480-495); the only blade is anim_knife, no firearms.
+local PROPS = {
+    { section = "vodka",              group = "booze" },
+    { section = "beer",               group = "booze" },
+    { section = "energy_drink",       group = "booze" },
+    { section = "mineral_water",      group = "booze" },
+    { section = "bread",              group = "food" },
+    { section = "kolbasa",            group = "food" },
+    { section = "stick_kolbasa",      group = "roast" },
+    { section = "stick_bred",         group = "roast" },
+    { section = "stick_kolbasa_bred", group = "roast" },
+    { section = "guitar_a",           group = "instrument" },
+    { section = "harmonica_a",        group = "instrument" },
+    { section = "hand_radio",         group = "device" },
+    { section = "detector_advanced",  group = "device" },
+    { section = "anomaly_scaner",     group = "device" },
+    { section = "pda_for_nps",        group = "device" },
+    { section = "anim_binoc",         group = "device" },
+    { section = "medkit_script",      group = "device" },
+    { section = "sigaret_for_nps",    group = "smoke" },
+    { section = "anim_knife",         group = "blade" },
+}
 
 local COL_MOTION, COL_STATE, COL_NAME = "motion", "state", "name"
 local COL_CATEGORY, COL_VERDICT = "category", "verdict"
 
--- How the next motion play is forced. A state item ignores these (it carries its own movement/props).
+-- Posture for the next play; a state item ignores it. The prop is a separate selection (_prop).
 local MODES = {
-    { label = "pose",       moving = false, prop = nil },
-    { label = "moving",     moving = true,  prop = nil },
-    { label = "prop vodka", moving = false, prop = "vodka" },
+    { label = "pose",   moving = false },
+    { label = "moving", moving = true },
 }
 
 local _view    = VIEW_ROOT
@@ -26,6 +48,8 @@ local _sources = {}
 local _row     = nil
 local _cur     = nil
 local _mode_i  = 1
+-- The attached prop section for the next play, nil = none; an independent selection that persists across motions.
+local _prop    = nil
 local _npc_id  = nil
 local _npc_name = nil
 -- The standing selection: an NPC pinned via the Select button that persists across opens, so the tool binds and shows it until you re-select.
@@ -189,7 +213,13 @@ function tz_anim_tool_wnd:build_list()
     if xslice then xslice.stop_queue("tz_anim_fill") end
     if _built then self.list:RemoveAll() end
     _built = true
-    if _view == VIEW_ROOT then self:add_source_rows() else self:add_pool_rows(_row) end
+    if _view == VIEW_ROOT then
+        self:add_source_rows()
+    elseif _view == VIEW_PROP then
+        self:add_prop_rows()
+    else
+        self:add_pool_rows(_row)
+    end
 end
 
 --- Fill the root list with the source files in the anim folder, or a hint when none are present.
@@ -203,9 +233,19 @@ function tz_anim_tool_wnd:add_source_rows()
 end
 
 --- Fill one source's pool, frame-spread by xslice so a large motion list never builds in one frame.
+--- Fill the prop picker: back, a clear entry, then every attachable prop labelled by its group.
+function tz_anim_tool_wnd:add_prop_rows()
+    self.list:AddTextItem("..")
+    self.list:AddTextItem("(none)")
+    for i = 1, #PROPS do
+        self.list:AddTextItem(string_format("%s  (%s)", PROPS[i].section, PROPS[i].group))
+    end
+end
+
 function tz_anim_tool_wnd:add_pool_rows(row)
     if not row then return end
     self.list:AddTextItem("..")
+    self.list:AddTextItem(string_format("[ prop:  %s ]", _prop or "none"))
     local list = self.list
     if not xslice then
         for i = 1, #row.pool do list:AddTextItem(row.pool[i].label) end
@@ -221,16 +261,20 @@ function tz_anim_tool_wnd:render()
     if _view == VIEW_ROOT then
         self.lbl_path:SetText("sources in configs\\testzone\\anim    (click one)")
         self.status:SetText("pick a source file, or drop a .tsv / .txt in that folder")
+    elseif _view == VIEW_PROP then
+        self.lbl_path:SetText("props    (click one to attach, (none) to clear)")
+        self.status:SetText("the pick attaches on the next play and persists across motions")
     else
         self.lbl_path:SetText(string_format("%s    (%d)", _row and _row.label or "?", _row and #_row.pool or 0))
-        self.status:SetText("click a candidate to play on the bound NPC    -    verdict button logs it")
+        self.status:SetText("click a candidate to play    -    the [ prop: ] row picks an attachment")
     end
     if _npc_id then
         local bound = db.storage[_npc_id] and db.storage[_npc_id].object
         local live = (bound and bound:alive()) and state_mgr.get_state(bound) or "?"
         local mark = (_selected_id and _npc_id == _selected_id) and "* " or ""
         self.lbl_now:SetText(mark .. _get_clipped(tostring(_npc_name), 24))
-        self.lbl_mode:SetText(string_format("%s  |  %s", _get_clipped(tostring(live), 16), _get_mode().label))
+        self.lbl_mode:SetText(string_format("%s  |  %s  |  %s",
+            _get_clipped(tostring(live), 12), _get_mode().label, _prop or "no prop"))
     else
         self.lbl_now:SetText("** NO NPC **")
         self.lbl_mode:SetText("look at a stalker, reopen HOME")
@@ -262,7 +306,7 @@ end
 function tz_anim_tool_wnd:_play_current()
     if not (_cur and _npc_id and tz_anim) then return end
     local mode = _get_mode()
-    local item = { name = _cur.name, is_state = _cur.is_state, moving = mode.moving, prop = mode.prop }
+    local item = { name = _cur.name, is_state = _cur.is_state, moving = mode.moving, prop = _prop }
     if tz_anim.start_review_hold(_npc_id, item) then
         self.status:SetText(string_format("playing:  %s", _cur.name))
     end
@@ -271,7 +315,13 @@ end
 function tz_anim_tool_wnd:select_row()
     local idx = self.list:GetSelectedIndex()
     if not idx or idx < 0 then return end
-    if _view == VIEW_ROOT then self:select_root(idx) else self:select_pool(idx) end
+    if _view == VIEW_ROOT then
+        self:select_root(idx)
+    elseif _view == VIEW_PROP then
+        self:select_prop(idx)
+    else
+        self:select_pool(idx)
+    end
 end
 
 --- ROOT click: load the chosen source TSV into a pool and switch to the candidate list.
@@ -292,11 +342,31 @@ function tz_anim_tool_wnd:select_pool(idx)
         self:build_list(); self:render()
         return
     end
-    local entry = _row and _row.pool[idx]
+    if idx == 1 then
+        _view = VIEW_PROP
+        self:build_list(); self:render()
+        return
+    end
+    local entry = _row and _row.pool[idx - 1]
     if not entry then return end
     _cur = entry
     self:render()
     self.status:SetText("selected:  " .. entry.name .. "   (Play or double-click)")
+end
+
+--- PROP click: index 0 returns to the pool, index 1 clears the prop, any other index selects it.
+--- The pick persists across motions and replays the current one so the change shows at once.
+function tz_anim_tool_wnd:select_prop(idx)
+    if idx == 0 then
+        _view = VIEW_POOL
+        self:build_list(); self:render()
+        return
+    end
+    _prop = (idx == 1) and nil or (PROPS[idx - 1] and PROPS[idx - 1].section)
+    _view = VIEW_POOL
+    self:build_list(); self:render()
+    if _cur then self:_play_current() end
+    self.status:SetText(string_format("prop: %s", _prop or "none"))
 end
 
 function tz_anim_tool_wnd:play() self:_play_current() end
@@ -331,7 +401,7 @@ function tz_anim_tool_wnd:_select_neighbor(delta)
     if _view ~= VIEW_POOL or not (_row and #_row.pool > 0) then return end
     local at = (self:find_pool_index() - 1 + delta) % #_row.pool + 1
     _cur = _row.pool[at]
-    self.list:SetSelectedIndex(at)
+    self.list:SetSelectedIndex(at + 1)
     self:_play_current()
     self:render()
 end
