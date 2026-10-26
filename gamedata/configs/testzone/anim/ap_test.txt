@@ -1,5 +1,7 @@
-# anim-manager in-game proof: one ap_* motion carved from barman and merged into
-# meshes/actors/modded_stalker_animations/tz_test_anims.omf. Aim at a stalker, press HOME,
-# pick this file, play ap_test_vodka. It plays the drinking idle = the OMF loaded and the
-# bones mapped by name; nothing (log "There is no animation") = it did not load.
-ap_test_vodka
+# anim-manager proof - built from YOUR curated KEEP list (curation-anomaly.tsv), barman standing poses.
+# Aim at a stalker, HOME, pick this file, then a motion. Upright + reads clean = OMF loaded, bones mapped.
+ap_keep_commander
+ap_keep_armscross
+ap_keep_hello
+ap_keep_watch
+ap_keep_hiphand
