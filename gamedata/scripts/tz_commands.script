@@ -5,6 +5,7 @@ local pairs, type, tostring, string_format, table_concat, getfenv = pairs, type,
 local math_random, math_cos, math_sin, math_pi, math_rad, math_floor =
     math.random, math.cos, math.sin, math.pi, math.rad, math.floor
 local time_global, alife, level, ini_sys = time_global, alife, level, ini_sys
+local IsStalker, IsMonster = IsStalker, IsMonster
 local news_manager, xinventory, xstash, xlevel, xobject =
     news_manager, xinventory, xstash, xlevel, xobject
 local xfs, getFS = xfs, getFS
@@ -30,6 +31,7 @@ local ARENA_TICK       = 2
 local ARENA_DIST       = 45
 local ARENA_RING_MIN   = 10
 local ARENA_RING_MAX   = 18
+local CLEAR_NPCS_RADIUS = 100
 local ARENA_MAX_SPAWN  = 8
 local ARENA_SPREAD_DEG = 25
 -- Cosmetic gear per combatant: artefact auras glow on camera, plus optics and NVG (at_test.script:14).
@@ -51,8 +53,11 @@ local CATALOG = {
     { "combat", "stop_arena",        "",                     "" },
     { "combat", "spawn_mutant",      "species, count, dist", '"boar", 3' },
     { "combat", "clear_mutants",     "",                     "" },
+    { "combat", "clear_npcs",        "radius",               "100" },
     { "combat", "start_mutant_arena","count, dist, wave",    "8" },
     { "combat", "stop_mutant_arena", "",                     "" },
+    { "combat", "start_actor_drive", "mode, radius, period", '"strafe"' },
+    { "combat", "stop_actor_drive",  "",                     "" },
     { "kit",    "add_kit",           "what, amount",         '"silenced", 3' },
     { "world",  "set_weather",       "key",                  '"rain"' },
     { "world",  "add_hours",         "hours",                "6" },
@@ -83,6 +88,12 @@ local NORTH_FLAGS = {
 }
 
 local MUTANT_DIST = 20
+
+-- The actor-drive strafe orbit: radius in metres, seconds per lap (~3.1 m/s - evasive but still hittable).
+local DRIVE_STRAFE_RADIUS = 3.0
+local DRIVE_STRAFE_PERIOD = 6.0
+local DRIVE_MODE_STRAFE = "strafe"
+local DRIVE_MODE_STAND  = "stand"
 
 -- spawn_mutant species words -> one plain spawn section each (squad_descr_default_mutants.ltx npc_random rosters).
 local MUTANTS = {
@@ -119,6 +130,9 @@ local _arena = { on = false, want = 0, dist = 0, shuffle_sec = 0, shuffle_at = 0
                  spawned = {} }
 
 local _lifepump = { on = false, threshold = LIFEPUMP_THRESHOLD, damp = LIFEPUMP_DAMP, topups = 0 }
+
+local _drive = { on = false, mode = DRIVE_MODE_STAND, anchor = nil, radius = 0, period = 0, start_at = 0 }
+local _drive_v = vector()
 
 local _mutants = {}
 
@@ -249,6 +263,21 @@ local function _reset_actor()
     actor.psy_health = 1
 end
 
+-- Drive the actor every frame for an unattended test: "stand" pins the start spot, "strafe" auto-circles it.
+-- set_actor_position(pos, true) skips collision and zeroes the velocity.
+local function _update_actor_drive()
+    local actor = db.actor
+    if not (actor and _drive.anchor) then return end
+    if _drive.mode == DRIVE_MODE_STRAFE then
+        local ang = (time_global() - _drive.start_at) / 1000 * (2 * math_pi / _drive.period)
+        _drive_v:set(_drive.anchor.x + _drive.radius * math_cos(ang), _drive.anchor.y,
+                     _drive.anchor.z + _drive.radius * math_sin(ang))
+        actor:set_actor_position(_drive_v, true)
+    else
+        actor:set_actor_position(_drive.anchor, true)
+    end
+end
+
 -- Arszi Psy kills via its own pool with db.actor:kill() at zero (arszi_psy.script:205); the pins miss it.
 local _arszi_zomb
 local _ARSZI_KILL = "manage_zombification"
@@ -305,6 +334,21 @@ local function _update_mutant_arena()
         budget = budget - 1
     end
     return false
+end
+
+-- Release one NPC within radius_sqr of the actor, skipping the actor, companions and non-combatants; returns 1 on release, else 0.
+local function _release_clearable_npc(sim, npc_id, actor_pos, radius_sqr, actor_id)
+    if npc_id == actor_id then return 0 end
+    local npc = xobject.get_go(npc_id)
+    if not npc or not npc:alive() then return 0 end
+    if npc:position():distance_to_sqr(actor_pos) > radius_sqr then return 0 end
+    local is_stalker = IsStalker(npc)
+    if not (is_stalker or IsMonster(npc)) then return 0 end
+    if is_stalker and npc:has_info("npcx_is_companion") then return 0 end
+    local se = xobject.get_se(npc_id)
+    if not se then return 0 end
+    sim:release(se, true)
+    return 1
 end
 
 --- Give the actor a keyed kit; guns include ammo, or use the money and rank keys, or a raw item section.
@@ -364,6 +408,23 @@ function clear_mutants()
         _mutants[id] = nil
     end
     _show_tip(string_format("released %d", released))
+end
+
+--- Release every stalker and monster within radius metres of the actor, default 100, except the actor and his companions.
+--- It clears an area for a clean test and removes quest NPCs in range too, so use it deliberately.
+function clear_npcs(radius)
+    local actor = db.actor
+    if not actor then return _show_tip("Not in game") end
+    radius = radius or CLEAR_NPCS_RADIUS
+    local actor_pos = actor:position()
+    local actor_id = actor:id()
+    local radius_sqr = radius * radius
+    local sim = alife()
+    local released = 0
+    for npc_id in pairs(db.storage) do
+        released = released + _release_clearable_npc(sim, npc_id, actor_pos, radius_sqr, actor_id)
+    end
+    _show_tip(string_format("released %d npcs within %dm", released, radius))
 end
 
 --- Keep count combatants fighting half against half on a ring, reshuffling factions every shuffle seconds.
@@ -447,6 +508,31 @@ function stop_lifepump()
     UnregisterScriptCallback("actor_on_update", _reset_actor)
     _enable_psy_death()
     _show_tip(string_format("lifepump off, %d topups", _lifepump.topups))
+end
+
+--- Drive the tester unattended from his current spot: "stand" pins him there, "strafe" auto-circles it at radius m over period s.
+function start_actor_drive(mode, radius, period)
+    local actor = db.actor
+    if not actor then return _show_tip("Not in game") end
+    local apos = actor:position()
+    _drive.mode = (mode == DRIVE_MODE_STRAFE) and DRIVE_MODE_STRAFE or DRIVE_MODE_STAND
+    _drive.anchor = vector():set(apos.x, apos.y, apos.z)
+    _drive.radius = radius or DRIVE_STRAFE_RADIUS
+    _drive.period = period or DRIVE_STRAFE_PERIOD
+    _drive.start_at = time_global()
+    if not _drive.on then
+        _drive.on = true
+        RegisterScriptCallback("actor_on_update", _update_actor_drive)
+    end
+    _show_tip(string_format("actor drive: %s", _drive.mode))
+end
+
+--- Stop driving the tester and hand control back.
+function stop_actor_drive()
+    if not _drive.on then return end
+    _drive.on = false
+    UnregisterScriptCallback("actor_on_update", _update_actor_drive)
+    _show_tip("actor drive off")
 end
 
 --- Set the weather to a preset key (clear, rain, storm, fog), or freeze / resume the dynamic cycle.
