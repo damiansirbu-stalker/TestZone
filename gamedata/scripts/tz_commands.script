@@ -133,6 +133,8 @@ local _lifepump = { on = false, threshold = LIFEPUMP_THRESHOLD, damp = LIFEPUMP_
 
 local _drive = { on = false, mode = DRIVE_MODE_STAND, anchor = nil, radius = 0, period = 0, start_at = 0 }
 local _drive_v = vector()
+local _aim = { on = false, away = false }
+local _aim_v = vector()
 
 local _mutants = {}
 
@@ -276,6 +278,28 @@ local function _update_actor_drive()
     else
         actor:set_actor_position(_drive.anchor, true)
     end
+end
+
+-- Face the actor at the nearest live spawned mutant each frame via the camera (set_actor_direction sets cam_Active, the -getH idiom).
+-- The aim read mutants use (xcombat.is_aim_held) follows the camera, so this opens the aim-gated moves in a harness. Keep a weapon out.
+local function _update_actor_aim()
+    local actor = db.actor
+    if not actor then return end
+    local ap = actor:position()
+    local best, best_d_sqr
+    for id in pairs(_mutants) do
+        local mob = xobject.get_go(id)
+        if mob and mob:alive() then
+            local d_sqr = ap:distance_to_sqr(mob:position())
+            if not best_d_sqr or d_sqr < best_d_sqr then best_d_sqr, best = d_sqr, mob end
+        end
+    end
+    if not best then return end
+    local mp = best:position()
+    _aim_v:set(mp.x - ap.x, mp.y - ap.y, mp.z - ap.z)
+    local yaw = -_aim_v:getH()
+    if _aim.away then yaw = yaw + math_pi end
+    actor:set_actor_direction(yaw)
 end
 
 -- Arszi Psy kills via its own pool with db.actor:kill() at zero (arszi_psy.script:205); the pins miss it.
@@ -533,6 +557,26 @@ function stop_actor_drive()
     _drive.on = false
     UnregisterScriptCallback("actor_on_update", _update_actor_drive)
     _show_tip("actor drive off")
+end
+
+--- Face the actor at the nearest spawned mutant every frame, so the aim-gated mutant moves can fire in a harness. Needs a weapon out.
+function start_actor_aim(away)
+    local actor = db.actor
+    if not actor then return _show_tip("Not in game") end
+    _aim.away = away and true or false
+    if not _aim.on then
+        _aim.on = true
+        RegisterScriptCallback("actor_on_update", _update_actor_aim)
+    end
+    _show_tip(_aim.away and "actor aim: away" or "actor aim: on")
+end
+
+--- Stop facing the actor at mutants and hand the camera back.
+function stop_actor_aim()
+    if not _aim.on then return end
+    _aim.on = false
+    UnregisterScriptCallback("actor_on_update", _update_actor_aim)
+    _show_tip("actor aim: off")
 end
 
 --- Set the weather to a preset key (clear, rain, storm, fog), or freeze / resume the dynamic cycle.
