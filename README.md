@@ -3,7 +3,7 @@
 Watches every engine callback with fire counts and payload logging, including introspection of table and userdata arguments.
 Rate limiting keeps high-frequency callbacks from flooding the log, and each callback toggles on its own through MCM.
 
-[Releases](https://github.com/damiansirbu-stalker/TestZone/releases) | [Bugs, suggestions](https://github.com/damiansirbu-stalker/TestZone/issues)
+[![Releases](https://img.shields.io/badge/Releases-24292f?logo=github&logoColor=white)](https://github.com/damiansirbu-stalker/TestZone/releases) [![Bugs, suggestions](https://img.shields.io/badge/Bugs%2C_suggestions-24292f?logo=github&logoColor=white)](https://github.com/damiansirbu-stalker/TestZone/issues) [![Ko-fi](https://img.shields.io/badge/Ko--fi-ff5e5b?logo=kofi&logoColor=white)](https://ko-fi.com/damiansirbu)
 
 [![ci](https://github.com/damiansirbu-stalker/TestZone/actions/workflows/ci.yml/badge.svg)](https://github.com/damiansirbu-stalker/TestZone/actions/workflows/ci.yml) [![Project Health](https://img.shields.io/badge/project_health-dashboard-00ced1)](https://damiansirbu-stalker.github.io/TestZone/)
 
