@@ -1,0 +1,601 @@
+--- tz_loadgen: profiler attribution test fixture. Each case burns CPU or allocates through one way a mod runs, hides,
+--- patches, or hooks, inside its own function, so every case is its own row in a JitProfiler capture.
+--- check_capture(kind) then judges the last capture case by case: CAUGHT, MISSED, or INCONCLUSIVE.
+--- Console (-dbg): run_string tz_loadgen.start_load(50); capture ~15 s; run_string tz_loadgen.stop_load(); run_string tz_loadgen.check_capture("cpu")
+--- The vanilla patches below swap, call and restore with no error guard: an error inside the call leaves the patch in place for the session.
+--- pos_deep crosses the depth cap by design, so the panel's "raise Stack depth" warning is expected during a run. stop_load before saving.
+--- @novalidate(conventions.unused_export, reason:"console commands invoked by name via run_string")
+
+local pairs, ipairs, tostring, tonumber = pairs, ipairs, tostring, tonumber
+local setmetatable, loadstring, pcall = setmetatable, loadstring, pcall
+local rawget, rawset = rawget, rawset
+local os_clock, os_date, table_sort, table_concat, string_format, dup_table = os.clock, os.date, table.sort, table.concat, string.format, dup_table
+local coroutine_create, coroutine_resume = coroutine.create, coroutine.resume
+local debug_getinfo = debug.getinfo
+local RegisterScriptCallback, UnregisterScriptCallback = RegisterScriptCallback, UnregisterScriptCallback
+
+-- Unbuffered: a verdict must be on disk the moment it shows, not at xlog's 60-second flush.
+local log = xlog.get_logger("TestZone.loadgen", { outfile = "testzone_loadgen.log", buffer_size = 1 })
+
+local DEFAULT_LOAD_MS = 50
+local HOOK_MS = 10
+local DEEP_DEPTH = 120
+local TIP_MS = 10000
+-- Verdict gates: MIN_SAMPLES or MIN_BYTES to judge a case; main (+ also) owners hold MIN_MAIN_SHARE, 0.9 from one os.clock per heavy callee call.
+local MIN_SAMPLES, MIN_BYTES, MIN_MAIN_SHARE = 10, 65536, 0.9
+-- The owner strings JitProfiler reports; TestZone must be deployed through MO2 for its frames to resolve to "mod: TestZone".
+local SELF, ANOMALY, XLIBS, MODDED = "mod: TestZone", "anomaly", "mod: xlibs", "modded exes"
+local KIND_CPU, KIND_MEM, KIND_FRAME, KIND_CALLBACKS = "cpu", "mem", "frame", "callbacks"
+local CAUGHT, MISSED, INCONCLUSIVE = "CAUGHT", "MISSED", "INCONCLUSIVE"
+local LINE_PATTERN = "tz_loadgen%.script:(%d+)"
+
+local load_active, load_ms, load_idx, load_handler = false, DEFAULT_LOAD_MS, 0, nil
+-- The load's start stamp in JitProfiler's capture-stamp format, so stop_load checks only captures taken during this load.
+local load_stamp = ""
+local CHECK_KINDS = { KIND_CPU, KIND_MEM, KIND_FRAME, KIND_CALLBACKS, "scan" }
+local timer_live = false
+local timer_fires = 0
+local hook_handler
+-- The panel's tab names, so a verdict names the tab the user pressed, not the capture's internal kind.
+local TAB_NAMES = { cpu = "CPU", mem = "MEM", frame = "HITCHES", callbacks = "CALLBACKS", scan = "INSTRUMENT" }
+local case_list
+local case_ranges
+local source_cache
+local HEX_SOURCE = ("stalker_anomaly_zone_"):rep(12)
+
+-- The victim's original body, restored at the end of every override case so no case stacks a wrapper on the last one.
+local victim_original = tz_loadgen_victim.get_value
+
+-- A cached nested table; dup_table of it burns inside the recursive vanilla copy_table, xinspect.format_table inside xlibs.
+local function get_source()
+    if source_cache then return source_cache end
+    local tbl = {}
+    for i = 1, 40 do tbl[i] = { a = i, b = tostring(i), c = { x = i, y = i * 2, z = { i, i, i, i } } } end
+    source_cache = tbl
+    return source_cache
+end
+
+--- @safety SAFE - the pcall is the case under test (a protected-call frame on the stack), not error handling.
+local function run_guarded(fn, ms)
+    pcall(fn, ms)
+end
+
+-- Factories for a patched vanilla slot, so the install site assigns a call result, not a function literal on a vanilla name.
+local function build_burner(ms)
+    return function()
+        local stop, count = os_clock() + ms / 1000, 0
+        while os_clock() < stop do count = count + 1 end
+        return count
+    end
+end
+
+local function build_wrapper(ms, orig)
+    return function(text)
+        local stop, count = os_clock() + ms / 1000, 0
+        while os_clock() < stop do count = count + 1 end
+        return orig(text)
+    end
+end
+
+-- Patch a REAL vanilla target, run it, restore it. Synchronous, so the swap is atomic and nothing else sees it.
+local function run_vanilla_replace(ms)
+    local ud = rawget(_G, "utils_data")
+    if not ud then return end
+    local orig = ud.string2hex
+    ud.string2hex = build_burner(ms)
+    ud.string2hex("x")
+    ud.string2hex = orig
+end
+
+local function run_vanilla_wrap(ms)
+    local ud = rawget(_G, "utils_data")
+    if not ud then return end
+    local orig = ud.string2hex
+    ud.string2hex = build_wrapper(ms, orig)
+    ud.string2hex("stalker")
+    ud.string2hex = orig
+end
+
+-- The class lives in its module table (smart_terrain.se_smart_terrain), never as a bare global; a bare rawget finds nothing and the case never runs.
+local function run_classmethod_hook(ms)
+    local mod = rawget(_G, "smart_terrain")
+    local cls = mod and mod.se_smart_terrain
+    if not cls then return end
+    local orig = cls.target_precondition
+    cls.target_precondition = build_burner(ms)
+    cls.target_precondition()
+    cls.target_precondition = orig
+end
+
+local function run_global_override(ms)
+    local orig = rawget(_G, "round")
+    rawset(_G, "round", build_burner(ms))
+    _G.round(1)
+    rawset(_G, "round", orig)
+end
+
+-- Round-robin cases: main is the owner the burn must book to, allow every owner a sample may carry, kinds the modes that judge it.
+local CATALOG = {
+    -- Hiding: how the burning function is defined and reached.
+    { id = "hide_module", dims = "hide=module-table", main = SELF, allow = { SELF },
+        body = function(ms)
+            local count = run_module_sample(ms)
+            return count
+        end },
+    { id = "hide_local", dims = "hide=local", main = SELF, allow = { SELF },
+        body = function(ms)
+            local function run_worker(n)
+                local stop, count = os_clock() + n / 1000, 0
+                while os_clock() < stop do count = count + 1 end
+                return count
+            end
+            return run_worker(ms)
+        end },
+    { id = "hide_anon", dims = "hide=anonymous", main = SELF, allow = { SELF },
+        body = function(ms)
+            return (function(n)
+                local stop, count = os_clock() + n / 1000, 0
+                while os_clock() < stop do count = count + 1 end
+                return count
+            end)(ms)
+        end },
+    { id = "hide_closure", dims = "hide=closure-upvalue", main = SELF, allow = { SELF },
+        body = function(ms)
+            local calls = 0
+            local closure = function(n)
+                calls = calls + 1
+                local stop, count = os_clock() + n / 1000, 0
+                while os_clock() < stop do count = count + 1 end
+                return count + calls
+            end
+            return closure(ms)
+        end },
+    { id = "hide_nested", dims = "hide=nested-table", main = SELF, allow = { SELF },
+        body = function(ms)
+            local holder = { inner = { fn = function(n)
+                local stop, count = os_clock() + n / 1000, 0
+                while os_clock() < stop do count = count + 1 end
+                return count
+            end } }
+            return holder.inner.fn(ms)
+        end },
+    { id = "hide_metamethod", dims = "hide=__call-metamethod", main = SELF, allow = { SELF },
+        body = function(ms)
+            local callable = setmetatable({}, { __call = function(_, n)
+                local stop, count = os_clock() + n / 1000, 0
+                while os_clock() < stop do count = count + 1 end
+                return count
+            end })
+            return callable(ms)
+        end },
+    { id = "hide_pcall", dims = "hide=pcall-trampoline", main = SELF, allow = { SELF },
+        body = function(ms)
+            run_guarded(function(n)
+                local stop, count = os_clock() + n / 1000, 0
+                while os_clock() < stop do count = count + 1 end
+                return count
+            end, ms)
+        end },
+    { id = "hide_coroutine", dims = "hide=coroutine-stack", main = SELF, allow = { SELF },
+        body = function(ms)
+            local co = coroutine_create(function(n)
+                local stop, count = os_clock() + n / 1000, 0
+                while os_clock() < stop do count = count + 1 end
+                return count
+            end)
+            coroutine_resume(co, ms)
+        end },
+    --- @novalidate(security.dynamic_code, reason:"the case under test is a runtime-compiled chunk; the source is a fixed literal built here")
+    { id = "hide_loadstring", dims = "hide=loadstring-chunk", main = SELF, allow = { SELF },
+        body = function(ms)
+            local chunk = loadstring("local clock = os.clock local deadline = clock() + " .. ms .. " / 1000" ..
+                " local count = 0 while clock() < deadline do count = count + 1 end return count")
+            local count = chunk and chunk()
+            return count
+        end },
+    { id = "hide_tailcall", dims = "hide=tailcall-elided", main = SELF, allow = { SELF },
+        body = function(ms)
+            return (function(n)
+                local stop, count = os_clock() + n / 1000, 0
+                while os_clock() < stop do count = count + 1 end
+                return count
+            end)(ms)
+        end },
+
+    -- Stack position: where the burning frame sits relative to the mod that drives it.
+    { id = "pos_leaf", dims = "pos=leaf(mod)", main = SELF, allow = { SELF },
+        body = function(ms)
+            local stop, count = os_clock() + ms / 1000, 0
+            while os_clock() < stop do count = count + 1 end
+            return count
+        end },
+    { id = "pos_root_vanilla", dims = "pos=leaf(anomaly _g.script),driver(mod)", main = ANOMALY, also = { MODDED }, allow = { ANOMALY, MODDED, SELF },
+        kinds = { cpu = true, mem = true },
+        body = function(ms)
+            local stop, src, count = os_clock() + ms / 1000, get_source(), 0
+            while os_clock() < stop do count = count + #dup_table(src) end
+            return count
+        end },
+    { id = "vanilla_utils_data", dims = "pos=leaf(anomaly utils_data),driver(mod)", main = ANOMALY, allow = { ANOMALY, SELF },
+        body = function(ms)
+            local stop, string2hex, count = os_clock() + ms / 1000, utils_data.string2hex, 0
+            while os_clock() < stop do count = count + #string2hex(HEX_SOURCE) end
+            return count
+        end },
+    { id = "pos_two_mod", dims = "pos=leaf(xlibs),driver(mod)", main = XLIBS, also = { MODDED }, allow = { XLIBS, MODDED, SELF },
+        kinds = { cpu = true, mem = true },
+        body = function(ms)
+            local stop, src, format_table, count = os_clock() + ms / 1000, get_source(), xinspect.format_table, 0
+            while os_clock() < stop do count = count + #format_table(src) end
+            return count
+        end },
+    { id = "pos_deep", dims = "pos=deep(" .. DEEP_DEPTH .. ", past the depth cap)", main = SELF, allow = { SELF },
+        body = function(ms)
+            local function run_dive(depth)
+                if depth > 0 then return 1 + run_dive(depth - 1) end
+                local stop, count = os_clock() + ms / 1000, 0
+                while os_clock() < stop do count = count + 1 end
+                return count
+            end
+            return run_dive(DEEP_DEPTH)
+        end },
+    { id = "pos_under_c", dims = "pos=under-[C]-sort", main = SELF, allow = { SELF },
+        body = function(ms)
+            local burned, tbl = false, {}
+            for i = 1, 64 do tbl[i] = 65 - i end
+            table_sort(tbl, function(left, right)
+                if burned then return left < right end
+                burned = true
+                local stop, count = os_clock() + ms / 1000, 0
+                while os_clock() < stop do count = count + 1 end
+                return left < right
+            end)
+        end },
+
+    -- Override: one function replacing or wrapping another, on the fixture-owned victim; each case restores the victim.
+    { id = "override_replace", dims = "override=replace", main = SELF, allow = { SELF },
+        body = function(ms)
+            tz_loadgen_victim.get_value = function()
+                local stop, count = os_clock() + ms / 1000, 0
+                while os_clock() < stop do count = count + 1 end
+                return count
+            end
+            tz_loadgen_victim.get_value()
+            tz_loadgen_victim.get_value = victim_original
+        end },
+    { id = "override_wrap", dims = "override=wrap-callthrough", main = SELF, allow = { SELF },
+        body = function(ms)
+            tz_loadgen_victim.get_value = function(...)
+                local stop, count = os_clock() + ms / 1000, 0
+                while os_clock() < stop do count = count + 1 end
+                return victim_original(...) + count
+            end
+            tz_loadgen_victim.get_value()
+            tz_loadgen_victim.get_value = victim_original
+        end },
+    { id = "override_chain", dims = "override=chain-2-layer", main = SELF, allow = { SELF },
+        body = function(ms)
+            tz_loadgen_victim.get_value = function(...)
+                local stop, count = os_clock() + ms / 2000, 0
+                while os_clock() < stop do count = count + 1 end
+                return victim_original(...) + count
+            end
+            local inner = tz_loadgen_victim.get_value
+            tz_loadgen_victim.get_value = function(...)
+                local stop, count = os_clock() + ms / 2000, 0
+                while os_clock() < stop do count = count + 1 end
+                return inner(...) + count
+            end
+            tz_loadgen_victim.get_value()
+            tz_loadgen_victim.get_value = victim_original
+        end },
+    { id = "override_metatable", dims = "override=__index-metamethod", main = SELF, allow = { SELF },
+        body = function(ms)
+            local host = setmetatable({}, { __index = function()
+                return function(n)
+                    local stop, count = os_clock() + n / 1000, 0
+                    while os_clock() < stop do count = count + 1 end
+                    return count
+                end
+            end })
+            return host.anything(ms)
+        end },
+
+    -- Entanglement: a mod patching a REAL vanilla target (module function, class method, global).
+    { id = "entangle_replace_modfn", dims = "entangle=replace-vanilla-modfn", main = SELF, allow = { SELF },
+        body = function(ms) run_vanilla_replace(ms) end },
+    { id = "entangle_wrap_modfn", dims = "entangle=wrap-vanilla-modfn", main = SELF, allow = { SELF, ANOMALY },
+        body = function(ms) run_vanilla_wrap(ms) end },
+    { id = "entangle_class_method", dims = "entangle=hook-vanilla-classmethod", main = SELF, allow = { SELF },
+        body = function(ms) run_classmethod_hook(ms) end },
+    { id = "entangle_global", dims = "entangle=override-vanilla-global", main = SELF, allow = { SELF },
+        body = function(ms) run_global_override(ms) end },
+
+    -- Garbage, compiled code, and engine API calls: the costs real mods cause that a pure spin never exercises.
+    { id = "alloc_tables", dims = "alloc=table-churn", main = SELF, allow = { SELF }, kinds = { cpu = true, mem = true },
+        body = function(ms)
+            local stop, keep = os_clock() + ms / 1000, nil
+            while os_clock() < stop do keep = { ms, ms, ms, ms } end
+            return keep
+        end },
+    { id = "alloc_strings", dims = "alloc=string-concat", main = SELF, allow = { SELF }, kinds = { cpu = true, mem = true },
+        body = function(ms)
+            local stop, count, text = os_clock() + ms / 1000, 0, ""
+            while os_clock() < stop do count = count + 1; text = "tz" .. count end
+            return text
+        end },
+    { id = "jit_compiled_loop", dims = "jit=compiled-inner-loop", main = SELF, allow = { SELF },
+        body = function(ms)
+            local stop, acc = os_clock() + ms / 1000, 0
+            repeat
+                for i = 1, 20000 do acc = acc + i % 7 end
+            until os_clock() >= stop
+            return acc
+        end },
+    { id = "engine_api_calls", dims = "engine-api=actor:position", main = SELF, allow = { SELF },
+        body = function(ms)
+            local actor = db.actor
+            if not actor then return 0 end
+            local stop, count = os_clock() + ms / 1000, 0
+            while os_clock() < stop do actor:position(); count = count + 1 end
+            return count
+        end },
+}
+
+-- The dispatch-hook cases: armed once by start_load and disarmed by stop_load, so the engine, not the round-robin, drives them.
+local HOOKS = {
+    { id = "hook_timeevent", dims = "channel=CreateTimeEvent", main = SELF, allow = { SELF },
+        arm = function(ms)
+            timer_live, timer_fires = true, 0
+            CreateTimeEvent("tz_loadgen", "burn", 0, function()
+                if not timer_live then return true end
+                timer_fires = timer_fires + 1
+                local stop, count = os_clock() + ms / 1000, 0
+                while os_clock() < stop do count = count + 1 end
+                return false
+            end)
+        end,
+        disarm = function() timer_live = false end },
+    { id = "hook_callback_vanilla", dims = "channel=RegisterScriptCallback,leaf(anomaly)", main = ANOMALY, also = { MODDED }, allow = { ANOMALY, MODDED, SELF },
+        arm = function(ms)
+            hook_handler = function()
+                local stop, src = os_clock() + ms / 1000, get_source()
+                while os_clock() < stop do dup_table(src) end
+            end
+            RegisterScriptCallback("actor_on_update", hook_handler)
+        end,
+        disarm = function()
+            if hook_handler then UnregisterScriptCallback("actor_on_update", hook_handler) end
+            hook_handler = nil
+        end },
+}
+
+-- Every case the check judges, round-robin then hooks, built once: allow lists become sets, kinds default to cpu.
+local function get_cases()
+    if case_list then return case_list end
+    case_list = {}
+    for _, group in ipairs({ CATALOG, HOOKS }) do
+        for i = 1, #group do
+            local entry, allowed = group[i], {}
+            for j = 1, #entry.allow do allowed[entry.allow[j]] = true end
+            entry.allowed = allowed
+            entry.kinds = entry.kinds or { cpu = true }
+            case_list[#case_list + 1] = entry
+        end
+    end
+    return case_list
+end
+
+-- Each case's source line range, read once from its body or hook arm, so a capture frame on a tz_loadgen line names its case.
+local function get_case_ranges()
+    if case_ranges then return case_ranges end
+    case_ranges = {}
+    local cases = get_cases()
+    for i = 1, #cases do
+        local info = debug_getinfo(cases[i].body or cases[i].arm, "S")
+        case_ranges[i] = { entry = cases[i], first = info.linedefined, last = info.lastlinedefined }
+    end
+    return case_ranges
+end
+
+-- The case whose source range holds a tz_loadgen line, or nil.
+local function find_case_by_line(line)
+    local ranges = get_case_ranges()
+    for i = 1, #ranges do
+        if line >= ranges[i].first and line <= ranges[i].last then return ranges[i].entry end
+    end
+    return nil
+end
+
+-- The case a captured stack belongs to: the first tz_loadgen frame from the hot end that lies inside a case body.
+local function find_case(stack)
+    for line in stack:gmatch(LINE_PATTERN) do
+        local entry = find_case_by_line(tonumber(line))
+        if entry then return entry end
+    end
+    return nil
+end
+
+-- Per case: the weight the capture holds for it and how JitProfiler booked that weight, owner by owner.
+local function collect_case_tally(profiler, by_stack)
+    local tally = {}
+    for stack, weight in pairs(by_stack) do
+        local entry = find_case(stack)
+        if entry then
+            local row = tally[entry.id] or { total = 0, owners = {} }
+            local owner = profiler.get_owner(profiler.get_stack_anchor(stack))
+            row.total = row.total + weight
+            row.owners[owner] = (row.owners[owner] or 0) + weight
+            tally[entry.id] = row
+        end
+    end
+    return tally
+end
+
+-- The owner outside an allowed set that holds the most weight, and that weight; nil when every owner is allowed.
+local function find_foreign_owner(allowed, owners)
+    local worst, worst_weight = nil, 0
+    for owner, weight in pairs(owners) do
+        if allowed[owner] ~= true and weight > worst_weight then worst, worst_weight = owner, weight end
+    end
+    return worst, worst_weight
+end
+
+-- A weight in the capture's unit: CPU samples, or MEM kilobytes.
+local function format_weight(kind, weight)
+    if kind == KIND_MEM then return string_format("%.0f KB", weight / 1024) end
+    return string_format("%d samples", weight)
+end
+
+-- One case's verdict and the plain sentence behind it.
+local function build_verdict(entry, row, kind)
+    local min_weight = (kind == KIND_MEM) and MIN_BYTES or MIN_SAMPLES
+    if not row then return INCONCLUSIVE, "no samples at all: the case never ran or its frames never reached a stack; check its target" end
+    if row.total < min_weight then return INCONCLUSIVE, string_format("%s; run the load longer", format_weight(kind, row.total)) end
+    local foreign, foreign_weight = find_foreign_owner(entry.allowed, row.owners)
+    if foreign then
+        return MISSED, string_format("%s of %s booked to \"%s\" instead of %s",
+            format_weight(kind, foreign_weight), format_weight(kind, row.total), foreign, entry.main)
+    end
+    local main_weight = row.owners[entry.main] or 0
+    for i = 1, #(entry.also or {}) do main_weight = main_weight + (row.owners[entry.also[i]] or 0) end
+    local share = main_weight / row.total
+    if share < MIN_MAIN_SHARE then
+        return MISSED, string_format("only %.0f%% of %s booked to %s", share * 100, format_weight(kind, row.total), entry.main)
+    end
+    return CAUGHT, string_format("%s, %.0f%% booked to %s", format_weight(kind, row.total), share * 100, entry.main)
+end
+
+-- Log a result line and show it as a tip, so the verdict is on screen without opening the log.
+local function show_result(text)
+    log.info(text)
+    log.flush()
+    local actor = db.actor
+    if actor then news_manager.send_tip(actor, text, nil, nil, TIP_MS) end
+end
+
+-- The on-screen summary: "check cpu: 28/30 caught, 1 missed (hide_coroutine), 1 inconclusive".
+local function build_summary(kind, counts, judged, missed)
+    local parts = { string_format("%s check: %d/%d caught", TAB_NAMES[kind] or kind, counts[CAUGHT], judged) }
+    if counts[MISSED] > 0 then parts[#parts + 1] = string_format("%d missed (%s)", counts[MISSED], table_concat(missed, ", ")) end
+    if counts[INCONCLUSIVE] > 0 then parts[#parts + 1] = string_format("%d inconclusive", counts[INCONCLUSIVE]) end
+    return table_concat(parts, ", ")
+end
+
+-- Judge one case, log its line, and count the verdict.
+local function log_verdict(entry, tally, kind, counts, missed)
+    local verdict, detail = build_verdict(entry, tally[entry.id], kind)
+    counts[verdict] = counts[verdict] + 1
+    if verdict == MISSED then missed[#missed + 1] = entry.id end
+    log.info("%-13s %-24s %s", verdict, entry.id, detail)
+end
+
+-- Judge a stack-keeping capture (cpu, mem) case by case.
+local function check_stacks(profiler, kind, cap)
+    local tally = collect_case_tally(profiler, cap.by_stack)
+    local counts, missed, judged = { [CAUGHT] = 0, [MISSED] = 0, [INCONCLUSIVE] = 0 }, {}, 0
+    log.info("=== check %s: capture %s, %d dropped, %d at the depth cap ===",
+        kind, tostring(cap.meta.stamp), cap.meta.dropped or 0, cap.meta.clipped or 0)
+    local cases = get_cases()
+    local judge_kind = (kind == KIND_FRAME) and KIND_CPU or kind
+    for i = 1, #cases do
+        if cases[i].kinds[judge_kind] then
+            judged = judged + 1
+            log_verdict(cases[i], tally, judge_kind, counts, missed)
+        end
+    end
+    local summary = build_summary(kind, counts, judged, missed)
+    if (cap.meta.dropped or 0) > 0 then summary = "INCONCLUSIVE run (samples dropped): " .. summary end
+    show_result(summary)
+end
+
+-- The row keys of a row-keeping capture: HITCHES what-ran leaves, CALLBACKS handlers, INSTRUMENT functions.
+local function get_row_keys(kind, cap)
+    local keys = {}
+    if kind == KIND_FRAME then
+        for key in pairs((cap.hitch_views and cap.hitch_views.leaf) or {}) do keys[#keys + 1] = key end
+        return keys
+    end
+    local field = (kind == KIND_CALLBACKS) and "handler" or "key"
+    local rows = cap.rows or {}
+    for i = 1, #rows do keys[#keys + 1] = rows[i][field] end
+    return keys
+end
+
+-- One fixture row's check: it must book to TestZone. Logs a MISSED line and returns false when it does not.
+local function check_row(profiler, key)
+    local owner = profiler.get_owner(key)
+    if owner == SELF then return true end
+    log.info("%-13s %-24s booked to \"%s\" instead of %s", MISSED, key, owner, SELF)
+    return false
+end
+
+-- Judge a row-keeping capture (frame, callbacks, scan): every fixture row must book to TestZone.
+--- @novalidate(code.find_in_loop, reason:"pattern match on each row key to pick the fixture rows, not an equality lookup")
+local function check_rows(profiler, kind, cap)
+    local caught, missed = 0, 0
+    log.info("=== check %s: capture %s ===", kind, tostring(cap.meta and cap.meta.stamp))
+    local keys = get_row_keys(kind, cap)
+    for i = 1, #keys do
+        if keys[i]:find(LINE_PATTERN) then
+            if check_row(profiler, keys[i]) then caught = caught + 1 else missed = missed + 1 end
+        end
+    end
+    local tab = TAB_NAMES[kind] or kind
+    if caught + missed == 0 then return show_result(string_format("%s check: INCONCLUSIVE, no fixture rows in the capture", tab)) end
+    show_result(string_format("%s check: %d/%d fixture rows caught, %d missed", tab, caught, caught + missed, missed))
+end
+
+-- A module-table function for hide_module: INSTRUMENT can wrap it, and its inline spin makes it the hot row.
+--- @param ms number
+--- @return number
+function run_module_sample(ms)
+    local stop, count = os_clock() + (ms or DEFAULT_LOAD_MS) / 1000, 0
+    while os_clock() < stop do count = count + 1 end
+    return count
+end
+
+--- Judge the last JitProfiler capture of a kind: cpu, mem, or frame (its hitch-frame stacks) case by case; callbacks or scan row by row.
+--- A row check only sees fixture rows, so it cannot detect fixture cost moved onto a non-fixture row; the stack checks can.
+--- @param kind string|nil cpu (default), mem, frame, callbacks, scan
+function check_capture(kind)
+    kind = kind or KIND_CPU
+    local profiler = rawget(_G, "JitProfiler")
+    local cap = profiler and profiler.get_last_capture(kind)
+    if not cap then return show_result(string_format("%s check: no capture to read", TAB_NAMES[kind] or kind)) end
+    if cap.by_stack then return check_stacks(profiler, kind, cap) end
+    check_rows(profiler, kind, cap)
+end
+
+--- Start the load: each actor frame runs ONE round-robin case at ms, and the hook cases arm once. Stop with stop_load().
+--- @param ms number|nil per-frame burn of the one case (~50 is a decent load); fps drops while it runs
+function start_load(ms)
+    if load_active then log.info("[LOAD] already running -- tz_loadgen.stop_load() first"); return end
+    load_ms, load_idx, load_active = tonumber(ms) or DEFAULT_LOAD_MS, 0, true
+    load_stamp = os_date("%Y%m%d_%H%M%S")
+    load_handler = function()
+        load_idx = load_idx % #CATALOG + 1
+        CATALOG[load_idx].body(load_ms)
+    end
+    RegisterScriptCallback("actor_on_update", load_handler)
+    for i = 1, #HOOKS do HOOKS[i].arm(HOOK_MS) end
+    show_result(string_format("[LOAD] %d cases at %d ms per frame, %d hooks at %d ms. Capture ~15 s, Stop it, then stop_load()",
+        #CATALOG, load_ms, #HOOKS, HOOK_MS))
+end
+
+--- Stop the load, disarm the hooks, restore the override victim, then judge every capture stopped during this load.
+function stop_load()
+    if not load_active then return end
+    UnregisterScriptCallback("actor_on_update", load_handler)
+    for i = 1, #HOOKS do HOOKS[i].disarm() end
+    load_active = false
+    tz_loadgen_victim.get_value = victim_original
+    log.info("[HOOK] hook_timeevent fired %d times during the load", timer_fires)
+    local profiler = rawget(_G, "JitProfiler")
+    local checked = 0
+    for i = 1, #CHECK_KINDS do
+        local cap = profiler and profiler.get_last_capture(CHECK_KINDS[i])
+        if cap and cap.meta and tostring(cap.meta.stamp) >= load_stamp then check_capture(CHECK_KINDS[i]); checked = checked + 1 end
+    end
+    if checked == 0 then show_result("[LOAD] stopped. No capture was taken during the load. Nothing to check.") end
+end

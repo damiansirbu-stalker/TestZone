@@ -1,0 +1,11 @@
+--- tz_loadgen_victim: the override target for tz_loadgen's cross-file override case. Its one
+--- function is replaced by tz_loadgen, so the live body's definition site becomes tz_loadgen.script
+--- while this module's name stays tz_loadgen_victim.script. That mismatch is the signal a
+--- definition-site override scan reads, so the fixture exercises it against a real target.
+--- @novalidate(conventions.unused_export, reason:"override target, replaced and invoked by tz_loadgen")
+
+--- The original body, defined here. tz_loadgen replaces it and later restores it.
+--- @return number
+function get_value()
+    return 0
+end
