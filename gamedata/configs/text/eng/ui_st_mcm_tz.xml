@@ -54,6 +54,12 @@
     <string id="ui_mcm_tz_main_geometry_scan_enabled_desc">
         <text>Scan smart terrain distances, stash density, base spacing, and feature distribution per level. Fires on level load and periodically. Log output: logs/testzone.log</text>
     </string>
+    <string id="ui_mcm_tz_main_event_queue_watch_enabled">
+        <text>Timer queue watch enabled</text>
+    </string>
+    <string id="ui_mcm_tz_main_event_queue_watch_enabled_desc">
+        <text>For when every timer in the game stops at once: HUDs never appear, stat panels freeze, and nothing is logged. Records whether the timer queue registered at load and which timer broke it. After a freeze, run_string tz_watcher.log_queue_state() names the timer left mid-call. Takes effect on the next game load. Log output: logs/testzone.log</text>
+    </string>
     <string id="ui_mcm_tz_main_rate_limit_enabled">
         <text>Rate limiting</text>
     </string>

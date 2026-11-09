@@ -4,12 +4,16 @@
 local pairs, ipairs, tostring, type, time_global = pairs, ipairs, tostring, type, time_global
 local math_floor, string_format, table_concat, table_sort = math.floor, string.format, table.concat, table.sort
 local RegisterScriptCallback = RegisterScriptCallback
+local rawget, rawset, xpcall, error = rawget, rawset, xpcall, error
 local INVALID_ENTITY_ID = xconst.INVALID_ENTITY_ID
 
 local log = xlog.get_logger("TestZone.watcher", { outfile = "testzone.log" })
 
 -- Rate limiting state
 local last_log_time = {}
+
+-- The timer the queue watch saw start and not yet finish; the culprit when ProcessEventQueue throws.
+local _queue_running = nil
 
 -- Use xinspect for formatting (with local aliases for performance)
 local format_table = xinspect.format_table
@@ -358,6 +362,60 @@ local function _init_timers()
     end)
 end
 
+--- Wrap a timer callback so the queue watch knows which timer is mid-call when the queue throws.
+local function _build_stamped(fn, ev_id, act_id)
+    local tag = tostring(ev_id) .. "/" .. tostring(act_id)
+    return function(...)
+        _queue_running = tag
+        local res = fn(...)
+        _queue_running = nil
+        return res
+    end
+end
+
+--- The timer-queue watch, once per Lua state: one silent drop of the ProcessEventQueue level call (PHCommander.cpp:87-96) stops every timer.
+--- Installed at on_game_start, before bind_stalker_ext registers the queue at actor_on_reinit, so the guarded queue is the one registered.
+--- @novalidate(xray.cached_timer_global, reason:"the watch wraps the demonized CreateTimeEvent/ProcessEventQueue and must call the originals")
+local function _start_queue_watch()
+    if rawget(_G, "__tz_queue_watch") then return end
+    rawset(_G, "__tz_queue_watch", true)
+    local create_event, process_queue, add_unique, add_call = CreateTimeEvent, rawget(_G, "ProcessEventQueue"), AddUniqueCall, level.add_call
+    local function create_stamped_event(ev_id, act_id, timer, fn, ...)
+        if type(fn) == "function" then fn = _build_stamped(fn, ev_id, act_id) end
+        return create_event(ev_id, act_id, timer, fn, ...)
+    end
+    local ran = false
+    local function run_guarded_queue(force)
+        if not ran then
+            ran = true
+            log.warn("[QUEUE] ProcessEventQueue first run")
+            log.flush()
+        end
+        local ok, res = xpcall(process_queue, debug.traceback, force)
+        if ok then return res end
+        log.warn("[QUEUE] ProcessEventQueue threw in timer=%s: %s", tostring(_queue_running), tostring(res))
+        log.flush()
+        _queue_running = nil
+        error(res, 0)
+    end
+    local function add_traced_call(functor)
+        if functor ~= run_guarded_queue then return add_unique(functor) end
+        local reached = false
+        level.add_call = function(...)
+            reached = true
+            return add_call(...)
+        end
+        add_unique(functor)
+        level.add_call = add_call
+        log.warn("[QUEUE] AddUniqueCall(ProcessEventQueue) reached level.add_call=%s", tostring(reached))
+        log.flush()
+    end
+    _G.CreateTimeEvent = create_stamped_event
+    _G.ProcessEventQueue = run_guarded_queue
+    _G.AddUniqueCall = add_traced_call
+    log.warn("[QUEUE] watch installed")
+end
+
 --- Load MCM _config into local _config table
 local _cfg = tz_mcm and tz_mcm.cfg
 local function _load_config()
@@ -378,6 +436,12 @@ local function _load_config()
     _config.world_scan_enabled = _cfg.world_scan_enabled
     _config.world_scan_interval = _cfg.world_scan_interval
     _config.geometry_scan_enabled = _cfg.geometry_scan_enabled
+end
+
+--- Log the timer-queue watch stamp: after a freeze, a timer left set is the one that was mid-call when the queue died.
+function log_queue_state()
+    log.warn("[QUEUE] state watch=%s running=%s", tostring(rawget(_G, "__tz_queue_watch")), tostring(_queue_running))
+    log.flush()
 end
 
 function get_stats()
@@ -423,6 +487,7 @@ end
 
 function on_game_start()
     log.info("TestZone v%s (xlibs v%s)", _tz_init.get_version(), xlibs.get_version())
+    if tz_mcm.get_config("event_queue_watch_enabled") then _start_queue_watch() end
     _init_timers()
     _load_config()
     RegisterScriptCallback("actor_on_first_update", function()
