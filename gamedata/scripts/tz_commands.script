@@ -281,7 +281,7 @@ local function _update_actor_drive()
 end
 
 -- Face the actor at the nearest live spawned mutant each frame via the camera (set_actor_direction sets cam_Active, the -getH idiom).
--- The aim read mutants use (xcombat.is_aim_held) follows the camera, so this opens the aim-gated moves in a harness. Keep a weapon out.
+-- The aim read mutants use (xcombat.is_enemy_watching) follows the camera, so this opens the aim-gated moves in a harness. Keep a weapon out.
 local function _update_actor_aim()
     local actor = db.actor
     if not actor then return end
@@ -368,7 +368,7 @@ local function _release_clearable_npc(sim, npc_id, actor_pos, radius_sqr, actor_
     if npc:position():distance_to_sqr(actor_pos) > radius_sqr then return 0 end
     local is_stalker = IsStalker(npc)
     if not (is_stalker or IsMonster(npc)) then return 0 end
-    if is_stalker and npc:has_info("npcx_is_companion") then return 0 end
+    if is_stalker and xcreature.is_companion(npc) then return 0 end
     local se = xobject.get_se(npc_id)
     if not se then return 0 end
     sim:release(se, true)
