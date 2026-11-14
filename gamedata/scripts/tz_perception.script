@@ -14,7 +14,6 @@ local TICK_SEC = 0.5
 local REPORT_SEC = 60
 local SLOW_TICK_EVERY = 2
 local SEE_STEP_PCT = 10
-local HEAR_COLLAPSE_MS = 400
 local SOURCE_LIMIT_MS = 1000
 local SCRIPT_DANGER_ACTION_ID = 188113
 local KIND_STALKER, KIND_MUTANT = "stalker", "mutant"
@@ -146,6 +145,22 @@ local function _find_actor_entry(records)
     return nil
 end
 
+--- One list as "count:id@age,id@age" for the first HEAR of a sound, to see which record the actor listing misses.
+local function _format_list(records, tg)
+    local count, parts = 0, {}
+    for record in records do
+        count = count + 1
+        local obj = record:object()
+        parts[#parts + 1] = string_format("%s@%d", obj and obj:id() or "nil", tg - record.level_time)
+    end
+    return string_format("%d:%s", count, table_concat(parts, ","))
+end
+
+local function _log_lists(npc, id, tg)
+    log.info("LISTS npc=%d memory_age=%dms vis=[%s] snd=[%s] hit=[%s]", id, tg - npc:memory_time(db.actor),
+        _format_list(npc:memory_visible_objects(), tg), _format_list(npc:memory_sound_objects(), tg), _format_list(npc:memory_hit_objects(), tg))
+end
+
 local function _get_action_names(npc)
     local manager = npc:motivation_action_manager()
     if not (manager and manager:initialized()) then return "none", "-" end
@@ -210,8 +225,8 @@ local function _on_hear(npc, who_id, s_type, dist_sqr, power, _pos)
     local rec = _get_record(id, kind)
     local tg = time_global()
     local hear_key = tostring(who_id) .. "/" .. tostring(s_type)
-    local limit_ms = who_id == AC_ID and HEAR_COLLAPSE_MS or SOURCE_LIMIT_MS
-    if rec.hear_key == hear_key and (tg - rec.hear_at) < limit_ms then return end
+    local same_sound = rec.hear_key == hear_key
+    if same_sound and (who_id == AC_ID and rec.hear_at == tg or who_id ~= AC_ID and (tg - rec.hear_at) < SOURCE_LIMIT_MS) then return end
     rec.hear_key, rec.hear_at = hear_key, tg
     local factor, threshold = _get_keep_gate(npc, kind, s_type)
     local kept_hint = (power or 0) * factor >= threshold
@@ -221,6 +236,7 @@ local function _on_hear(npc, who_id, s_type, dist_sqr, power, _pos)
     if who_id == AC_ID and kind == KIND_STALKER then
         gate = _get_gate(npc, tg)
         if kept_hint then rec.keep_check = { type = s_type, power = power or 0 } end
+        if not same_sound then _log_lists(npc, id, tg) end
     end
     log.info("HEAR npc=%d kind=%s %s from=%d type=%s dist=%.1fm power=%.3f factor=%.2f threshold=%.2f kept_hint=%s%s",
         id, kind, npc:name(), who_id, tostring(s_type), math_sqrt(dist_sqr or 0), power or -1, factor, threshold, tostring(kept_hint), gate)
