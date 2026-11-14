@@ -1,0 +1,89 @@
+<w>
+	<main x="0" y="0" width="1024" height="768"/>
+
+	<!-- A compact band docked to the left edge; the rest stays transparent so the spot stays visible.
+	     Three areas, top to bottom: where you are, your input, the last records written; the readings live on the HUD. -->
+	<background x="8" y="16" width="300" height="376" stretch="1">
+		<texture>ui_inGame2_pda_buttons_background</texture>
+	</background>
+
+	<hdr_tool x="16" y="22" width="100" height="20">
+		<text font="letterica18" align="l" r="200" g="170" b="120">GEO</text>
+	</hdr_tool>
+	<btn_help x="270" y="20" width="30" height="24" stretch="1">
+		<texture>ui_inGame2_pda_button</texture>
+		<text font="letterica16" align="c">?</text>
+	</btn_help>
+	<line_tool x="16" y="44" width="284" height="4" stretch="1">
+		<texture>ui_inGame2_pda_line_horizontal</texture>
+	</line_tool>
+
+	<!-- STATUS: level, position, vertex; recording state and record counts. -->
+	<screen x="16" y="52" width="284" height="42" stretch="1">
+		<texture>ui_inGame2_pda_Filtr_plyer_interface_off</texture>
+	</screen>
+	<lbl_where x="20" y="54" width="276" height="18">
+		<text font="letterica16" align="l" vert_align="c" r="66" g="157" b="195"/>
+	</lbl_where>
+	<lbl_state x="20" y="74" width="276" height="18">
+		<text font="letterica16" align="l" vert_align="c" r="66" g="157" b="195"/>
+	</lbl_state>
+
+	<!-- INPUT: one -/yes/no combo per mark (placed by the script, two columns), the note and record.
+	     The combo follows MCM's list element (ui_mcm_16.xml). -->
+	<hdr_input x="16" y="100" width="284" height="16">
+		<text font="letterica16" align="l" r="200" g="170" b="120">INPUT</text>
+	</hdr_input>
+	<mark_caption x="0" y="0" width="76" height="22">
+		<text font="letterica16" align="l" vert_align="c" r="180" g="200" b="180"/>
+	</mark_caption>
+	<mark_list x="0" y="0" width="58" height="9020" stretch="1" list_length="3">
+		<list_font r="170" g="170" b="170" font="letterica16"/>
+		<text_color>
+			<e r="170" g="170" b="170"/>
+			<d r="70" g="70" b="70"/>
+		</text_color>
+	</mark_list>
+
+	<note x="16" y="226" width="206" height="26" stretch="1">
+		<text x="5" font="letterica16" vert_align="c" align="l"/>
+		<texture>ui_inGame2_edit_box_2</texture>
+	</note>
+	<btn_note x="228" y="226" width="72" height="26" stretch="1">
+		<texture>ui_inGame2_pda_button</texture>
+		<text font="letterica16" align="c">Note</text>
+	</btn_note>
+	<btn_record x="16" y="258" width="284" height="26" stretch="1">
+		<texture>ui_inGame2_pda_button</texture>
+		<text font="letterica16" align="c">Record</text>
+	</btn_record>
+
+	<!-- FILE: the last records written (placed by the script). -->
+	<hdr_file x="16" y="292" width="284" height="16">
+		<text font="letterica16" align="l" r="200" g="170" b="120">FILE</text>
+	</hdr_file>
+	<feed_row x="0" y="0" width="280" height="18">
+		<text font="letterica16" align="l" vert_align="c" r="160" g="160" b="160"/>
+	</feed_row>
+
+	<!-- One HUD grid cell, the AlifePlus stats overlay's line (ui_ap_stats.xml); the script places and colors each. -->
+	<hud_cell x="0" y="0" width="100" height="14">
+		<text font="letterica16" r="212" g="201" b="168" a="230" complex_mode="0"/>
+	</hud_cell>
+
+	<!-- HELP: the page tz_help opens from the ? button. The text is 720 wide so a 200-character paragraph fits one line;
+	     tz_help sets the page height and the Close row from the text height. -->
+	<help_background x="132" y="134" width="760" height="300" stretch="1">
+		<texture>ui_inGame2_pda_buttons_background</texture>
+	</help_background>
+	<help_title x="152" y="148" width="720" height="22">
+		<text font="letterica18" align="l" r="200" g="170" b="120"/>
+	</help_title>
+	<help_text x="152" y="180" width="720" height="40">
+		<text font="letterica16" align="l" complex_mode="1" r="200" g="200" b="200"/>
+	</help_text>
+	<help_close x="792" y="0" width="80" height="26" stretch="1">
+		<texture>ui_inGame2_pda_button</texture>
+		<text font="letterica16" align="c">Close</text>
+	</help_close>
+</w>

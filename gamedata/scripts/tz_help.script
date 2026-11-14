@@ -1,0 +1,49 @@
+--- tz_help: the help page each TestZone tool opens from its ? button, laid out by the tool's own XML and filled from one string id.
+
+-- Space under the text before the Close button and under the button; the page grows to fit the text, like UIHint (utils_ui.script:3434-3442).
+local GAP, CLOSE_H = 16, 26
+
+class "tz_help_wnd" (CUIScriptWnd)
+
+function tz_help_wnd:__init(xml_file, title_id, text_id) super()
+    self:SetWndRect(Frect():set(0, 0, 1024, 768))
+    self:SetAutoDelete(true)
+    local xml = CScriptXmlInit()
+    xml:ParseFile(xml_file)
+    local background = xml:InitStatic("help_background", self)
+    xml:InitStatic("help_title", self):TextControl():SetText(game.translate_string(title_id))
+    local text = xml:InitTextWnd("help_text", self)
+    text:SetText(game.translate_string(text_id))
+    text:AdjustHeightToText()
+    local close = xml:Init3tButton("help_close", self)
+    local close_y = text:GetWndPos().y + text:GetHeight() + GAP
+    close:SetWndPos(vector2():set(close:GetWndPos().x, close_y))
+    local top = background:GetWndPos().y
+    background:SetWndSize(vector2():set(background:GetWidth(), close_y + CLOSE_H + GAP - top))
+    self:Register(close, "help_close")
+    self:AddCallback("help_close", ui_events.BUTTON_CLICKED, self.hide, self)
+end
+
+--- Esc closes the help page and leaves the tool open under it.
+function tz_help_wnd:OnKeyboard(dik, action)
+    local res = CUIScriptWnd.OnKeyboard(self, dik, action)
+    if action ~= ui_events.WINDOW_KEY_PRESSED then return res end
+    if res or dik ~= DIK_keys.DIK_ESCAPE then return res end
+    self:hide()
+    return true
+end
+
+function tz_help_wnd:hide()
+    self:HideDialog()
+    Unregister_UI("tz_help_wnd")
+end
+
+--- Show a tool's help page over its window.
+--- @param xml_file string The tool's layout file, which holds the help_* elements
+--- @param title_id string String id of the page title
+--- @param text_id string String id of the page text
+function show_page(xml_file, title_id, text_id)
+    local page = tz_help_wnd(xml_file, title_id, text_id)
+    page:ShowDialog(true)
+    Register_UI("tz_help_wnd", "tz_help", page)
+end

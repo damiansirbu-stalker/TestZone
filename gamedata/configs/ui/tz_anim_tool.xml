@@ -14,10 +14,14 @@
 		<texture>ui_inGame2_pda_button</texture>
 		<text font="letterica16" align="c" r="200" g="160" b="120">reset</text>
 	</btn_reset>
-	<btn_select x="928" y="20" width="80" height="24" stretch="1">
+	<btn_select x="926" y="20" width="56" height="24" stretch="1">
 		<texture>ui_inGame2_pda_button</texture>
 		<text font="letterica16" align="c" r="66" g="157" b="195">select</text>
 	</btn_select>
+	<btn_help x="984" y="20" width="24" height="24" stretch="1">
+		<texture>ui_inGame2_pda_button</texture>
+		<text font="letterica16" align="c">?</text>
+	</btn_help>
 	<line_player x="798" y="44" width="210" height="4" stretch="1">
 		<texture>ui_inGame2_pda_line_horizontal</texture>
 	</line_player>
@@ -89,4 +93,20 @@
 	<status x="798" y="584" width="210" height="44">
 		<text font="letterica16" align="l" complex_mode="1" r="160" g="160" b="160"/>
 	</status>
+
+	<!-- HELP: the page tz_help opens from the ? button. The text is 720 wide so a 200-character paragraph fits one line;
+	     tz_help sets the page height and the Close row from the text height. -->
+	<help_background x="132" y="134" width="760" height="300" stretch="1">
+		<texture>ui_inGame2_pda_buttons_background</texture>
+	</help_background>
+	<help_title x="152" y="148" width="720" height="22">
+		<text font="letterica18" align="l" r="200" g="170" b="120"/>
+	</help_title>
+	<help_text x="152" y="180" width="720" height="40">
+		<text font="letterica16" align="l" complex_mode="1" r="200" g="200" b="200"/>
+	</help_text>
+	<help_close x="792" y="0" width="80" height="26" stretch="1">
+		<texture>ui_inGame2_pda_button</texture>
+		<text font="letterica16" align="c">Close</text>
+	</help_close>
 </w>

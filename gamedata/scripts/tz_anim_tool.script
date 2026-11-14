@@ -189,7 +189,7 @@ function tz_anim_tool_wnd:init_controls()
     self.snote = xml:InitEditBox("snote", self)
     self:Register(self.snote, "snote")
     local buttons = { "btn_select", "btn_reset", "btn_pos_down", "btn_pos_up", "btn_prior", "btn_play", "btn_stop", "btn_next",
-                      "btn_good", "btn_bad", "btn_note" }
+                      "btn_good", "btn_bad", "btn_note", "btn_help" }
     for i = 1, #buttons do self:Register(xml:Init3tButton(buttons[i], self), buttons[i]) end
 end
 
@@ -207,6 +207,11 @@ function tz_anim_tool_wnd:init_callbacks()
     self:AddCallback("btn_good", ui_events.BUTTON_CLICKED, function() self:add_verdict("good") end, self)
     self:AddCallback("btn_bad",  ui_events.BUTTON_CLICKED, function() self:add_verdict("bad") end, self)
     self:AddCallback("btn_note", ui_events.BUTTON_CLICKED, function() self:add_verdict("note") end, self)
+    self:AddCallback("btn_help", ui_events.BUTTON_CLICKED, self.show_help, self)
+end
+
+function tz_anim_tool_wnd:show_help()
+    tz_help.show_page("tz_anim_tool.xml", "st_tz_anim_tool_help_title", "st_tz_anim_tool_help")
 end
 
 function tz_anim_tool_wnd:build_list()

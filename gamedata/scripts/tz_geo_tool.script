@@ -1,0 +1,530 @@
+--- tz_geo_tool: GeoTool - marks, notes and labelled samples per spot, all into one file. Settings in MCM TestZone > GeoTool.
+
+local string_format, table_concat, table_insert = string.format, table.concat, table.insert
+local tostring, math_floor = tostring, math.floor
+local os_date, time_global, RegisterScriptCallback = os.date, time_global, RegisterScriptCallback
+
+local OUTPUT_FILE = "geo_tool.txt"
+local LOGS_MOUNT  = "$logs$"
+local EV          = "tz_geo_tool"
+local RQ_STATIC   = 2
+local STOP_SHORT  = 0.4
+local FEED_MAX    = 4
+local FEED_CHARS  = 46
+-- The marks you set by hand, in window order. Each is unset, yes or no; unset means you have not said.
+local MARKS = { "indoor", "overhang", "upper_floor", "underground", "base", "under_trees" }
+local MARK_STATES = { { label = "-", value = nil }, { label = "yes", value = true }, { label = "no", value = false } }
+-- Check groups in HUD order; a check with no group (sky) goes to the records only.
+local GROUPS = { "WHERE", "ENCLOSED", "COVER", "WEATHER" }
+local CHECK_ORDER = { "smart", "base_owner", "is_indoor", "roof", "roof_walls", "underground",
+    "surge_cover", "safe_cover", "rain", "sky" }
+-- Thresholds: chest above the feet, a roof this close counts as indoor, ray reach, the engine's own indoor sky cutoff (GamePersistent.cpp:314-315).
+local CHEST_HEIGHT, ROOF_NEAR, SKY_RANGE, SKY_INDOOR_BELOW = 1.51, 4, 40, 0.05
+-- xcombat.is_indoor counts a wall within this distance (xcombat.script:101); base owners count within this radius (dd_test.script:202).
+local WALL_NEAR, BASE_OWNER_RADIUS = 5, 80
+-- Window layout anchors the script places rows from; the fixed elements sit in tz_geo_tool.xml.
+local MARK_TOP, MARK_ROW_H, MARK_COL_X = 118, 26, { 16, 162 }
+local FEED_TOP, FEED_ROW_H = 310, 18
+-- HUD grid, the AlifePlus stats overlay's metrics (ap_core_hud.script:65-84): check | reading.
+local HUD_ROW_H, HUD_MARGIN = 14, 15
+local HUD_LABEL_W, HUD_VALUE_W = 84, 200
+local HUD_W = HUD_LABEL_W + HUD_VALUE_W
+local HUD_ROWS = 4 + #GROUPS + #CHECK_ORDER
+local HUD_H = HUD_ROWS * HUD_ROW_H + 4
+local POSITION_OFF = "off"
+
+local _mark = {}
+local _recording = false
+local _rec_since = 0
+local _readings = {}
+local _feed = {}
+local _counts = { NOTE = 0, SAMPLE = 0, MARKS = 0 }
+local _box = nil
+local _hud, _hud_added = nil, false
+local _live_on = false
+-- Text colors, built lazily (GetARGB is absent at module-load under the validator); text is the AlifeTactics HUD grey (at_hud.script:56).
+local _clr = nil
+
+local function _get_color(name)
+    if not _clr then
+        _clr = {
+            text   = GetARGB(220, 200, 200, 200),
+            header = GetARGB(140, 200, 170, 120),
+            green  = GetARGB(190, 160, 210, 150),
+            red    = GetARGB(190, 230, 130, 120),
+        }
+    end
+    return _clr[name]
+end
+
+local function _get_setting(key)
+    return tz_mcm.get_config("geo_" .. key)
+end
+
+-- One static-geometry ray; distance to the first hit within range, or nil (the ray_pick class reads 0 on a miss, raypick.cpp:32).
+local function _get_ray_distance(pos, dir, range)
+    local ray = ray_pick()
+    ray:set_flags(RQ_STATIC)
+    ray:set_position(pos)
+    ray:set_direction(dir)
+    ray:set_range(range)
+    ray:query()
+    local hit = ray:get_distance()
+    return (hit > 0 and hit <= range) and hit or nil
+end
+
+-- Roof height above the chest from an up ray, or a down ray from above when the up ray misses a single-sided roof.
+local function _get_roof_height(pos)
+    local chest = vector():set(pos.x, pos.y + CHEST_HEIGHT, pos.z)
+    local up = _get_ray_distance(chest, vector():set(0, 1, 0), SKY_RANGE)
+    if up then return up, "up" end
+    local top = vector():set(pos.x, chest.y + SKY_RANGE, pos.z)
+    local down = _get_ray_distance(top, vector():set(0, -1, 0), SKY_RANGE - STOP_SHORT)
+    if down then return SKY_RANGE - down, "down" end
+    return nil, "none"
+end
+
+local function _get_place_word(indoor)
+    return indoor and "indoor" or "outdoor"
+end
+
+local function _get_yes_no(on)
+    return on and "yes" or "no"
+end
+
+local function _get_nearest_smart()
+    local ns = smart_terrain.nearest_to_actor_smart
+    return ns and ns.id and xobject.get_se(ns.id), ns and ns.dist
+end
+
+-- The check registry: run(pos) returns the shown reading and, for a check tied to a mark, its true/false answer.
+local CHECKS = {
+    smart = { group = "WHERE", mark = "base", run = function()
+        local smart, dist = _get_nearest_smart()
+        if not smart then return "none", nil end
+        local base, lair = xsmart.is_base(smart), xsmart.is_lair(smart)
+        local props = (base and "  base" or "") .. (lair and "  lair" or "")
+        return string_format("%s %.0f m%s", smart:name(), dist or -1, props), base
+    end },
+    base_owner = { group = "WHERE", mark = "base", run = function(pos)
+        local owner, dist = xsmart.find_base_owner(pos, BASE_OWNER_RADIUS)
+        if not owner then return string_format("none within %d m", BASE_OWNER_RADIUS), false end
+        return string_format("%s %.0f m", owner, dist), true
+    end },
+    is_indoor = { group = "ENCLOSED", mark = "indoor", run = function(pos)
+        local on = xcombat.is_indoor(pos) == true
+        return _get_place_word(on), on
+    end },
+    roof_walls = { group = "ENCLOSED", run = function(pos)
+        local enc = xcombat.get_enclosure(pos)
+        if not enc then return "n/a" end
+        local near = 0
+        for i = 1, 4 do near = near + ((enc.walls[i] and enc.walls[i] <= WALL_NEAR) and 1 or 0) end
+        local roof = enc.roof and string_format("roof %.1f m", enc.roof) or "no roof"
+        return string_format("%s  walls %d within %d m", roof, near, WALL_NEAR)
+    end },
+    roof = { group = "ENCLOSED", mark = "indoor", run = function(pos)
+        local height, via = _get_roof_height(pos)
+        if not height then return "open sky = outdoor", false end
+        local on = height <= ROOF_NEAR
+        return string_format("roof %.1f m (%s) = %s", height, via, _get_place_word(on)), on
+    end },
+    sky = { mark = "indoor", run = function()
+        local value = db.actor:get_luminocity_hemi()
+        local on = value < SKY_INDOOR_BELOW
+        return string_format("%.3f = %s", value, _get_place_word(on)), on
+    end },
+    underground = { group = "ENCLOSED", mark = "underground", run = function()
+        local on = GetEvent("underground") == true
+        return _get_yes_no(on), on
+    end },
+    surge_cover = { group = "COVER", run = function(pos)
+        local sm = surge_manager.get_surge_manager()
+        return _get_yes_no(sm and sm:pos_in_cover(pos))
+    end },
+    safe_cover = { group = "COVER", run = function()
+        return _get_yes_no(GetEvent("current_safe_cover"))
+    end },
+    rain = { group = "WEATHER", run = function()
+        return level.rain_hemi and string_format("%.2f", level.rain_hemi()) or "n/a"
+    end },
+}
+
+local function _get_mark_text()
+    local set = {}
+    for i = 1, #MARKS do
+        local value = _mark[MARKS[i]]
+        if value ~= nil then set[#set + 1] = MARKS[i] .. "=" .. _get_yes_no(value) end
+    end
+    return #set > 0 and table_concat(set, "+") or "-"
+end
+
+-- Run every check at pos into _readings; a check whose mark is set gets agree true/false, else nil.
+local function _update_readings(pos)
+    local rows = {}
+    for i = 1, #CHECK_ORDER do
+        local name = CHECK_ORDER[i]
+        local check = CHECKS[name]
+        local reading, answer = check.run(pos)
+        local said = check.mark and _mark[check.mark]
+        local agree = nil
+        if said ~= nil and answer ~= nil then agree = (answer == true) == said end
+        rows[#rows + 1] = { name = name, group = check.group, reading = reading, mark = check.mark, said = said, agree = agree }
+    end
+    _readings = rows
+end
+
+local function _format_readings()
+    local parts = {}
+    for i = 1, #_readings do parts[#parts + 1] = _readings[i].name .. "=" .. _readings[i].reading end
+    return table_concat(parts, "; ")
+end
+
+-- Gold when the check's mark is unset, faint green when the reading agrees with it, faded red when not.
+local function _get_reading_color(data)
+    if data.agree == nil then return _get_color("text") end
+    return _get_color(data.agree and "green" or "red")
+end
+
+local function _is_window_open()
+    return _box ~= nil and _box:IsShown()
+end
+
+-- Append one record to the output file: time, kind, level, x y z, level vertex, set marks, payload.
+local function _write_record(kind, payload)
+    local actor = db.actor
+    local base = getFS():update_path(LOGS_MOUNT, "")
+    if not (actor and base) then return false end
+    local pos = actor:position()
+    local stamp = os_date("%H:%M:%S")
+    local line = string_format("%s %s\t%s\t%s\t%.2f %.2f %.2f\t%d\t%s\t%s", os_date("%Y-%m-%d"), stamp, kind,
+        level.name(), pos.x, pos.y, pos.z, actor:level_vertex_id(), _get_mark_text(), payload or "")
+    local ok = xfs.write_file(base .. OUTPUT_FILE, line .. "\n", true)
+    _counts[kind] = _counts[kind] + 1
+    local short = string_format("%s %s %s", stamp, kind, payload or "")
+    table_insert(_feed, 1, #short > FEED_CHARS and (short:sub(1, FEED_CHARS - 1) .. "~") or short)
+    _feed[FEED_MAX + 1] = nil
+    if _is_window_open() then _box:render() end
+    return ok
+end
+
+local function _log_sample()
+    if not _recording then return true end
+    ResetTimeEvent(EV, "record", _get_setting("record_interval"))
+    if db.actor then
+        _update_readings(db.actor:position())
+        _write_record("SAMPLE", _format_readings())
+    end
+    return false
+end
+
+local function _get_rec_text()
+    if not _recording then return "" end
+    local secs = math_floor((time_global() - _rec_since) / 1000)
+    return string_format("REC %02d:%02d", math_floor(secs / 60), secs % 60)
+end
+
+local function _build_reading_row(data)
+    return { data.name, tostring(data.reading), _get_reading_color(data) }
+end
+
+-- Append one group's rows: a dim group header, then each reading the MCM shows.
+local function _add_group_rows(rows, group)
+    local header_added = false
+    for i = 1, #_readings do
+        local data = _readings[i]
+        local shown = data.group == group and _get_setting("hud_" .. data.name)
+        if shown and not header_added then rows[#rows + 1] = { group, "", _get_color("header") }; header_added = true end
+        if shown then rows[#rows + 1] = _build_reading_row(data) end
+    end
+end
+
+-- HUD rows: { check, reading, color }; the title, column headers, your spot and marks, then each group.
+local function _build_hud_rows()
+    local actor = db.actor
+    local pos = actor:position()
+    local rows = {
+        { "GeoTool", _get_rec_text(), _get_color(_recording and "red" or "text") },
+        { "CHECK", "READING", _get_color("header") },
+        { "level", string_format("%s  %.0f %.0f %.0f  v%d", level.name(), pos.x, pos.y, pos.z, actor:level_vertex_id()), _get_color("text") },
+        { "marks", _get_mark_text(), _get_color("text") },
+    }
+    for i = 1, #GROUPS do _add_group_rows(rows, GROUPS[i]) end
+    return rows
+end
+
+-- The HUD's top-left for a position preset, the AlifePlus and AlifeTactics set (at_hud.script:60-73).
+local function _get_hud_position(key)
+    local right, middle = 1024 - HUD_W - HUD_MARGIN, math_floor((768 - HUD_H) / 2)
+    local bottom = 768 - HUD_H - HUD_MARGIN
+    local presets = {
+        top_left = { HUD_MARGIN, HUD_MARGIN }, top_right = { right, HUD_MARGIN },
+        center_left = { HUD_MARGIN, middle }, center_right = { right, middle },
+        bottom_left = { HUD_MARGIN, bottom }, bottom_right = { right, bottom },
+    }
+    return presets[key] or presets.center_right
+end
+
+local function _build_hud_cell(wnd, xml, pos_x, pos_y, width)
+    local cell = xml:InitStatic("hud_cell", wnd)
+    cell:SetWndPos(vector2():set(pos_x, pos_y))
+    cell:SetWndSize(vector2():set(width, HUD_ROW_H))
+    return cell:TextControl()
+end
+
+local function _is_hud_wanted()
+    return _get_setting("hud_position") ~= POSITION_OFF
+end
+
+local function _hide_hud()
+    if _hud and _hud_added then get_hud():RemoveDialogToRender(_hud); _hud_added = false end
+end
+
+-- The HUD hides under the PDA and with the main HUD off, like the AlifeTactics HUD (at_hud.script:388-393).
+local function _is_hud_visible()
+    if not main_hud_shown() then return false end
+    local pda = ActorMenu and ActorMenu.get_pda_menu and ActorMenu.get_pda_menu()
+    return not (pda and pda:IsShown())
+end
+
+local function _render_hud()
+    if not _is_hud_visible() then _hide_hud(); return end
+    if not _hud then _hud = tz_geo_hud(_get_setting("hud_position")) end
+    if not _hud_added then get_hud():AddDialogToRender(_hud); _hud_added = true end
+    _hud:set_rows(_build_hud_rows())
+end
+
+--- One live tick for the HUD and the open window; it re-arms first and stops when neither is shown.
+--- Time events keep running while a dialog is open (tz_anim.script:205, tested with its window open).
+local function _update_live()
+    local window_open = _is_window_open()
+    local hud_wanted = _is_hud_wanted()
+    if not (hud_wanted or window_open) then _live_on = false; _hide_hud(); return true end
+    ResetTimeEvent(EV, "live", _get_setting("hud_period"))
+    if not db.actor then _hide_hud(); return false end
+    _update_readings(db.actor:position())
+    if hud_wanted then _render_hud() else _hide_hud() end
+    if window_open then _box:render() end
+    return false
+end
+
+local function _start_live()
+    if _live_on then return end
+    _live_on = true
+    CreateTimeEvent(EV, "live", _get_setting("hud_period"), _update_live)
+end
+
+--- Rebuild the HUD at the MCM position; position or period changes land on the next tick.
+local function _apply_settings()
+    _hide_hud(); _hud = nil
+    _live_on = false
+    RemoveTimeEvent(EV, "live")
+    if _is_hud_wanted() or _is_window_open() then _start_live() end
+end
+
+local function _on_actor_destroy()
+    RemoveTimeEvent(EV, "live")
+    _live_on = false
+    _hide_hud(); _hud = nil
+end
+
+-- The MARK_STATES index for a mark value: 1 unset, 2 yes, 3 no.
+local function _get_mark_index(value)
+    if value == nil then return 1 end
+    if value then return 2 end
+    return 3
+end
+
+local function _set_wnd_pos(wnd, pos_x, pos_y)
+    wnd:SetWndPos(vector2():set(pos_x, pos_y))
+    return wnd
+end
+
+--- The select handler for mark combo i: item ids are MARK_STATES indexes (the MCM list pattern, ui_mcm.script:1468-1491).
+local function _get_mark_callback(wnd, i)
+    return function()
+        set_mark(MARKS[i], MARK_STATES[wnd.mark_lists[i]:CurrentID()].value)
+        _update_readings(db.actor:position())
+        wnd:render()
+    end
+end
+
+local function _try_open()
+    if _is_window_open() or not db.actor then return end
+    _box = tz_geo_tool_wnd()
+    _box:ShowDialog(true)
+    Register_UI("tz_geo_tool_wnd", "tz_geo_tool", _box)
+    _start_live()
+end
+
+local function _on_key_press(key)
+    if key == _get_setting("key") then _try_open() end
+end
+
+class "tz_geo_hud" (CUIScriptWnd)
+
+function tz_geo_hud:__init(position) super()
+    self:SetAutoDelete(true)
+    local pos = _get_hud_position(position)
+    self:SetWndPos(vector2():set(pos[1], pos[2]))
+    self:SetWndSize(vector2():set(HUD_W, HUD_H))
+    local xml = CScriptXmlInit()
+    xml:ParseFile("tz_geo_tool.xml")
+    self.cells = {}
+    for i = 1, HUD_ROWS do
+        local row_y = (i - 1) * HUD_ROW_H + 2
+        self.cells[i] = {
+            _build_hud_cell(self, xml, 0, row_y, HUD_LABEL_W),
+            _build_hud_cell(self, xml, HUD_LABEL_W, row_y, HUD_VALUE_W),
+        }
+    end
+    self.used = 0
+end
+
+--- Rewrite each row's two cells; blank only what the previous refresh used.
+function tz_geo_hud:set_rows(rows)
+    local count = #rows < HUD_ROWS and #rows or HUD_ROWS
+    for i = 1, count do
+        local row, cells = rows[i], self.cells[i]
+        for c = 1, 2 do
+            cells[c]:SetText(row[c])
+            cells[c]:SetTextColor(row[3])
+        end
+    end
+    for i = count + 1, self.used do
+        for c = 1, 2 do self.cells[i][c]:SetText("") end
+    end
+    self.used = count
+end
+
+function tz_geo_hud:__finalize() end
+
+class "tz_geo_tool_wnd" (CUIScriptWnd)
+
+function tz_geo_tool_wnd:__init() super()
+    self:SetWndRect(Frect():set(0, 0, 1024, 768))
+    self:SetAutoDelete(true)
+    self:init_controls()
+    self:init_callbacks()
+    _update_readings(db.actor:position())
+    self:render()
+end
+
+function tz_geo_tool_wnd:init_controls()
+    local xml = CScriptXmlInit()
+    xml:ParseFile("tz_geo_tool.xml")
+    local statics = { "background", "hdr_tool", "line_tool", "screen", "hdr_input", "hdr_file" }
+    for i = 1, #statics do xml:InitStatic(statics[i], self) end
+    self.lbl_where = xml:InitStatic("lbl_where", self):TextControl()
+    self.lbl_state = xml:InitStatic("lbl_state", self):TextControl()
+    self.note = xml:InitEditBox("note", self)
+    self:Register(self.note, "note")
+    self.btn_record = xml:Init3tButton("btn_record", self)
+    self:Register(self.btn_record, "btn_record")
+    self:Register(xml:Init3tButton("btn_note", self), "btn_note")
+    self:Register(xml:Init3tButton("btn_help", self), "btn_help")
+    self:init_marks(xml)
+    self.feed_rows = {}
+    for i = 1, FEED_MAX do
+        self.feed_rows[i] = _set_wnd_pos(xml:InitStatic("feed_row", self), 20, FEED_TOP + (i - 1) * FEED_ROW_H):TextControl()
+    end
+end
+
+-- One caption and one -/yes/no combo box per mark, two columns; the combo shows the mark's current state.
+function tz_geo_tool_wnd:init_marks(xml)
+    self.mark_lists = {}
+    for i = 1, #MARKS do
+        local name = MARKS[i]
+        local col_x = MARK_COL_X[(i - 1) % 2 + 1]
+        local row_y = MARK_TOP + math_floor((i - 1) / 2) * MARK_ROW_H
+        _set_wnd_pos(xml:InitStatic("mark_caption", self), col_x, row_y):TextControl():SetText((name:gsub("_", " ")))
+        local list = _set_wnd_pos(xml:InitComboBox("mark_list", self), col_x + 78, row_y)
+        for s = 1, #MARK_STATES do list:AddItem(MARK_STATES[s].label, s) end
+        local current = _get_mark_index(_mark[name])
+        list:enable_id(current)
+        list:SetText(MARK_STATES[current].label)
+        self:Register(list, "mark_" .. i)
+        self.mark_lists[i] = list
+    end
+end
+
+function tz_geo_tool_wnd:init_callbacks()
+    for i = 1, #self.mark_lists do
+        self:AddCallback("mark_" .. i, ui_events.LIST_ITEM_SELECT, _get_mark_callback(self, i), self)
+    end
+    self:AddCallback("btn_note", ui_events.BUTTON_CLICKED, self.add_note, self)
+    self:AddCallback("btn_record", ui_events.BUTTON_CLICKED, self.set_recording, self)
+    self:AddCallback("btn_help", ui_events.BUTTON_CLICKED, self.show_help, self)
+end
+
+function tz_geo_tool_wnd:show_help()
+    tz_help.show_page("tz_geo_tool.xml", "st_tz_geo_tool_help_title", "st_tz_geo_tool_help")
+end
+
+function tz_geo_tool_wnd:add_note()
+    add_note(self.note:GetText())
+    self.note:SetText("")
+end
+
+function tz_geo_tool_wnd:set_recording()
+    set_recording(not _recording)
+    self:render()
+end
+
+function tz_geo_tool_wnd:render()
+    local actor = db.actor
+    if actor then
+        local pos = actor:position()
+        self.lbl_where:SetText(string_format("%s  %.0f %.0f %.0f  v%d", level.name(), pos.x, pos.y, pos.z, actor:level_vertex_id()))
+    end
+    self.lbl_state:SetText(string_format("%s  notes %d  samples %d",
+        _recording and _get_rec_text() or "idle", _counts.NOTE, _counts.SAMPLE))
+    self.btn_record:TextControl():SetText(_recording and "Stop" or "Record")
+    for i = 1, FEED_MAX do self.feed_rows[i]:SetText(_feed[i] or "") end
+end
+
+--- Esc closes the window when no edit box has focus, so typing a note never closes it.
+function tz_geo_tool_wnd:OnKeyboard(dik, action)
+    local res = CUIScriptWnd.OnKeyboard(self, dik, action)
+    if action ~= ui_events.WINDOW_KEY_PRESSED then return res end
+    if res or dik ~= DIK_keys.DIK_ESCAPE then return res end
+    self:hide()
+    return true
+end
+
+function tz_geo_tool_wnd:hide()
+    self:HideDialog()
+    Unregister_UI("tz_geo_tool_wnd")
+end
+
+--- Write one NOTE record with every check's reading at the actor's spot, led by the typed text when there is one.
+--- @param text string|nil The note text; empty or nil saves the spot alone
+function add_note(text)
+    if not db.actor then return end
+    _update_readings(db.actor:position())
+    local readings = _format_readings()
+    _write_record("NOTE", (text and text ~= "") and ("note=" .. text .. "; " .. readings) or readings)
+end
+
+--- Set one mark to yes (true), no (false) or unset (nil) and write a MARKS record with the new set.
+--- @param name string One of MARKS
+function set_mark(name, value)
+    _mark[name] = value
+    _write_record("MARKS", _get_mark_text())
+end
+
+--- Start or stop writing one SAMPLE record per interval.
+function set_recording(on)
+    _recording = on
+    _rec_since = time_global()
+    RemoveTimeEvent(EV, "record")
+    if on then CreateTimeEvent(EV, "record", _get_setting("record_interval"), _log_sample) end
+end
+
+function on_game_start()
+    RegisterScriptCallback("on_key_press", _on_key_press)
+    RegisterScriptCallback("actor_on_first_update", _apply_settings)
+    RegisterScriptCallback("on_option_change", _apply_settings)
+    RegisterScriptCallback("mcm_option_restore_default", _apply_settings)
+    RegisterScriptCallback("actor_on_net_destroy", _on_actor_destroy)
+end

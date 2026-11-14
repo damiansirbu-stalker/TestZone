@@ -1,6 +1,7 @@
 --- tz_mcm: MCM configuration for TestZone
 
-local RegisterScriptCallback, xlog = RegisterScriptCallback, xlog
+local RegisterScriptCallback, SendScriptCallback, xlog, pairs = RegisterScriptCallback, SendScriptCallback, xlog, pairs
+local axr_main, news_manager, game, db = axr_main, news_manager, game, db
 
 -- Every TestZone logger, so the development tab's level and flush apply across all subsystems.
 local TZ_LOGGERS = {
@@ -9,6 +10,8 @@ local TZ_LOGGERS = {
 }
 local _levels = xlog.get_levels()
 local KEY_LOG_LEVEL, KEY_LOG_FLUSH = "log_level", "log_flush"
+-- DIK_DELETE (lua_help.script:1088); DIK_keys is not loaded when this table is built.
+local GEO_KEY_DEFAULT = 211
 
 defaults = {
     watcher_enabled = false,
@@ -30,6 +33,27 @@ defaults = {
     profiler_enabled = false,
     profiler_report_interval = 30,
     profiler_spike_threshold = 1000,
+    perception_hearing = false,
+    perception_vision = false,
+    perception_memory = false,
+    perception_danger = false,
+    perception_enemy = false,
+    perception_radius = 70,
+    perception_all_sources = false,
+    perception_mutants = false,
+    geo_key = GEO_KEY_DEFAULT,
+    geo_record_interval = 1,
+    geo_hud_position = "center_right",
+    geo_hud_period = 0.5,
+    geo_hud_smart = true,
+    geo_hud_base_owner = true,
+    geo_hud_is_indoor = true,
+    geo_hud_roof_walls = true,
+    geo_hud_roof = true,
+    geo_hud_underground = true,
+    geo_hud_surge_cover = true,
+    geo_hud_safe_cover = true,
+    geo_hud_rain = true,
     log_level = "WARN",
     log_flush = false,
 }
@@ -37,10 +61,29 @@ defaults = {
 local build_path = function(key)
     local tab = "main"
     if key:sub(1, 9) == "profiler_" then tab = "profiler"
+    elseif key:sub(1, 11) == "perception_" then tab = "perception"
+    elseif key:sub(1, 4) == "geo_" then tab = "geotool"
     elseif key == KEY_LOG_LEVEL or key == KEY_LOG_FLUSH then tab = "development" end
     return "tz/" .. tab .. "/" .. key
 end
 cfg, get_config, load_config = xmcm.create_config("tz", defaults, build_path)
+
+local function _apply_defaults(gui, msg)
+    local config = axr_main.config
+    for key, value in pairs(defaults) do
+        config:w_value("mcm", build_path(key), value)
+    end
+    config:save()
+    load_config()
+    SendScriptCallback("mcm_option_restore_default")
+    if gui and gui.owner and gui.owner.SetMsg then gui.owner:SetMsg(msg, 5) end
+    if gui and gui.On_Cancel then gui:On_Cancel() end
+    if db.actor then news_manager.send_tip(db.actor, msg, nil, nil, 5000) end
+end
+
+function btn_reset_all(gui)
+    _apply_defaults(gui, game.translate_string("st_tz_reset_all_done"))
+end
 
 function on_mcm_load()
     return {
@@ -112,6 +155,63 @@ function on_mcm_load()
                 },
             },
             {
+                id = "perception",
+                text = "ui_mcm_menu_tz_perception",
+                sh = true,
+                gr = {
+                    { id = "title", type = "slide", link = "tz_mcm_banner",
+                        text = "ui_mcm_tz_perception_title", size = {512, 50}, spacing = 20 },
+                    { id = "desc", type = "desc", text = "ui_mcm_tz_perception_desc" },
+                    { id = "perception_hearing", type = "check", val = 1, def = false },
+                    { id = "perception_vision", type = "check", val = 1, def = false },
+                    { id = "perception_memory", type = "check", val = 1, def = false },
+                    { id = "perception_danger", type = "check", val = 1, def = false },
+                    { id = "perception_enemy", type = "check", val = 1, def = false },
+
+                    { id = "div_scope", type = "line" },
+                    { id = "perception_radius", type = "track", val = 2, min = 20, max = 150, step = 10, def = 70 },
+                    { id = "perception_all_sources", type = "check", val = 1, def = false },
+                    { id = "perception_mutants", type = "check", val = 1, def = false },
+
+                    { id = "div_info", type = "line" },
+                    { id = "info", type = "desc", text = "ui_mcm_tz_perception_info", clr = {200, 200, 200, 100} },
+                },
+            },
+            {
+                id = "geotool",
+                text = "ui_mcm_menu_tz_geotool",
+                sh = true,
+                gr = {
+                    { id = "title", type = "slide", link = "tz_mcm_banner",
+                        text = "ui_mcm_tz_geotool_title", size = {512, 50}, spacing = 20 },
+                    { id = "desc", type = "desc", text = "ui_mcm_tz_geotool_desc" },
+                    { id = "hdr_tool", type = "desc", text = "ui_mcm_tz_geotool_hdr_tool", clr = {255, 200, 200, 200} },
+                    { id = "geo_key", type = "key_bind", val = 2, def = GEO_KEY_DEFAULT },
+                    { id = "geo_record_interval", type = "track", val = 2, min = 0.5, max = 10, step = 0.5, def = 1 },
+
+                    { id = "div_hud", type = "line" },
+                    { id = "hdr_hud", type = "desc", text = "ui_mcm_tz_geotool_hdr_hud", clr = {255, 200, 200, 200} },
+                    { id = "geo_hud_position", type = "list", val = 0, def = "center_right", content = {
+                        {"off", "off"}, {"top_left", "topleft"}, {"top_right", "topright"},
+                        {"center_left", "centerleft"}, {"center_right", "centerright"},
+                        {"bottom_left", "bottomleft"}, {"bottom_right", "bottomright"},
+                    } },
+                    { id = "geo_hud_period", type = "track", val = 2, min = 0.25, max = 5, step = 0.25, def = 0.5 },
+                    { id = "geo_hud_smart", type = "check", val = 1, def = true },
+                    { id = "geo_hud_base_owner", type = "check", val = 1, def = true },
+                    { id = "geo_hud_is_indoor", type = "check", val = 1, def = true },
+                    { id = "geo_hud_roof_walls", type = "check", val = 1, def = true },
+                    { id = "geo_hud_roof", type = "check", val = 1, def = true },
+                    { id = "geo_hud_underground", type = "check", val = 1, def = true },
+                    { id = "geo_hud_surge_cover", type = "check", val = 1, def = true },
+                    { id = "geo_hud_safe_cover", type = "check", val = 1, def = true },
+                    { id = "geo_hud_rain", type = "check", val = 1, def = true },
+
+                    { id = "div_info", type = "line" },
+                    { id = "info", type = "desc", text = "ui_mcm_tz_geotool_info", clr = {200, 200, 200, 100} },
+                },
+            },
+            {
                 id = "development",
                 text = "ui_mcm_menu_tz_development",
                 sh = true,
@@ -123,6 +223,11 @@ function on_mcm_load()
                         {"ERROR", "error"}, {"WARN", "warn"}, {"INFO", "info"}, {"DEBUG", "debug"},
                     } },
                     { id = "log_flush", type = "check", val = 1, def = false },
+
+                    { id = "div_reset", type = "line" },
+                    { id = "warn_reset", type = "desc", text = "ui_mcm_tz_development_reset_warning", clr = {255, 240, 200, 80} },
+                    { id = "btn_reset_all", type = "button", functor_ui = { btn_reset_all }, spacing = 30 },
+                    { id = "div_reset_footer", type = "line", spacing = 40 },
                 },
             },
         },

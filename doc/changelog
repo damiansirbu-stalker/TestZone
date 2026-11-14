@@ -1,4 +1,9 @@
 1.0.4-snapshot
+  Added: Perception trace, its own tab and log file, one switch per system. Hearing: every event that reaches a nearby stalker or mutant with its power against his threshold.
+    Vision: when he starts or stops seeing you and his detection progress. Memory: his visual, sound and hit memory of you.
+    Danger: his held danger, the action answering it down to the leaf (take cover, look out, hold, detour, search), and his reaction with the distance he moved.
+    Enemy: his enemy pick and drop, with whether he heard or saw you first. It reads engine state only. A run with an AI mod on and a run with it off compare line for line.
+  Added: Reset to defaults button on the Development tab, and the Immediate flush switch now covers the perception log.
   Fixed: rare arena census crash when the engine recycles a dead combatant's id to another object
   Added: timed event scheduling works correctly with major modpacks (globals resolve at call time for demonized_time_events compatibility)
   Added: version displayed at startup (mod + xlibs)

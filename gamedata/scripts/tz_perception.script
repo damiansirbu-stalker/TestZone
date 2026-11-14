@@ -1,0 +1,454 @@
+--- tz_perception: the perception trace - hearing, vision, memory, danger and enemy of the stalkers and mutants near the actor, testzone_perception.log
+
+local RegisterScriptCallback, UnregisterScriptCallback = RegisterScriptCallback, UnregisterScriptCallback
+local IsStalker, IsMonster, time_global, db, level, ini_sys, get_console = IsStalker, IsMonster, time_global, db, level, ini_sys, get_console
+local rawget, pairs, tostring, type, debug, math_sqrt, math_floor = rawget, pairs, tostring, type, debug, math.sqrt, math.floor
+local string_sub, string_match, string_format, table_concat = string.sub, string.match, string.format, table.concat
+local stalker_ids, cast_planner, danger_object, get_modded_exes_version = stalker_ids, cast_planner, danger_object, get_modded_exes_version
+
+local log = xlog.get_logger("TestZone.perception", { outfile = "testzone_perception.log", level = "DEBUG" })
+local _levels = xlog.get_levels()
+
+local AC_ID = 0
+local TICK_SEC = 0.5
+local REPORT_SEC = 60
+local SLOW_TICK_EVERY = 2
+local SEE_STEP_PCT = 10
+local HEAR_COLLAPSE_MS = 400
+local SOURCE_LIMIT_MS = 1000
+local SCRIPT_DANGER_ACTION_ID = 188113
+local KIND_STALKER, KIND_MUTANT = "stalker", "mutant"
+local SYSTEMS = { "hearing", "vision", "memory", "danger", "enemy" }
+local STEP_ROWS = { "norm_walk_fwd_0", "norm_run_fwd_0", "norm_escape_0", "norm_jump_end", "cr_walk_fwd_0" }
+local CVARS = {
+    "snd_max_ai_distance_multiplier", "ai_vision_speed_boost",
+    "ai_danger_ricochet_mult", "ai_danger_attack_sound_mult", "ai_danger_entity_attacked_mult", "ai_danger_entity_death_mult",
+    "ai_danger_corpse_mult", "ai_danger_attacked_mult", "ai_danger_grenade_mult", "ai_danger_enemy_sound_mult",
+}
+local SOUND_FACTOR_KEY = { WPN = "weapon", ITM = "item", MST = "npc" }
+local TYPE_NAME = {
+    [danger_object.bullet_ricochet] = "bullet_ricochet",
+    [danger_object.attack_sound]    = "attack_sound",
+    [danger_object.entity_attacked] = "entity_attacked",
+    [danger_object.entity_death]    = "entity_death",
+    [danger_object.entity_corpse]   = "entity_corpse",
+    [danger_object.attacked]        = "attacked",
+    [danger_object.grenade]         = "grenade",
+    [danger_object.enemy_sound]     = "enemy_sound",
+}
+local PERCEIVE_NAME = { [0] = "visual", [1] = "sound", [2] = "hit" }
+local OWNER_NAME = {
+    [stalker_ids.action_danger_planner]  = "engine_danger",
+    [SCRIPT_DANGER_ACTION_ID]            = "script_danger",
+    [stalker_ids.action_alife_planner]   = "alife",
+    [stalker_ids.action_combat_planner]  = "combat",
+    [stalker_ids.action_anomaly_planner] = "anomaly",
+    [stalker_ids.action_gather_items]    = "gather",
+}
+local SUB_PLANNER = {
+    [stalker_ids.action_danger_in_direction_planner] = "in_direction",
+    [stalker_ids.action_danger_unknown_planner]      = "unknown",
+    [stalker_ids.action_danger_grenade_planner]      = "grenade",
+    [stalker_ids.action_danger_by_sound_planner]     = "by_sound",
+}
+local LEAF_NAME = {
+    [stalker_ids.action_danger_in_direction_take_cover]    = "take_cover",
+    [stalker_ids.action_danger_in_direction_look_out]      = "look_out",
+    [stalker_ids.action_danger_in_direction_hold_position] = "hold_position",
+    [stalker_ids.action_danger_in_direction_detour]        = "detour",
+    [stalker_ids.action_danger_in_direction_search]        = "search",
+    [stalker_ids.action_danger_unknown_take_cover]         = "unknown_take_cover",
+    [stalker_ids.action_danger_unknown_look_around]        = "unknown_look_around",
+    [stalker_ids.action_danger_unknown_search]             = "unknown_search",
+    [stalker_ids.action_danger_grenade_take_cover]         = "grenade_take_cover",
+    [stalker_ids.action_danger_grenade_wait_for_explosion] = "grenade_wait",
+    [stalker_ids.action_danger_grenade_take_cover_after_explosion] = "grenade_cover_after",
+}
+
+local _config = { hearing = false, vision = false, memory = false, danger = false, enemy = false, radius_sqr = 70 * 70, all_sources = false, mutants = false }
+local _enabled = false
+local _env = { threshold = 0.5, factors = {} }
+local _tracked = {}
+local _stats = { hear = {}, hear_n = 0, kept_n = 0, danger = {}, owner = {}, seen_n = 0, enemy_n = 0 }
+local _tick_n = 0
+
+local function _get_owner_file(fn)
+    if type(fn) ~= "function" then return "absent" end
+    local info = debug.getinfo(fn, "S")
+    local src = info and info.short_src or "?"
+    return string_match(src, "[^\\/]+$") or src
+end
+
+local function _get_env_tag()
+    return string_format("hour=%d rain=%.2f", level.get_time_hours(), level.rain_factor())
+end
+
+local function _read_env()
+    _env.threshold = ini_sys:r_float_ex("stalker", "sound_threshold") or 0.5
+    local perceive = ini_sys:r_string_ex("stalker", "sound_perceive_section") or "stalker_sound_perceive"
+    for _, key in pairs(SOUND_FACTOR_KEY) do
+        _env.factors[key] = ini_sys:r_float_ex(perceive, key) or 1.0
+    end
+end
+
+local function _log_start()
+    local console = get_console()
+    local xr_danger_module = rawget(_G, "xr_danger")
+    local systems = {}
+    for i = 1, #SYSTEMS do systems[#systems + 1] = SYSTEMS[i] .. "=" .. tostring(_config[SYSTEMS[i]]) end
+    log.info("START %s radius=%.0fm all_sources=%s mutants=%s build=%s at_danger=%s xr_danger.set_script_danger=%s add_to_binder=%s %s",
+        table_concat(systems, " "), math_sqrt(_config.radius_sqr), tostring(_config.all_sources), tostring(_config.mutants),
+        tostring(type(get_modded_exes_version) == "function" and get_modded_exes_version() or "?"),
+        tostring(rawget(_G, "at_danger") ~= nil),
+        _get_owner_file(xr_danger_module and xr_danger_module.set_script_danger),
+        _get_owner_file(xr_danger_module and xr_danger_module.add_to_binder), _get_env_tag())
+    log.info("ENV sound_threshold=%.2f weapon=%.2f item=%.2f npc=%.2f hud_step_vol=%s",
+        _env.threshold, _env.factors.weapon or -1, _env.factors.item or -1, _env.factors.npc or -1,
+        tostring(ini_sys:r_float_ex("hud_sound", "hud_step_sound_vol_k")))
+    for i = 1, #STEP_ROWS do
+        log.info("ENV step %s = %s", STEP_ROWS[i], tostring(ini_sys:r_string_ex("stalker_step_manager", STEP_ROWS[i])))
+    end
+    for _, section in pairs({ "stalker_vision_free", "stalker_vision_danger" }) do
+        log.info("ENV %s visibility_threshold=%s transparency=%s luminocity=%s velocity=%s decrease=%s", section,
+            tostring(ini_sys:r_float_ex(section, "visibility_threshold")), tostring(ini_sys:r_float_ex(section, "transparency_threshold")),
+            tostring(ini_sys:r_float_ex(section, "luminocity_factor")), tostring(ini_sys:r_float_ex(section, "velocity_factor")),
+            tostring(ini_sys:r_float_ex(section, "decrease_value")))
+    end
+    for i = 1, #CVARS do
+        log.info("ENV cvar %s=%s", CVARS[i], tostring(console:get_float(CVARS[i])))
+    end
+    log.info("ENV cvar ai_fire_make_sense_interval=%s", tostring(console:get_integer("ai_fire_make_sense_interval")))
+    log.flush()
+end
+
+local function _get_record(id, kind)
+    local rec = _tracked[id]
+    if rec then return rec end
+    rec = { kind = kind, hear_key = nil, hear_at = 0, percept = false, danger_key = nil, origin = nil, state = nil,
+        sees = nil, see_pct = -1, enemy_id = nil, memory_key = nil, keep_check = nil }
+    _tracked[id] = rec
+    return rec
+end
+
+local function _is_near(npc, actor_pos)
+    return npc:position():distance_to_sqr(actor_pos) <= _config.radius_sqr
+end
+
+local function _is_record_from(record, who_id)
+    local obj = record:object()
+    return obj ~= nil and obj:id() == who_id
+end
+
+local function _find_actor_entry(records)
+    for record in records do
+        if _is_record_from(record, AC_ID) then return record end
+    end
+    return nil
+end
+
+local function _get_action_names(npc)
+    local manager = npc:motivation_action_manager()
+    if not (manager and manager:initialized()) then return "none", "-" end
+    local top = manager:current_action_id()
+    local owner = OWNER_NAME[top] or ("id" .. tostring(top))
+    if top ~= stalker_ids.action_danger_planner then return owner, "-" end
+    local danger_planner = cast_planner(manager:action(top))
+    if not (danger_planner and danger_planner:initialized()) then return owner, "-" end
+    local sub = danger_planner:current_action_id()
+    local sub_name = SUB_PLANNER[sub] or ("id" .. tostring(sub))
+    if not SUB_PLANNER[sub] then return owner, sub_name end
+    local sub_planner = cast_planner(danger_planner:action(sub))
+    if not (sub_planner and sub_planner:initialized()) then return owner, sub_name end
+    local leaf = sub_planner:current_action_id()
+    return owner, sub_name .. "/" .. (LEAF_NAME[leaf] or ("id" .. tostring(leaf)))
+end
+
+local function _get_grade(id)
+    local at_danger_module = rawget(_G, "at_danger")
+    if not (at_danger_module and at_danger_module.get_script_danger) then return "-" end
+    return tostring(at_danger_module.get_script_danger(id) or "-")
+end
+
+local function _get_moved(npc, rec)
+    if not rec.origin then return 0 end
+    return npc:position():distance_to(rec.origin)
+end
+
+local function _get_kind(npc)
+    if IsStalker(npc) then return KIND_STALKER end
+    if _config.mutants and IsMonster(npc) then return KIND_MUTANT end
+    return nil
+end
+
+--- The gate between a kept actor sound and its memory entry: relation, the combat-ignore verdict the engine asks for, age of his last perception of the actor.
+local function _get_gate(npc, tg)
+    local useful = xr_combat_ignore and xr_combat_ignore.is_enemy and xr_combat_ignore.is_enemy(npc, db.actor)
+    return string_format(" rel=%s useful=%s memory_age=%dms see=%s", tostring(xcreature.relation(npc, db.actor)), tostring(useful),
+        tg - npc:memory_time(db.actor), tostring(npc:see(db.actor)))
+end
+
+--- The type factor and the keep threshold a stalker compares this sound against; the live threshold when the exe exposes it, else the ltx floor.
+local function _get_keep_gate(npc, kind, s_type)
+    local family = string_sub(s_type or "", 1, 3)
+    local factor = _env.factors[SOUND_FACTOR_KEY[family] or "npc"] or 1.0
+    local live = kind == KIND_STALKER and type(npc.get_sound_threshold) == "function" and npc:get_sound_threshold()
+    return factor, live or _env.threshold
+end
+
+local function _update_hear_stats(s_type, kept_hint)
+    _stats.hear_n = _stats.hear_n + 1
+    _stats.hear[s_type] = (_stats.hear[s_type] or 0) + 1
+    if kept_hint then _stats.kept_n = _stats.kept_n + 1 end
+end
+
+local function _on_hear(npc, who_id, s_type, dist_sqr, power, _pos)
+    if who_id ~= AC_ID and not _config.all_sources then return end
+    local kind = _get_kind(npc)
+    if not kind then return end
+    if not db.actor or not _is_near(npc, db.actor:position()) then return end
+    local id = npc:id()
+    local rec = _get_record(id, kind)
+    local tg = time_global()
+    local hear_key = tostring(who_id) .. "/" .. tostring(s_type)
+    local limit_ms = who_id == AC_ID and HEAR_COLLAPSE_MS or SOURCE_LIMIT_MS
+    if rec.hear_key == hear_key and (tg - rec.hear_at) < limit_ms then return end
+    rec.hear_key, rec.hear_at = hear_key, tg
+    local factor, threshold = _get_keep_gate(npc, kind, s_type)
+    local kept_hint = (power or 0) * factor >= threshold
+    if kept_hint and who_id == AC_ID then rec.percept = true end
+    _update_hear_stats(s_type, kept_hint)
+    local gate = ""
+    if who_id == AC_ID and kind == KIND_STALKER then
+        gate = _get_gate(npc, tg)
+        if kept_hint then rec.keep_check = { type = s_type, power = power or 0 } end
+    end
+    log.info("HEAR npc=%d kind=%s %s from=%d type=%s dist=%.1fm power=%.3f factor=%.2f threshold=%.2f kept_hint=%s%s",
+        id, kind, npc:name(), who_id, tostring(s_type), math_sqrt(dist_sqr or 0), power or -1, factor, threshold, tostring(kept_hint), gate)
+end
+
+local function _format_entry(entry, payload, tg)
+    if not entry then return "none" end
+    if payload then return string_format("%.2f@%dms", payload, tg - entry.level_time) end
+    return string_format("%dms", tg - entry.level_time)
+end
+
+--- One tick after a keep-worthy actor sound: did the sound memory take it (the MT store refuses a source the enemy manager calls not useful).
+local function _update_keep(npc, rec, id, tg)
+    local check = rec.keep_check
+    if not check then return end
+    rec.keep_check = nil
+    local snd = _find_actor_entry(npc:memory_sound_objects())
+    log.info("KEEP npc=%d heard=%s power=%.3f stored=%s snd=%s", id, tostring(check.type), check.power, tostring(snd ~= nil), _format_entry(snd, snd and snd.power, tg))
+end
+
+local function _update_memory(npc, rec, id, tg)
+    local vis = _find_actor_entry(npc:memory_visible_objects())
+    local snd, hit = nil, nil
+    if rec.kind == KIND_STALKER then
+        snd = _find_actor_entry(npc:memory_sound_objects())
+        hit = _find_actor_entry(npc:memory_hit_objects())
+    end
+    local key = string_format("%s/%s/%s", vis and "v" or "-", snd and string_format("%.2f", snd.power) or "-", hit and string_format("%.2f", hit.amount) or "-")
+    if rec.memory_key == key then return end
+    rec.memory_key = key
+    log.info("MEMORY npc=%d kind=%s vis=%s snd=%s hit=%s", id, rec.kind, _format_entry(vis, nil, tg),
+        _format_entry(snd, snd and snd.power, tg), _format_entry(hit, hit and hit.amount, tg))
+end
+
+local function _update_danger(npc, rec, id, tg)
+    local danger = npc:best_danger()
+    if not danger then
+        if rec.danger_key then
+            rec.danger_key, rec.origin = nil, nil
+            log.info("DANGER npc=%d cleared", id)
+        end
+        return
+    end
+    local src = danger:object()
+    local src_id = src and src:id() or -1
+    local danger_type, perceive_type = danger:type(), danger:perceive_type()
+    local owner, leaf = _get_action_names(npc)
+    local key = string_format("%s/%s/%s/%s/%s", tostring(danger_type), tostring(perceive_type), tostring(src_id), owner, leaf)
+    if rec.danger_key == key then return end
+    local npc_pos = npc:position()
+    if not rec.origin then rec.origin = npc_pos end
+    rec.danger_key = key
+    local type_name = TYPE_NAME[danger_type] or tostring(danger_type)
+    _stats.danger[type_name] = (_stats.danger[type_name] or 0) + 1
+    _stats.owner[owner] = (_stats.owner[owner] or 0) + 1
+    local st = db.storage[id]
+    log.info("DANGER npc=%d %s type=%s perceive=%s src=%d dist=%.1fm age=%dms flag=%s grade=%s owner=%s leaf=%s moved=%.1fm",
+        id, npc:name(), type_name, PERCEIVE_NAME[perceive_type] or "?", src_id,
+        danger:position():distance_to(npc_pos), tg - danger:time(), tostring(st and st.danger_flag), _get_grade(id), owner, leaf,
+        npc_pos:distance_to(rec.origin))
+end
+
+local function _update_react(npc, rec, id)
+    local st = db.storage[id]
+    local sm = st and st.state_mgr
+    local state = sm and tostring(sm.target_state) or "-"
+    if rec.state == state then return end
+    rec.state = state
+    if not rec.danger_key then return end
+    local owner, leaf = _get_action_names(npc)
+    local sight = npc:sight_params()
+    log.info("REACT npc=%d state=%s move=%s sight=%s owner=%s leaf=%s moved=%.1fm", id, state, tostring(npc:movement_type()),
+        tostring(sight and sight.m_sight_type), owner, leaf, _get_moved(npc, rec))
+end
+
+local function _update_enemy(npc, rec, id)
+    local enemy = rec.kind == KIND_STALKER and npc:best_enemy() or npc:get_enemy()
+    local enemy_id = enemy and enemy:id() or nil
+    if rec.enemy_id == enemy_id then return end
+    rec.enemy_id = enemy_id
+    local enemy_name = enemy and enemy:name() or "none"
+    if enemy then _stats.enemy_n = _stats.enemy_n + 1 end
+    log.info("ENEMY npc=%d kind=%s enemy=%s own_percept=%s", id, rec.kind, enemy_name, tostring(rec.percept))
+end
+
+local function _get_detect_pct(npc, threshold)
+    for cand in npc:not_yet_visible_objects() do
+        if _is_record_from(cand, AC_ID) then return math_floor(cand.value / threshold * 100 / SEE_STEP_PCT) * SEE_STEP_PCT end
+    end
+    return 0
+end
+
+local function _update_vision(npc, rec, id, tg)
+    local sees = npc:see(db.actor)
+    if rec.sees ~= sees then
+        rec.sees = sees
+        if sees then _stats.seen_n = _stats.seen_n + 1; rec.percept = true end
+        log.info("SEE npc=%d kind=%s sees_actor=%s last_memory_age=%dms %s", id, rec.kind, tostring(sees), tg - npc:memory_time(db.actor), _get_env_tag())
+    end
+    if sees then return end
+    local threshold = npc:visibility_threshold()
+    if not threshold or threshold <= 0 then return end
+    local pct = _get_detect_pct(npc, threshold)
+    if pct == rec.see_pct then return end
+    local reset = pct == 0 and rec.see_pct > 0
+    rec.see_pct = pct
+    log.info("SEE npc=%d kind=%s detect=%d%% threshold=%.0f%s", id, rec.kind, pct, threshold, reset and " reset" or "")
+end
+
+local function _update_subject(npc, kind, tg)
+    local id = npc:id()
+    local rec = _get_record(id, kind)
+    if kind == KIND_STALKER then _update_keep(npc, rec, id, tg) end
+    if _config.danger and kind == KIND_STALKER then
+        _update_danger(npc, rec, id, tg)
+        _update_react(npc, rec, id)
+    end
+    if _config.enemy then _update_enemy(npc, rec, id) end
+end
+
+local function _update_subject_slow(npc, kind, tg)
+    _update_subject(npc, kind, tg)
+    local id = npc:id()
+    local rec = _get_record(id, kind)
+    if _config.vision then _update_vision(npc, rec, id, tg) end
+    if _config.memory then _update_memory(npc, rec, id, tg) end
+end
+
+local function _run_subjects(actor_pos, tg, update)
+    for i = 1, #db.OnlineStalkers do
+        local st = db.storage[db.OnlineStalkers[i]]
+        local npc = st and st.object
+        if npc and npc:alive() and _is_near(npc, actor_pos) then update(npc, KIND_STALKER, tg) end
+    end
+    if not _config.mutants or type(level.iterate_nearest) ~= "function" then return end
+    level.iterate_nearest(actor_pos, math_sqrt(_config.radius_sqr), function(obj)
+        if IsMonster(obj) and obj:alive() then update(obj, KIND_MUTANT, tg) end
+        return false
+    end)
+end
+
+local function _run_tick()
+    if not _enabled then return true end
+    if not db.actor then ResetTimeEvent("tz_perception", "tick", TICK_SEC) return false end
+    _tick_n = _tick_n + 1
+    local update = (_tick_n % SLOW_TICK_EVERY == 0) and _update_subject_slow or _update_subject
+    _run_subjects(db.actor:position(), time_global(), update)
+    ResetTimeEvent("tz_perception", "tick", TICK_SEC)
+    return false
+end
+
+local function _format_counts(counts)
+    local parts = {}
+    for name, count in pairs(counts) do parts[#parts + 1] = name .. "=" .. count end
+    return table_concat(parts, " ")
+end
+
+local function _get_tracked_count()
+    local tracked_count = 0
+    for _ in pairs(_tracked) do tracked_count = tracked_count + 1 end
+    return tracked_count
+end
+
+local function _run_report()
+    if not _enabled then return true end
+    log.info("MIN hear=%d kept_hint=%d by_type=[%s] dangers=[%s] owners=[%s] seen=%d enemy_flips=%d tracked=%d %s",
+        _stats.hear_n, _stats.kept_n, _format_counts(_stats.hear), _format_counts(_stats.danger), _format_counts(_stats.owner),
+        _stats.seen_n, _stats.enemy_n, _get_tracked_count(), _get_env_tag())
+    log.flush()
+    _stats = { hear = {}, hear_n = 0, kept_n = 0, danger = {}, owner = {}, seen_n = 0, enemy_n = 0 }
+    ResetTimeEvent("tz_perception", "report", REPORT_SEC)
+    return false
+end
+
+local function _on_unregister(se_obj)
+    if se_obj then _tracked[se_obj.id] = nil end
+end
+
+local function _is_any_system_on()
+    for i = 1, #SYSTEMS do
+        if _config[SYSTEMS[i]] then return true end
+    end
+    return false
+end
+
+local function _apply_enabled()
+    local wanted = _is_any_system_on()
+    if wanted == _enabled then return end
+    _enabled = wanted
+    if _enabled then
+        _tracked, _tick_n = {}, 0
+        _read_env()
+        _log_start()
+        RegisterScriptCallback("npc_on_hear_callback", _on_hear)
+        RegisterScriptCallback("server_entity_on_unregister", _on_unregister)
+        RemoveTimeEvent("tz_perception", "tick")
+        CreateTimeEvent("tz_perception", "tick", TICK_SEC, _run_tick)
+        RemoveTimeEvent("tz_perception", "report")
+        CreateTimeEvent("tz_perception", "report", REPORT_SEC, _run_report)
+        return
+    end
+    UnregisterScriptCallback("npc_on_hear_callback", _on_hear)
+    UnregisterScriptCallback("server_entity_on_unregister", _on_unregister)
+    RemoveTimeEvent("tz_perception", "tick")
+    RemoveTimeEvent("tz_perception", "report")
+    log.info("STOP")
+    log.flush()
+end
+
+local function _load_config()
+    local cfg = tz_mcm and tz_mcm.cfg
+    if not cfg then return end
+    for i = 1, #SYSTEMS do _config[SYSTEMS[i]] = cfg["perception_" .. SYSTEMS[i]] == true end
+    local radius = cfg.perception_radius
+    _config.radius_sqr = radius * radius
+    _config.all_sources = cfg.perception_all_sources == true
+    _config.mutants = cfg.perception_mutants == true
+    log._logger.flush_on_level = cfg.log_flush and _levels.TRACE or _levels.ERROR
+    _apply_enabled()
+end
+
+local function _on_actor_net_destroy()
+    if _enabled then log.flush() end
+end
+
+function on_game_start()
+    RegisterScriptCallback("actor_on_first_update", _load_config)
+    RegisterScriptCallback("actor_on_net_destroy", _on_actor_net_destroy)
+    RegisterScriptCallback("on_option_change", _load_config)
+    RegisterScriptCallback("mcm_option_restore_default", _load_config)
+end

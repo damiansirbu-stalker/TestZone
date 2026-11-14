@@ -144,6 +144,189 @@
         <text>Profiler wraps 22 suspect functions identified from GAMMA review. Log output: logs/testzone.log</text>
     </string>
 
+    <!-- ==================== PERCEPTION TAB ==================== -->
+    <string id="ui_mcm_menu_tz_perception">
+        <text>Perception</text>
+    </string>
+    <string id="ui_mcm_tz_perception_title">
+        <text>TestZone</text>
+    </string>
+    <string id="ui_mcm_tz_perception_desc">
+        <text>What the stalkers and mutants near you hear, see, remember, take as danger and pick as enemy. One line per change. Output: logs/testzone_perception.log</text>
+    </string>
+    <string id="ui_mcm_tz_perception_perception_hearing">
+        <text>Hearing</text>
+    </string>
+    <string id="ui_mcm_tz_perception_perception_hearing_desc">
+        <text>Every hearing event that reaches him, with its power against his threshold. One line per source and sound type per half second.</text>
+    </string>
+    <string id="ui_mcm_tz_perception_perception_vision">
+        <text>Vision</text>
+    </string>
+    <string id="ui_mcm_tz_perception_perception_vision_desc">
+        <text>When he starts or stops seeing you, and his detection progress in 10 percent steps.</text>
+    </string>
+    <string id="ui_mcm_tz_perception_perception_memory">
+        <text>Memory</text>
+    </string>
+    <string id="ui_mcm_tz_perception_perception_memory_desc">
+        <text>His visual, sound and hit memory of you: presence, age and payload, on every change. Mutants: visual only.</text>
+    </string>
+    <string id="ui_mcm_tz_perception_perception_danger">
+        <text>Danger</text>
+    </string>
+    <string id="ui_mcm_tz_perception_perception_danger_desc">
+        <text>His held danger with the action answering it down to the leaf (take cover, look out, hold, detour, search), and his reaction with the distance he moved. Stalkers only.</text>
+    </string>
+    <string id="ui_mcm_tz_perception_perception_enemy">
+        <text>Enemy</text>
+    </string>
+    <string id="ui_mcm_tz_perception_perception_enemy_desc">
+        <text>Who he picks as enemy and drops, and whether this log saw him hear or see you before the pick.</text>
+    </string>
+    <string id="ui_mcm_tz_perception_perception_radius">
+        <text>Radius</text>
+    </string>
+    <string id="ui_mcm_tz_perception_perception_radius_desc">
+        <text>Subjects within this distance of you are tracked (meters).</text>
+    </string>
+    <string id="ui_mcm_tz_perception_perception_all_sources">
+        <text>All sound sources</text>
+    </string>
+    <string id="ui_mcm_tz_perception_perception_all_sources_desc">
+        <text>Hearing events from every source, not only yours. One line per subject and source per second at most.</text>
+    </string>
+    <string id="ui_mcm_tz_perception_perception_mutants">
+        <text>Include mutants</text>
+    </string>
+    <string id="ui_mcm_tz_perception_perception_mutants_desc">
+        <text>Track mutants as well as stalkers. Every line carries the kind.</text>
+    </string>
+    <string id="ui_mcm_tz_perception_info">
+        <text>Reads engine state only. Works the same with any AI mod on or off, so two runs compare. Log output: logs/testzone_perception.log</text>
+    </string>
+
+    <!-- ==================== GEOTOOL TAB ==================== -->
+    <string id="ui_mcm_menu_tz_geotool">
+        <text>GeoTool</text>
+    </string>
+    <string id="ui_mcm_tz_geotool_title">
+        <text>TestZone</text>
+    </string>
+    <string id="ui_mcm_tz_geotool_desc">
+        <text>GeoTool saves marks, notes and recorded samples per spot to logs/geo_tool.txt. The open key shows the window, and the HUD shows the live readings.</text>
+    </string>
+    <string id="ui_mcm_tz_geotool_hdr_tool">
+        <text>Tool</text>
+    </string>
+    <string id="ui_mcm_tz_geotool_geo_key">
+        <text>Open key</text>
+    </string>
+    <string id="ui_mcm_tz_geotool_geo_key_desc">
+        <text>Opens the GeoTool window. Esc closes it.</text>
+    </string>
+    <string id="ui_mcm_tz_geotool_geo_record_interval">
+        <text>Record every</text>
+    </string>
+    <string id="ui_mcm_tz_geotool_geo_record_interval_desc">
+        <text>[seconds]
+While Record is on, one SAMPLE line per interval with your marks and every reading.</text>
+    </string>
+    <string id="ui_mcm_tz_geotool_hdr_hud">
+        <text>HUD</text>
+    </string>
+    <string id="ui_mcm_tz_geotool_geo_hud_position">
+        <text>Position</text>
+    </string>
+    <string id="ui_mcm_tz_geotool_geo_hud_position_desc">
+        <text>Where the readings HUD sits. Off hides it.</text>
+    </string>
+    <string id="ui_mcm_tz_geotool_geo_hud_period">
+        <text>Refresh</text>
+    </string>
+    <string id="ui_mcm_tz_geotool_geo_hud_period_desc">
+        <text>[seconds]
+How often the HUD and the open window read every check.</text>
+    </string>
+    <string id="ui_mcm_tz_geotool_geo_hud_smart">
+        <text>smart</text>
+    </string>
+    <string id="ui_mcm_tz_geotool_geo_hud_smart_desc">
+        <text>Show this reading on the HUD. The nearest smart terrain, its distance, and whether it is a base or a lair.</text>
+    </string>
+    <string id="ui_mcm_tz_geotool_geo_hud_base_owner">
+        <text>base_owner</text>
+    </string>
+    <string id="ui_mcm_tz_geotool_geo_hud_base_owner_desc">
+        <text>Show this reading on the HUD. The nearest trader, medic or mechanic within 80 m, and its faction.</text>
+    </string>
+    <string id="ui_mcm_tz_geotool_geo_hud_is_indoor">
+        <text>is_indoor</text>
+    </string>
+    <string id="ui_mcm_tz_geotool_geo_hud_is_indoor_desc">
+        <text>Show this reading on the HUD. The xlibs indoor test: a roof within 4 m and at least two walls within 5 m.</text>
+    </string>
+    <string id="ui_mcm_tz_geotool_geo_hud_roof_walls">
+        <text>roof_walls</text>
+    </string>
+    <string id="ui_mcm_tz_geotool_geo_hud_roof_walls_desc">
+        <text>Show this reading on the HUD. The raw roof distance and wall count behind the xlibs indoor test.</text>
+    </string>
+    <string id="ui_mcm_tz_geotool_geo_hud_roof">
+        <text>roof</text>
+    </string>
+    <string id="ui_mcm_tz_geotool_geo_hud_roof_desc">
+        <text>Show this reading on the HUD. A roof within 4 m from an up ray, or a down ray from above when the roof only blocks from one side; walls are ignored.</text>
+    </string>
+    <string id="ui_mcm_tz_geotool_geo_hud_underground">
+        <text>underground</text>
+    </string>
+    <string id="ui_mcm_tz_geotool_geo_hud_underground_desc">
+        <text>Show this reading on the HUD. Whether the level counts as underground.</text>
+    </string>
+    <string id="ui_mcm_tz_geotool_geo_hud_surge_cover">
+        <text>surge_cover</text>
+    </string>
+    <string id="ui_mcm_tz_geotool_geo_hud_surge_cover_desc">
+        <text>Show this reading on the HUD. Whether the emission treats your spot as cover.</text>
+    </string>
+    <string id="ui_mcm_tz_geotool_geo_hud_safe_cover">
+        <text>safe_cover</text>
+    </string>
+    <string id="ui_mcm_tz_geotool_geo_hud_safe_cover_desc">
+        <text>Show this reading on the HUD. Whether the game flags you as in a safe shelter.</text>
+    </string>
+    <string id="ui_mcm_tz_geotool_geo_hud_rain">
+        <text>rain</text>
+    </string>
+    <string id="ui_mcm_tz_geotool_geo_hud_rain_desc">
+        <text>Show this reading on the HUD. How much rain reaches you.</text>
+    </string>
+    <string id="ui_mcm_tz_geotool_info">
+        <text>A reading whose mark you set in the window turns faint green when it agrees and faded red when not. Records go to logs/geo_tool.txt, one tab-separated line each.</text>
+    </string>
+    <string id="tz_geotool_geo_hud_position_lst_off">
+        <text>Off</text>
+    </string>
+    <string id="tz_geotool_geo_hud_position_lst_topleft">
+        <text>Top left</text>
+    </string>
+    <string id="tz_geotool_geo_hud_position_lst_topright">
+        <text>Top right</text>
+    </string>
+    <string id="tz_geotool_geo_hud_position_lst_centerleft">
+        <text>Center left</text>
+    </string>
+    <string id="tz_geotool_geo_hud_position_lst_centerright">
+        <text>Center right</text>
+    </string>
+    <string id="tz_geotool_geo_hud_position_lst_bottomleft">
+        <text>Bottom left</text>
+    </string>
+    <string id="tz_geotool_geo_hud_position_lst_bottomright">
+        <text>Bottom right</text>
+    </string>
+
     <!-- ==================== DEVELOPMENT TAB ==================== -->
     <string id="ui_mcm_menu_tz_development">
         <text>Development</text>
@@ -166,6 +349,18 @@
     <string id="ui_mcm_tz_development_log_flush_desc">
         <text>Write each line to disk at once instead of buffering. Slower, but the log stays current while you tail it.</text>
     </string>
+    <string id="ui_mcm_tz_development_btn_reset_all">
+        <text>Reset to defaults</text>
+    </string>
+    <string id="ui_mcm_tz_development_btn_reset_all_desc">
+        <text>Restore all TestZone MCM settings to defaults. Use after upgrading from a version with a different MCM structure.</text>
+    </string>
+    <string id="ui_mcm_tz_development_reset_warning">
+        <text>Warning: save or discard pending MCM changes first, otherwise they override the reset on the next Accept.</text>
+    </string>
+    <string id="st_tz_reset_all_done">
+        <text>TestZone: all settings restored to defaults.</text>
+    </string>
     <string id="tz_development_log_level_lst_error">
         <text>Error</text>
     </string>
@@ -177,5 +372,18 @@
     </string>
     <string id="tz_development_log_level_lst_debug">
         <text>Debug</text>
+    </string>
+    <!-- ==================== TOOL HELP PAGES ==================== -->
+    <string id="st_tz_geo_tool_help_title">
+        <text>GeoTool</text>
+    </string>
+    <string id="st_tz_geo_tool_help">
+        <text>GeoTool shows what the game's place checks say at your spot. A wrong check stands out against what you know is true.\n\nThe HUD shows the live readings. MCM, TestZone, GeoTool sets its position and its rows, and Off hides it.\n\nMarks hold what you know about this spot. Set each one to yes or no, or leave it unset when you have not checked. A reading turns green when it agrees with its mark and red when it does not.\n\nNote saves the spot with every reading and your typed text, and an empty note saves the spot alone. Record saves one sample per interval until you press Stop. Turn it on and walk a route.\n\nEvery record goes to logs/geo_tool.txt as one line with the time, kind, level, position, level vertex, marks and readings.\n\nDel opens the window, and MCM can change that key. Esc closes it, and a running recording keeps going.</text>
+    </string>
+    <string id="st_tz_anim_tool_help_title">
+        <text>AnimationTool</text>
+    </string>
+    <string id="st_tz_anim_tool_help">
+        <text>AnimationTool plays a motion or a state on a stalker. You judge it and log it as good or bad.\n\nLook at a stalker and press Home to bind him. Select keeps him bound when you reopen the tool. Reset clears that.\n\nThe list shows every .tsv or .txt file in configs/testzone/anim. Click a file, then click a motion to select it. Play or a double click plays it, and Stop sends the stalker back to idle.\n\nTwo arrows on the left switch between pose and moving. The other two step to the previous or next motion and play it. A prop from the prop row, a bottle or a guitar, attaches from the next play on.\n\nGood and bad log the selected motion with any typed note. Note logs the typed note alone. Everything goes to the anim curation file in the logs folder.\n\nA motion plays only when that stalker has its animation file loaded. Esc closes the tool.</text>
     </string>
 </string_table>
