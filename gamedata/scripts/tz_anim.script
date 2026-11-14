@@ -1,5 +1,5 @@
 --- tz_anim: animation command bench. Commands a motion through the real per-domain surface and logs whether it played/held.
---- Run via `run_string tz_anim.<name>(...)` in debug mode; aim at the target first (todo-animations.md a1/a2).
+--- Run via `run_string tz_anim.<name>(...)` in debug mode; aim at the target first.
 --- @novalidate(conventions.unused_export, reason:"console commands, invoked by name via run_string")
 
 local tostring, string_format, pairs = tostring, string.format, pairs
