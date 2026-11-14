@@ -18,7 +18,7 @@ local MARK_STATES = { { label = "-", value = nil }, { label = "yes", value = tru
 local GROUPS = { "WHERE", "ENCLOSED", "COVER", "WEATHER" }
 local CHECK_ORDER = { "smart", "base_owner", "is_indoor", "roof", "roof_walls", "underground",
     "surge_cover", "safe_cover", "rain", "sky" }
--- Thresholds: chest above the feet, a roof this close counts as indoor, ray reach, the engine's own indoor sky cutoff (GamePersistent.cpp:314-315).
+-- Thresholds: chest above the feet, a roof this close counts as indoor, ray reach, the engine's indoor sky cutoff (xray/GamePersistent.cpp:316 mt, :315 dev).
 local CHEST_HEIGHT, ROOF_NEAR, SKY_RANGE, SKY_INDOOR_BELOW = 1.51, 4, 40, 0.05
 -- xcombat.is_indoor counts a wall within this distance (xcombat.script:101); base owners count within this radius (dd_test.script:202).
 local WALL_NEAR, BASE_OWNER_RADIUS = 5, 80

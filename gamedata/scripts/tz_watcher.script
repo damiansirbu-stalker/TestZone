@@ -19,7 +19,7 @@ local _queue_running = nil
 local format_table = xinspect.format_table
 local format_userdata_deep = xinspect.format_userdata
 
--- All 162 callbacks from callbacks-reference.md
+-- All 162 callbacks, in groups
 local ALL_CALLBACKS = {
     -- Player - Core (16)
     "actor_on_first_update", "actor_on_update", "actor_on_net_destroy",
