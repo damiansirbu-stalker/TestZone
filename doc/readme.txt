@@ -50,7 +50,7 @@ Periodic statistics - logs top-firing callbacks at configurable intervals
 
 Requirements:
 Anomaly 1.5.3
-Modded exes: themrdemonized 20250908 or newer, or AOEngine v0.55 or newer. The full feature set needs the latest demonized build. A feature that needs a newer one stays inactive on older exes.
+Modded exes: themrdemonized 20250908 or newer, or AOEngine v0.5.2 or newer. The full feature set needs the latest demonized build. A feature that needs a newer one stays inactive on older exes.
 xlibs (https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001)
 MCM
 
@@ -66,8 +66,22 @@ Main tab:
   Rate limit interval - min ms between same callback logs (100-10000)
 Tracked Events tab:
   Per-callback enable/disable toggles for all 162 callbacks
+Perception tab, one switch per system, one line per change:
+  Hearing - every hearing event that reaches him, with its power against his threshold
+  Vision - when he starts or stops seeing you, and his detection progress
+  Memory - his visual, sound and hit memory of you, presence, age and payload
+  Danger - his held danger, the action answering it down to the leaf, and his reaction with the distance he moved
+  Enemy - his enemy pick and drop, with whether this log saw him hear or see you first
+  Radius - how far out subjects are tracked (20-150 m)
+  All sound sources - hearing events from every source, not only yours
+  Include mutants - track mutants as well as stalkers, every line carries the kind
+Development tab:
+  Log level - minimum severity written to testzone.log
+  Immediate flush - write each line to disk at once, the perception log included
+  Reset to defaults - restore every TestZone setting
 
-The log writes to appdata/logs/testzone.log.
+The log writes to appdata/logs/testzone.log. The perception trace writes its own file, appdata/logs/testzone_perception.log.
+It reads engine state only. A run with an AI mod on and a run with it off produce the same records and compare line for line.
 
 Compatibility:
 Coexists with everything. A callback tracer with no gameplay of its own, observation only.
