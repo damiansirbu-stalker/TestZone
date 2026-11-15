@@ -5,6 +5,8 @@
     Enemy: his enemy pick and drop, with whether he heard or saw you first. It reads engine state only. A run with an AI mod on and a run with it off compare line for line.
   Added: Reset to defaults button on the Development tab, and the Immediate flush switch now covers the perception log.
   Changed: the hearing trace folds a sound of yours only within one frame, so every layer of a reload logs. The first event of each sound lists his 3 memory lists, ids and ages, by his memory age.
+  Added: while a script danger is live on a stalker, the Danger trace logs every half second where he looks and faces against the direction to you.
+  Fixed: a stalker with no memory of you showed the game clock as his memory age. It now reads none.
   Fixed: rare arena census crash when the engine recycles a dead combatant's id to another object
   Added: timed event scheduling works correctly with major modpacks (globals resolve at call time for demonized_time_events compatibility)
   Added: version displayed at startup (mod + xlibs)

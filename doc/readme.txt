@@ -70,7 +70,7 @@ Perception tab, one switch per system, one line per change:
   Hearing - every hearing event that reaches him, with its power against his threshold. The first event of each sound of yours lists his three memory lists with record ids and ages
   Vision - when he starts or stops seeing you, and his detection progress
   Memory - his visual, sound and hit memory of you, presence, age and payload
-  Danger - his held danger, the action answering it down to the leaf, and his reaction with the distance he moved
+  Danger - his held danger, the action answering it down to the leaf, and his reaction with the distance he moved, and under a script danger the angle his sight and body keep to you
   Enemy - his enemy pick and drop, with whether this log saw him hear or see you first
   Radius - how far out subjects are tracked (20-150 m)
   All sound sources - hearing events from every source, not only yours
