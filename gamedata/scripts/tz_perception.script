@@ -156,8 +156,15 @@ local function _format_list(records, tg)
     return string_format("%d:%s", count, table_concat(parts, ","))
 end
 
+--- Age of the stalker's newest record of the actor, or "none": memory_time returns 0 when no list holds one (memory_manager.cpp:249-275).
+local function _format_memory_age(npc, tg)
+    local at = npc:memory_time(db.actor)
+    if at == 0 then return "none" end
+    return string_format("%dms", tg - at)
+end
+
 local function _log_lists(npc, id, tg)
-    log.info("LISTS npc=%d memory_age=%dms vis=[%s] snd=[%s] hit=[%s]", id, tg - npc:memory_time(db.actor),
+    log.info("LISTS npc=%d memory_age=%s vis=[%s] snd=[%s] hit=[%s]", id, _format_memory_age(npc, tg),
         _format_list(npc:memory_visible_objects(), tg), _format_list(npc:memory_sound_objects(), tg), _format_list(npc:memory_hit_objects(), tg))
 end
 
@@ -198,8 +205,8 @@ end
 --- The gate between a kept actor sound and its memory entry: relation, the combat-ignore verdict the engine asks for, age of his last perception of the actor.
 local function _get_gate(npc, tg)
     local useful = xr_combat_ignore and xr_combat_ignore.is_enemy and xr_combat_ignore.is_enemy(npc, db.actor)
-    return string_format(" rel=%s useful=%s memory_age=%dms see=%s", tostring(xcreature.relation(npc, db.actor)), tostring(useful),
-        tg - npc:memory_time(db.actor), tostring(npc:see(db.actor)))
+    return string_format(" rel=%s useful=%s memory_age=%s see=%s", tostring(xcreature.relation(npc, db.actor)), tostring(useful),
+        _format_memory_age(npc, tg), tostring(npc:see(db.actor)))
 end
 
 --- The type factor and the keep threshold a stalker compares this sound against; the live threshold when the exe exposes it, else the ltx floor.
@@ -334,7 +341,7 @@ local function _update_vision(npc, rec, id, tg)
     if rec.sees ~= sees then
         rec.sees = sees
         if sees then _stats.seen_n = _stats.seen_n + 1; rec.percept = true end
-        log.info("SEE npc=%d kind=%s sees_actor=%s last_memory_age=%dms %s", id, rec.kind, tostring(sees), tg - npc:memory_time(db.actor), _get_env_tag())
+        log.info("SEE npc=%d kind=%s sees_actor=%s last_memory_age=%s %s", id, rec.kind, tostring(sees), _format_memory_age(npc, tg), _get_env_tag())
     end
     if sees then return end
     local threshold = npc:visibility_threshold()
