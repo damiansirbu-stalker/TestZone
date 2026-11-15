@@ -3,6 +3,7 @@
 local RegisterScriptCallback, UnregisterScriptCallback = RegisterScriptCallback, UnregisterScriptCallback
 local IsStalker, IsMonster, time_global, db, level, ini_sys, get_console = IsStalker, IsMonster, time_global, db, level, ini_sys, get_console
 local rawget, pairs, tostring, type, debug, math_sqrt, math_floor = rawget, pairs, tostring, type, debug, math.sqrt, math.floor
+local math_acos, math_deg, vector = math.acos, math.deg, vector
 local string_sub, string_match, string_format, table_concat = string.sub, string.match, string.format, table.concat
 local stalker_ids, cast_planner, danger_object, get_modded_exes_version = stalker_ids, cast_planner, danger_object, get_modded_exes_version
 
@@ -319,6 +320,30 @@ local function _update_react(npc, rec, id)
         tostring(sight and sight.m_sight_type), owner, leaf, _get_moved(npc, rec))
 end
 
+--- Horizontal angle in degrees between two vectors, or -1 when either is flat zero.
+local function _get_angle_deg(a, b)
+    local ax, az, bx, bz = a.x, a.z, b.x, b.z
+    local la, lb = math_sqrt(ax * ax + az * az), math_sqrt(bx * bx + bz * bz)
+    if la < 0.01 or lb < 0.01 then return -1 end
+    local dot = (ax * bx + az * bz) / (la * lb)
+    if dot > 1 then dot = 1 elseif dot < -1 then dot = -1 end
+    return math_deg(math_acos(dot))
+end
+
+--- While a scripted danger grade is live: where he looks and faces against the direction to the actor.
+local function _update_face(npc, id)
+    local grade = _get_grade(id)
+    if grade == "-" then return end
+    local npc_pos = npc:position()
+    local to_actor = vector():set(db.actor:position()):sub(npc_pos)
+    local sight = npc:sight_params()
+    local st = db.storage[id]
+    local sm = st and st.state_mgr
+    log.info("FACE npc=%d grade=%s state=%s sight=%s sight_deg=%.0f body_deg=%.0f dist=%.1fm", id, grade,
+        sm and tostring(sm.target_state) or "-", tostring(sight and sight.m_sight_type),
+        sight and _get_angle_deg(sight.m_vector, to_actor) or -1, _get_angle_deg(npc:direction(), to_actor), to_actor:magnitude())
+end
+
 local function _update_enemy(npc, rec, id)
     local enemy = rec.kind == KIND_STALKER and npc:best_enemy() or npc:get_enemy()
     local enemy_id = enemy and enemy:id() or nil
@@ -360,6 +385,7 @@ local function _update_subject(npc, kind, tg)
     if _config.danger and kind == KIND_STALKER then
         _update_danger(npc, rec, id, tg)
         _update_react(npc, rec, id)
+        _update_face(npc, id)
     end
     if _config.enemy then _update_enemy(npc, rec, id) end
 end
