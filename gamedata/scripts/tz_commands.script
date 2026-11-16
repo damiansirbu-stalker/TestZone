@@ -2,14 +2,20 @@
 --- @novalidate(conventions.unused_export, reason:"console commands, invoked by name via run_string")
 
 local pairs, type, tostring, string_format, table_concat, getfenv = pairs, type, tostring, string.format, table.concat, getfenv
-local math_random, math_cos, math_sin, math_pi, math_rad, math_floor =
-    math.random, math.cos, math.sin, math.pi, math.rad, math.floor
+local math_random, math_cos, math_sin, math_pi, math_rad, math_floor, math_sqrt =
+    math.random, math.cos, math.sin, math.pi, math.rad, math.floor, math.sqrt
 local time_global, alife, level, ini_sys = time_global, alife, level, ini_sys
 local IsStalker, IsMonster = IsStalker, IsMonster
 local news_manager, xinventory, xstash, xlevel, xobject =
     news_manager, xinventory, xstash, xlevel, xobject
 local xfs, getFS = xfs, getFS
 local RegisterScriptCallback, UnregisterScriptCallback = RegisterScriptCallback, UnregisterScriptCallback
+local table_remove, rawget, ini_file, str_explode = table.remove, rawget, ini_file, str_explode
+local IsWeapon, character_community = IsWeapon, character_community
+local game_relations, xprofiler, xcombat = game_relations, xprofiler, xcombat
+
+-- The arena's record of rounds, spawns and outfits; its own file like tz_perception, since this log is the test's output.
+local log = xlog.get_logger("TestZone.arena", { outfile = "testzone_arena.log", level = "DEBUG" })
 
 local INVALID_VERTEX = 4294967295
 
@@ -32,10 +38,24 @@ local ARENA_DIST       = 45
 local ARENA_RING_MIN   = 10
 local ARENA_RING_MAX   = 18
 local CLEAR_NPCS_RADIUS = 100
-local ARENA_MAX_SPAWN  = 8
 local ARENA_SPREAD_DEG = 25
--- Cosmetic gear per combatant: artefact auras glow on camera, plus optics and NVG (at_test.script:14).
-local ARENA_GEAR = { "af_gravi", "af_soul", "af_fireball", "af_electra_sparkler", "af_compass", "af_kevlar", "wpn_binoc", "device_torch_nv_1" }
+-- One spawn or one outfit step per firing, so 40 combatants arrive over seconds instead of in one frame.
+local ARENA_DRAIN_SEC  = 0.1
+local ARENA_SHUFFLE_SEC = 90
+-- The second side waits, giving the first a quiet window: AlifeTactics Attachments mounts only with no enemy.
+local ARENA_HOLD_MS    = 8000
+-- Only the alive this close to the centre count toward a side, so a fleer 100m out is replaced.
+local ARENA_ZONE_M     = 60
+-- All alive arena spawns, wherever they are, stay under count times this.
+local ARENA_CAP_MULT   = 1.5
+-- The attachment step waits up to this many drain firings for the kit gun to come online.
+local ARENA_OUTFIT_TRIES = 20
+-- Combatants ignore the tester, so the fight stays faction against faction.
+local ARENA_ACTOR_NEUTRAL = true
+local ARENA_GEAR_FILE  = "alifetactics\\at_gear_config.ltx"
+local ARENA_GEAR_SECTION = "at_gear"
+-- Heal modes of a spawn: the low band splits into a medkit half and a no-heal half; the rest keep their loadout.
+local HEAL_KEPT, HEAL_MEDKIT, HEAL_NONE = "kept", "medkit", "none"
 
 -- Weapon kits: key -> { weapon section, ammo section, default ammo boxes }; ammo is always attached.
 local WEAPONS = {
@@ -49,7 +69,7 @@ local WEAPONS = {
 
 -- show_commands catalog: group, param-name signature, and a runnable example per command; getfenv lists any missing here.
 local CATALOG = {
-    { "combat", "start_arena",       "count, dist, shuffle", "16, 45, 60" },
+    { "combat", "start_arena",       "count, dist, shuffle", "16, 45, 90" },
     { "combat", "stop_arena",        "",                     "" },
     { "combat", "spawn_mutant",      "species, count, dist", '"boar", 3' },
     { "combat", "clear_mutants",     "",                     "" },
@@ -94,6 +114,9 @@ local DRIVE_STRAFE_RADIUS = 3.0
 local DRIVE_STRAFE_PERIOD = 6.0
 local DRIVE_MODE_STRAFE = "strafe"
 local DRIVE_MODE_STAND  = "stand"
+local DRIVE_MODE_PERCH  = "perch"
+-- Above the 0.8m enemy-above threshold the perch-gated mutant moves read (at_mutants_config.ltx [premises] above_m).
+local DRIVE_PERCH_M     = 1.5
 
 -- spawn_mutant species words -> one plain spawn section each (squad_descr_default_mutants.ltx npc_random rosters).
 local MUTANTS = {
@@ -114,26 +137,57 @@ local MARENA_MAX_SPAWN = 6
 local MARENA_WAVE_SEC  = 8
 local MARENA_ROSTER    = { "bloodsucker", "dog", "cat", "chimera", "burer", "controller", "snork", "boar" }
 
--- Arena faction tier pools and the hostile matchups start_arena rolls.
-local ARENA_POOLS = {
-    army     = { "sim_default_military_1", "sim_default_military_2", "sim_default_military_3", "sim_default_military_4" },
-    monolith = { "sim_default_monolith_1", "sim_default_monolith_2", "sim_default_monolith_3", "sim_default_monolith_4" },
-    ecolog   = { "sim_default_ecolog_0", "sim_default_ecolog_1", "sim_default_ecolog_2", "sim_default_ecolog_3", "sim_default_ecolog_4" },
-    renegade = { "sim_default_renegade_0", "sim_default_renegade_1", "sim_default_renegade_2" },
+-- Arena factions by sim_default section word; each section carries its own community (duty -> dolg, military -> army).
+local ARENA_FACTIONS = { "stalker", "bandit", "csky", "duty", "freedom", "ecolog", "killer", "military", "monolith", "greh", "isg", "renegade" }
+-- Tiers _0.._4 read novice, regular, experienced, veteran, master (spawn_sections_general.ltx spec_rank); a missing tier is skipped.
+local ARENA_TIERS = 5
+-- Ring radius per side; the sides stand opposite, so the gap is about twice the radius.
+local ARENA_BANDS = {
+    { name = "close", min = 3,  max = 6 },
+    { name = "mid",   min = 10, max = 18 },
+    { name = "far",   min = 20, max = 35 },
 }
-local ARENA_PAIRS = {
-    { "army", "monolith" }, { "ecolog", "monolith" }, { "renegade", "monolith" }, { "army", "renegade" },
+-- Low sits under the AlifeTactics hurt line 0.40 (at_maneuvers_config.ltx hurt_frac) and over vanilla's 0.20 wounded line (xr_wounded.script:510).
+local ARENA_HEALTH = {
+    { name = "full", weight = 50, min = 1.0,  max = 1.0 },
+    { name = "mid",  weight = 25, min = 0.45, max = 0.6 },
+    { name = "low",  weight = 25, min = 0.25, max = 0.38, split_heal = true },
+}
+-- Kit guns per weapon class, each taking an attachment: the Fort-12 and Saiga-12S take a silencer (w_fort.ltx, w_saiga.ltx), the PM and SPAS-12 none.
+local ARENA_KITS = {
+    pistol  = { "wpn_fort",     "ammo_9x18_fmj" },
+    shotgun = { "wpn_saiga12s", "ammo_12x70_buck" },
+    smg     = WEAPONS.smg,
+    rifle   = WEAPONS.rifle,
+    sniper  = WEAPONS.sniper,
+}
+local ARENA_GUNS = { "pistol", "shotgun", "smg", "rifle", "sniper" }
+local ARENA_MEDKITS = { "medkit", "medkit_army", "medkit_scientic" }
+-- Heal items stripped from the no-heal half (at_healing.script:44 plus vanilla bandage).
+local ARENA_HEAL_ITEMS = { medkit = true, medkit_army = true, medkit_scientic = true, medkit_script = true, bandage = true }
+-- The artefact classes of at_gear_config.ltx; plate, binoc and nvg are read beside them.
+local ARENA_GEAR_CLASSES = { "gravi", "thermal", "chemical", "electro", "special" }
+local ARENA_GEAR_KEYS = { "gravi", "thermal", "chemical", "electro", "special", "plate", "binoc", "nvg" }
+-- Gear profiles: none is the control, same_class tests strongest-wins, two_classes two effects at once.
+local ARENA_GEAR_PROFILES = {
+    { name = "none",        weight = 20 },
+    { name = "one",         weight = 35 },
+    { name = "same_class",  weight = 15 },
+    { name = "two_classes", weight = 10 },
+    { name = "plate",       weight = 10 },
+    { name = "optics",      weight = 10 },
 }
 
 local _arena = { on = false, want = 0, dist = 0, shuffle_sec = 0, shuffle_at = 0,
-                 center_lvid = nil, gvid = nil, side_dir = 0, side_a = "army", side_b = "monolith",
-                 spawned = {} }
+                 center_lvid = nil, center_pos = nil, gvid = nil, side_dir = 0,
+                 side_a = nil, side_b = nil, band = nil, first = "b", hold_at = nil, round = 0, gap_logged = false,
+                 pools = {}, gear = {}, spawn_q = {}, outfit_q = {}, spawned = {} }
 
 local _lifepump = { on = false, threshold = LIFEPUMP_THRESHOLD, damp = LIFEPUMP_DAMP, topups = 0 }
 
 local _drive = { on = false, mode = DRIVE_MODE_STAND, anchor = nil, radius = 0, period = 0, start_at = 0 }
 local _drive_v = vector()
-local _aim = { on = false, away = false }
+local _aim = { on = false, away = false, switch_ms = nil, target_id = nil, switched_at = 0 }
 local _aim_v = vector()
 
 local _mutants = {}
@@ -145,37 +199,108 @@ local function _show_tip(msg)
     if actor then news_manager.send_tip(actor, msg, nil, nil, 5000) end
 end
 
+-- One row of a weighted table, rolled against the summed weights.
+local function _select_weighted(rows)
+    local total = 0
+    for i = 1, #rows do total = total + rows[i].weight end
+    local roll = math_random() * total
+    for i = 1, #rows do
+        roll = roll - rows[i].weight
+        if roll <= 0 then return rows[i] end
+    end
+    return rows[#rows]
+end
+
+-- The tier sections that exist for one faction word, and the community the first of them declares.
+local function _get_tier_sections(word)
+    local secs, community = {}, nil
+    for tier = 0, ARENA_TIERS - 1 do
+        local sec = string_format("sim_default_%s_%d", word, tier)
+        if ini_sys:section_exist(sec) then
+            secs[#secs + 1] = sec
+            community = community or ini_sys:r_string_ex(sec, "community")
+        end
+    end
+    return secs, community
+end
+
+-- Every arena faction with at least one tier section, keyed by the community the section declares.
+local function _build_arena_pools()
+    local pools = {}
+    for i = 1, #ARENA_FACTIONS do
+        local word = ARENA_FACTIONS[i]
+        local secs, community = _get_tier_sections(word)
+        if community and #secs > 0 then pools[#pools + 1] = { word = word, community = community, secs = secs } end
+    end
+    return pools
+end
+
+-- One gear key's sections from the AlifeTactics config, kept only where the section exists.
+local function _get_gear_list(ini, key)
+    local list = {}
+    local raw = ini:r_string_ex(ARENA_GEAR_SECTION, key)
+    if not raw then return list end
+    local parts = str_explode(raw, ",")
+    for i = 1, #parts do
+        if ini_sys:section_exist(parts[i]) then list[#list + 1] = parts[i] end
+    end
+    return list
+end
+
+-- The AlifeTactics gear class lists, live from its config so modded rows count; an absent file leaves every list empty.
+local function _load_arena_gear()
+    local gear = {}
+    local ini = ini_file(ARENA_GEAR_FILE)
+    for i = 1, #ARENA_GEAR_KEYS do
+        gear[ARENA_GEAR_KEYS[i]] = _get_gear_list(ini, ARENA_GEAR_KEYS[i])
+    end
+    return gear
+end
+
 local function _find_arena_pos(angle)
     local dir = vector():set(math_cos(angle), 0, math_sin(angle))
-    local dist = ARENA_RING_MIN + math_random() * (ARENA_RING_MAX - ARENA_RING_MIN)
+    local band = _arena.band
+    local dist = band.min + math_random() * (band.max - band.min)
     local lvid = level.vertex_in_direction(_arena.center_lvid, dir, dist)
     if not lvid or lvid >= INVALID_VERTEX then return nil end
     return level.vertex_position(lvid), lvid
 end
 
-local function _select_arena_pair()
-    local pair = ARENA_PAIRS[math_random(#ARENA_PAIRS)]
-    _arena.side_a, _arena.side_b = pair[1], pair[2]
+-- A new round: two hostile factions, a range band, and the side that spawns first alternated.
+-- No hostile pair in 50 rolls keeps the last round's pair, or the first two pools on the first round.
+local function _select_arena_round()
+    local pools = _arena.pools
+    for _ = 1, 50 do
+        local a, b = pools[math_random(#pools)], pools[math_random(#pools)]
+        if a.community ~= b.community and game_relations.is_factions_enemies(a.community, b.community) then
+            _arena.side_a, _arena.side_b = a, b
+            break
+        end
+    end
+    if not _arena.side_a then _arena.side_a, _arena.side_b = pools[1], pools[2] end
+    _arena.band = ARENA_BANDS[math_random(#ARENA_BANDS)]
+    _arena.first = (_arena.first == "a") and "b" or "a"
+    _arena.hold_at = nil
+    _arena.round = _arena.round + 1
+    _arena.gap_logged = false
+    _arena.side_dir = math_random() * 2 * math_pi
     _arena.shuffle_at = time_global() + _arena.shuffle_sec * 1000
-    _show_tip(string_format("arena: %s vs %s", _arena.side_a, _arena.side_b))
+    local comm_a, comm_b = _arena.side_a.community, _arena.side_b.community
+    log.info("[ROUND] n=%d a=%s b=%s band=%s first=%s hour=%d", _arena.round, comm_a, comm_b,
+        _arena.band.name, _arena.first, level.get_time_hours())
+    _show_tip(string_format("arena %d: %s vs %s, %s", _arena.round, comm_a, comm_b, _arena.band.name))
 end
 
 local function _spawn_combatant(side)
-    local faction = (side == "b") and _arena.side_b or _arena.side_a
-    local pool = ARENA_POOLS[faction]
+    local pool = (side == "b") and _arena.side_b or _arena.side_a
     local base = (side == "b") and (_arena.side_dir + math_pi) or _arena.side_dir
     local angle = base + math_rad((math_random() * 2 - 1) * ARENA_SPREAD_DEG)
     local pos, lvid = _find_arena_pos(angle)
     if not pos then return false end
-    local sec = pool[math_random(#pool)]
-    if not ini_sys:section_exist(sec) then return false end
-    local sim = alife()
-    local se = sim:create(sec, pos, lvid, _arena.gvid)
+    local se = alife():create(pool.secs[math_random(#pool.secs)], pos, lvid, _arena.gvid)
     if not se then return false end
-    _arena.spawned[se.id] = { side = side, dead_seen = false }
-    for i = 1, #ARENA_GEAR do
-        if ini_sys:section_exist(ARENA_GEAR[i]) then sim:create(ARENA_GEAR[i], pos, lvid, _arena.gvid, se.id) end
-    end
+    _arena.spawned[se.id] = { side = side, dead_seen = false, queued = false, gun_id = nil }
+    if not _arena.hold_at then _arena.hold_at = time_global() + ARENA_HOLD_MS end
     return true
 end
 
@@ -187,37 +312,258 @@ local function _release_arena()
         if se then sim:release(se, true); released = released + 1 end
         _arena.spawned[id] = nil
     end
+    _arena.spawn_q, _arena.outfit_q = {}, {}
     return released
 end
 
--- Count alive per side; release a corpse one tick after it is first seen dead so the kill reads on camera.
-local function _update_census()
-    local sim = alife()
-    local alive_a, alive_b = 0, 0
-    for id, rec in pairs(_arena.spawned) do
-        local se = xobject.get_se(id)
-        if not se or not se.alive then
-            _arena.spawned[id] = nil
-        elseif se:alive() then
-            if rec.side == "a" then alive_a = alive_a + 1 else alive_b = alive_b + 1 end
-        elseif rec.dead_seen then
-            sim:release(se, true)
-            _arena.spawned[id] = nil
-        else
-            rec.dead_seen = true
-        end
-    end
-    return alive_a, alive_b
+-- A carried gun: a wpn_ weapon (grenade sections are grenade_), not the knife, not the binoculars Gear reads as optics.
+local function _is_gun(item)
+    if not IsWeapon(item) then return false end
+    local sec = item:section()
+    return sec:find("wpn_", 1, true) == 1 and sec ~= "wpn_binoc" and not sec:find("knife", 1, true)
 end
 
-local function _spawn_wave(alive_a, alive_b)
-    local budget = ARENA_MAX_SPAWN
+-- Release the faction loadout's guns, and its heal items for the no-heal half; collected first, released after the walk.
+local function _remove_carried_items(id, with_heal)
+    local doomed = {}
+    xinventory.iterate_inventory(id, function(_, item)
+        if _is_gun(item) or (with_heal and ARENA_HEAL_ITEMS[item:section()]) then doomed[#doomed + 1] = item end
+    end)
+    for i = 1, #doomed do xinventory.release_item(doomed[i]) end
+    return #doomed
+end
+
+-- The first AP box the gun's ammo_class lists, by AlifeTactics' own AP set (at_ammo.script:12); nil without AlifeTactics.
+local function _find_ap_ammo(wsec)
+    local ammo_mod = rawget(_G, "at_ammo")
+    local ap = ammo_mod and ammo_mod.AP_SECTIONS
+    local raw = ap and ini_sys:r_string_ex(wsec, "ammo_class")
+    if not raw then return nil end
+    local parts = str_explode(raw, ",")
+    for i = 1, #parts do
+        if ap[parts[i]] then return parts[i] end
+    end
+    return nil
+end
+
+-- Gear profile pickers: list is a random artefact class, other the next class along; each returns the sections to add.
+local ARENA_GEAR_PICKERS = {
+    none = function() return {} end,
+    one = function(_, list)
+        if #list == 0 then return {} end
+        return { list[math_random(#list)] }
+    end,
+    same_class = function(_, list)
+        if #list < 2 then return {} end
+        local i = math_random(#list)
+        return { list[i], list[(i % #list) + 1] }
+    end,
+    two_classes = function(_, list, other)
+        local picks = {}
+        if #list > 0 then picks[#picks + 1] = list[math_random(#list)] end
+        if #other > 0 then picks[#picks + 1] = other[math_random(#other)] end
+        return picks
+    end,
+    plate = function(gear)
+        if #gear.plate == 0 then return {} end
+        return { gear.plate[math_random(#gear.plate)] }
+    end,
+    optics = function(gear)
+        local picks, roll = {}, math_random(3)
+        if roll ~= 2 and #gear.binoc > 0 then picks[#picks + 1] = gear.binoc[math_random(#gear.binoc)] end
+        if roll ~= 1 and #gear.nvg > 0 then picks[#picks + 1] = gear.nvg[math_random(#gear.nvg)] end
+        return picks
+    end,
+}
+
+-- Add one gear profile's items; returns the profile and the "section:tier" list for the log.
+local function _add_arena_gear(id)
+    local profile = _select_weighted(ARENA_GEAR_PROFILES).name
+    local gear = _arena.gear
+    local ci = math_random(#ARENA_GEAR_CLASSES)
+    local list = gear[ARENA_GEAR_CLASSES[ci]]
+    local other = gear[ARENA_GEAR_CLASSES[(ci % #ARENA_GEAR_CLASSES) + 1]]
+    local picks = ARENA_GEAR_PICKERS[profile](gear, list, other)
+    local shown = {}
+    for i = 1, #picks do
+        xinventory.create_item(picks[i], id)
+        shown[i] = string_format("%s:%s", picks[i], tostring(ini_sys:r_float_ex(picks[i], "tier") or "-"))
+    end
+    return profile, table_concat(shown, ",")
+end
+
+-- Set one combatant neutral toward the tester. xlibs has no relation setter, so the bound call is used.
+-- @novalidate(conventions.raw_engine_call, reason:"no xlibs relation setter; set_relation is bound at script_game_object_script3.cpp:354")
+local function _set_actor_neutral(npc)
+    local actor = db.actor
+    if not actor then return end
+    npc:set_relation(game_object.neutral, actor)
+end
+
+-- Clear the hidden first-aid charge, which heals with no item (xr_eat_medkit.script:136), for the no-heal half.
+-- AlifeTactics rolls it at npc_on_net_spawn (at_healing.script:262-277), at least one drain firing before this runs.
+local function _clear_healing_charge(id, name)
+    if not name then return end
+    se_save_var(id, name, "healing_charge", nil)
+end
+
+-- Outfit step 1: strip, kit, gear, health band, heal half, and calm toward the tester; queues step 2 for the attachment.
+local function _apply_arena_outfit(id, rec)
+    local npc = xobject.get_go(id)
+    if not npc then return end
+    if not npc:alive() then return end
+    local name = npc:name()
+    local timer = xprofiler.new():start()
+    local health = _select_weighted(ARENA_HEALTH)
+    local heal = HEAL_KEPT
+    if health.split_heal then heal = (math_random() < 0.5) and HEAL_MEDKIT or HEAL_NONE end
+    local removed = _remove_carried_items(id, heal == HEAL_NONE)
+    local gun_key = ARENA_GUNS[math_random(#ARENA_GUNS)]
+    local kit = ARENA_KITS[gun_key]
+    local gun = xinventory.create_item(kit[1], id)
+    for _ = 1, AMMO_BOXES do xinventory.create_item(kit[2], id) end
+    local ap = _find_ap_ammo(kit[1])
+    if ap then xinventory.create_item(ap, id) end
+    if heal == HEAL_MEDKIT then xinventory.create_item(ARENA_MEDKITS[math_random(#ARENA_MEDKITS)], id) end
+    if heal == HEAL_NONE then _clear_healing_charge(id, name) end
+    local profile, shown = _add_arena_gear(id)
+    npc:set_health_ex(health.min + math_random() * (health.max - health.min))
+    if ARENA_ACTOR_NEUTRAL then _set_actor_neutral(npc) end
+    rec.gun_id = gun and gun.id
+    timer:stop()
+    local comm, rank, hp = character_community(npc), npc:character_rank(), xcombat.get_health_frac(npc)
+    log.info("[SPAWN] id=%d %s comm=%s rank=%d side=%s gun=%s ap=%s health=%s(%.2f) heal=%s removed=%d gear=%s(%s) [%.2fms]",
+        id, tostring(name), tostring(comm), rank, rec.side, gun_key, tostring(ap), health.name, hp, heal, removed,
+        profile, shown, timer:get_ms())
+    if rec.gun_id then _arena.outfit_q[#_arena.outfit_q + 1] = { id = id, step = 2, tries = 0 } end
+end
+
+-- Requeue an attachment order while the kit gun is still offline, up to ARENA_OUTFIT_TRIES firings.
+local function _push_attachment_retry(order)
+    order.tries = order.tries + 1
+    if order.tries < ARENA_OUTFIT_TRIES then
+        _arena.outfit_q[#_arena.outfit_q + 1] = order
+        return
+    end
+    log.info("[ATTACH] id=%d skip=gun_offline", order.id)
+end
+
+-- Outfit step 2: one attachment that fits the kit gun, once the gun has come online.
+local function _add_arena_attachment(order)
+    local rec = _arena.spawned[order.id]
+    if not rec then return end
+    local npc = xobject.get_go(order.id)
+    if not npc then return end
+    if not npc:alive() then return end
+    local gun = rec.gun_id and xobject.get_go(rec.gun_id)
+    if not gun then return _push_attachment_retry(order) end
+    local gun_sec = gun:section()
+    local fits = xinventory.get_fitting_attachments(gun)
+    if #fits == 0 then
+        log.info("[ATTACH] id=%d gun=%s fits=none", order.id, gun_sec)
+        return
+    end
+    local sec = fits[math_random(#fits)]
+    xinventory.create_item(sec, order.id)
+    log.info("[ATTACH] id=%d gun=%s attachment=%s", order.id, gun_sec, sec)
+end
+
+-- Online arena spawns queue their outfit; the callback only queues, no item work runs inside it.
+local function _on_npc_net_spawn(npc)
+    local id = npc:id()
+    local rec = _arena.spawned[id]
+    if not rec or rec.queued then return end
+    rec.queued = true
+    _arena.outfit_q[#_arena.outfit_q + 1] = { id = id, step = 1, tries = 0 }
+end
+
+-- The throttle: one outfit step, else one spawn, per firing; outfits drain first so a spawn is armed before the next arrives.
+local function _run_arena_drain()
+    if not _arena.on then return true end
+    ResetTimeEvent("tz_arena", "drain", ARENA_DRAIN_SEC)
+    if not db.actor then return false end
+    local order = table_remove(_arena.outfit_q, 1)
+    if order then
+        local rec = _arena.spawned[order.id]
+        if rec and order.step == 1 then _apply_arena_outfit(order.id, rec)
+        elseif rec then _add_arena_attachment(order) end
+        return false
+    end
+    local side = table_remove(_arena.spawn_q, 1)
+    if side then
+        local timer = xprofiler.new():start()
+        local made = _spawn_combatant(side)
+        timer:stop()
+        log.debug("[CREATE] side=%s made=%s [%.2fms]", side, tostring(made), timer:get_ms())
+    end
+    return false
+end
+
+-- Tally one arena record: alive inside the zone counts toward its side, alive anywhere toward the cap.
+-- A corpse is released one census after it is first seen dead, so the kill reads on camera.
+local function _update_arena_record(sim, id, rec, tally)
+    local se = xobject.get_se(id)
+    if not se or not se.alive then
+        _arena.spawned[id] = nil
+        return
+    end
+    if not se:alive() then
+        if rec.dead_seen then
+            sim:release(se, true)
+            _arena.spawned[id] = nil
+        end
+        rec.dead_seen = true
+        return
+    end
+    tally.total = tally.total + 1
+    local pos = se.position
+    if pos:distance_to_sqr(_arena.center_pos) > tally.zone_sqr then return end
+    local side = tally[rec.side]
+    side.count, side.x, side.z = side.count + 1, side.x + pos.x, side.z + pos.z
+end
+
+-- Count alive per side inside the zone and alive anywhere; the first census with both sides in the zone logs the real gap.
+local function _update_census()
+    local sim = alife()
+    local tally = { total = 0, zone_sqr = ARENA_ZONE_M * ARENA_ZONE_M,
+                    a = { count = 0, x = 0, z = 0 }, b = { count = 0, x = 0, z = 0 } }
+    for id, rec in pairs(_arena.spawned) do _update_arena_record(sim, id, rec, tally) end
+    local a, b = tally.a, tally.b
+    if not _arena.gap_logged and a.count > 0 and b.count > 0 then
+        _arena.gap_logged = true
+        local dx, dz = a.x / a.count - b.x / b.count, a.z / a.count - b.z / b.count
+        log.info("[GAP] n=%d band=%s gap=%.1fm", _arena.round, _arena.band.name, math_sqrt(dx * dx + dz * dz))
+    end
+    return a.count, b.count, tally.total
+end
+
+local function _get_queued_count(side)
+    local queued = 0
+    for i = 1, #_arena.spawn_q do
+        if _arena.spawn_q[i] == side then queued = queued + 1 end
+    end
+    return queued
+end
+
+-- Queue up to need spawns for one side within room; returns the room left.
+local function _add_side_orders(side, need, room)
+    while need > 0 and room > 0 do
+        _arena.spawn_q[#_arena.spawn_q + 1] = side
+        need, room = need - 1, room - 1
+    end
+    return room
+end
+
+-- Queue the spawns each side lacks: the first side at once, the second after the hold, all under the cap.
+local function _add_spawn_orders(alive_a, alive_b, total)
     local half = math_floor(_arena.want / 2)
-    local need_a, need_b = half - alive_a, half - alive_b
-    while (need_a > 0 or need_b > 0) and budget > 0 do
-        if need_a >= need_b and _spawn_combatant("a") then need_a = need_a - 1
-        elseif need_a < need_b and _spawn_combatant("b") then need_b = need_b - 1 end
-        budget = budget - 1
+    local room = math_floor(_arena.want * ARENA_CAP_MULT) - total - #_arena.spawn_q
+    local first = _arena.first
+    local second = (first == "a") and "b" or "a"
+    local alive = { a = alive_a, b = alive_b }
+    room = _add_side_orders(first, half - alive[first] - _get_queued_count(first), room)
+    if _arena.hold_at and time_global() >= _arena.hold_at then
+        _add_side_orders(second, half - alive[second] - _get_queued_count(second), room)
     end
 end
 
@@ -227,10 +573,9 @@ local function _update_arena()
     if not db.actor then return false end
     if _arena.shuffle_sec > 0 and time_global() >= _arena.shuffle_at then
         _release_arena()
-        _select_arena_pair()
+        _select_arena_round()
     end
-    local alive_a, alive_b = _update_census()
-    _spawn_wave(alive_a, alive_b)
+    _add_spawn_orders(_update_census())
     return false
 end
 
@@ -274,18 +619,19 @@ local function _update_actor_drive()
         local ang = (time_global() - _drive.start_at) / 1000 * (2 * math_pi / _drive.period)
         _drive_v:set(_drive.anchor.x + _drive.radius * math_cos(ang), _drive.anchor.y,
                      _drive.anchor.z + _drive.radius * math_sin(ang))
+        local lvid = level.vertex_id(_drive_v)
+        if lvid >= INVALID_VERTEX then return end
+        _drive_v.y = level.vertex_position(lvid).y
+        actor:set_actor_position(_drive_v, true)
+    elseif _drive.mode == DRIVE_MODE_PERCH then
+        _drive_v:set(_drive.anchor.x, _drive.anchor.y + DRIVE_PERCH_M, _drive.anchor.z)
         actor:set_actor_position(_drive_v, true)
     else
         actor:set_actor_position(_drive.anchor, true)
     end
 end
 
--- Face the actor at the nearest live spawned mutant each frame via the camera (set_actor_direction sets cam_Active, the -getH idiom).
--- The aim read mutants use (xcombat.is_enemy_watching) follows the camera, so this opens the aim-gated moves in a harness. Keep a weapon out.
-local function _update_actor_aim()
-    local actor = db.actor
-    if not actor then return end
-    local ap = actor:position()
+local function _find_nearest_mutant(ap)
     local best, best_d_sqr
     for id in pairs(_mutants) do
         local mob = xobject.get_go(id)
@@ -294,6 +640,38 @@ local function _update_actor_aim()
             if not best_d_sqr or d_sqr < best_d_sqr then best_d_sqr, best = d_sqr, mob end
         end
     end
+    return best
+end
+
+-- The next live spawned mutant after after_id in id order, wrapping to the lowest; nil when none is alive.
+local function _find_next_mutant_id(after_id)
+    local first_id, next_id
+    for id in pairs(_mutants) do
+        local mob = xobject.get_go(id)
+        if mob and mob:alive() then
+            if not first_id or id < first_id then first_id = id end
+            if after_id and id > after_id and (not next_id or id < next_id) then next_id = id end
+        end
+    end
+    return next_id or first_id
+end
+
+-- The rotating target: hold one mutant for switch_ms, then the next alive in turn, so every mutant of a group is aimed at.
+local function _get_rotating_target(now)
+    local mob = _aim.target_id and xobject.get_go(_aim.target_id)
+    if mob and mob:alive() and now - _aim.switched_at < _aim.switch_ms then return mob end
+    _aim.target_id = _find_next_mutant_id(_aim.target_id)
+    _aim.switched_at = now
+    return _aim.target_id and xobject.get_go(_aim.target_id)
+end
+
+-- Face the actor at a live spawned mutant each frame via the camera (set_actor_direction sets cam_Active, the -getH idiom): the nearest, or a rotating one.
+-- The aim read mutants use (xcombat.is_enemy_watching) follows the camera, so this opens the aim-gated moves in a harness. Keep a weapon out.
+local function _update_actor_aim()
+    local actor = db.actor
+    if not actor then return end
+    local ap = actor:position()
+    local best = _aim.switch_ms and _get_rotating_target(time_global()) or _find_nearest_mutant(ap)
     if not best then return end
     local mp = best:position()
     _aim_v:set(mp.x - ap.x, mp.y - ap.y, mp.z - ap.z)
@@ -422,6 +800,11 @@ function spawn_mutant(species, count, dist)
     _show_tip(string_format("%s x%d @%dm", section, made, ahead))
 end
 
+--- True when spawn_mutant made this id, so a harness can tell its own spawns from the level's wild mutants.
+function is_spawned_mutant(id)
+    return _mutants[id] == true
+end
+
 --- Release every creature spawn_mutant made.
 function clear_mutants()
     local sim = alife()
@@ -451,24 +834,34 @@ function clear_npcs(radius)
     _show_tip(string_format("released %d npcs within %dm", released, radius))
 end
 
---- Keep count combatants fighting half against half on a ring, reshuffling factions every shuffle seconds.
+--- Keep count combatants fighting half against half on a ring, a new hostile faction pair and range band every shuffle seconds (default 90, 0 = off).
+--- Each combatant is outfitted on coming online: a random kit gun, AP ammo, an attachment, a gear profile, and a health band, logged to testzone_arena.log.
 function start_arena(count, dist, shuffle)
     local actor = db.actor
     if not actor then return _show_tip("Not in game") end
     if not count or count < 2 then return _show_tip("arena: pass a count like start_arena(16)") end
+    if _arena.on then log.info("[RESTART] released=%d", _release_arena()) end
+    _arena.pools = _build_arena_pools()
+    if #_arena.pools < 2 then return _show_tip("arena: fewer than 2 faction pools") end
+    _arena.gear = _load_arena_gear()
     _arena.want = count
     _arena.dist = dist or ARENA_DIST
-    _arena.shuffle_sec = shuffle or 0
-    _arena.side_dir = math_random() * 2 * math_pi
+    _arena.shuffle_sec = shuffle or ARENA_SHUFFLE_SEC
     local fdir = actor:direction()
     local apos = actor:position()
     local cvid = level.vertex_id(vector():set(apos.x + fdir.x * _arena.dist, apos.y, apos.z + fdir.z * _arena.dist))
     _arena.center_lvid = (cvid ~= INVALID_VERTEX) and cvid or actor:level_vertex_id()
+    _arena.center_pos = level.vertex_position(_arena.center_lvid)
     _arena.gvid = actor:game_vertex_id()
+    _arena.spawn_q, _arena.outfit_q = {}, {}
     _arena.on = true
-    _select_arena_pair()
+    _select_arena_round()
+    RegisterScriptCallback("npc_on_net_spawn", _on_npc_net_spawn)
     RemoveTimeEvent("tz_arena", "tick")
+    RemoveTimeEvent("tz_arena", "drain")
     CreateTimeEvent("tz_arena", "tick", 1, _update_arena)
+    CreateTimeEvent("tz_arena", "drain", ARENA_DRAIN_SEC, _run_arena_drain)
+    log.info("[START] count=%d dist=%d shuffle=%d pools=%d", count, _arena.dist, _arena.shuffle_sec, #_arena.pools)
     _show_tip(string_format("arena: %d combatants @%dm", count, _arena.dist))
 end
 
@@ -476,8 +869,13 @@ end
 function stop_arena()
     if not _arena.on then return end
     _arena.on = false
+    UnregisterScriptCallback("npc_on_net_spawn", _on_npc_net_spawn)
     RemoveTimeEvent("tz_arena", "tick")
-    _show_tip(string_format("arena stopped, released %d", _release_arena()))
+    RemoveTimeEvent("tz_arena", "drain")
+    local released = _release_arena()
+    log.info("[STOP] released=%d", released)
+    log.flush()
+    _show_tip(string_format("arena stopped, released %d", released))
 end
 
 --- Keep count mutants fighting you on a ring, adding a new species to the mix every wave seconds.
@@ -535,12 +933,13 @@ function stop_lifepump()
 end
 
 --- Drive the tester unattended from his current spot: "stand" pins him there, "strafe" auto-circles it at radius m over period s.
+--- "perch" pins him DRIVE_PERCH_M above it, the height a perch-gated mutant move reads; a running drive keeps its anchor.
 function start_actor_drive(mode, radius, period)
     local actor = db.actor
     if not actor then return _show_tip("Not in game") end
     local apos = actor:position()
-    _drive.mode = (mode == DRIVE_MODE_STRAFE) and DRIVE_MODE_STRAFE or DRIVE_MODE_STAND
-    _drive.anchor = vector():set(apos.x, apos.y, apos.z)
+    _drive.mode = (mode == DRIVE_MODE_STRAFE or mode == DRIVE_MODE_PERCH) and mode or DRIVE_MODE_STAND
+    if not _drive.on then _drive.anchor = vector():set(apos.x, apos.y, apos.z) end
     _drive.radius = radius or DRIVE_STRAFE_RADIUS
     _drive.period = period or DRIVE_STRAFE_PERIOD
     _drive.start_at = time_global()
@@ -559,11 +958,13 @@ function stop_actor_drive()
     _show_tip("actor drive off")
 end
 
---- Face the actor at the nearest spawned mutant every frame, so the aim-gated mutant moves can fire in a harness. Needs a weapon out.
-function start_actor_aim(away)
+--- Face the actor at a spawned mutant every frame, so the aim-gated mutant moves can fire in a harness. Needs a weapon out.
+--- away turns the back on it; switch_sec rotates the aim across every live mutant, holding each that long, instead of the nearest.
+function start_actor_aim(away, switch_sec)
     local actor = db.actor
     if not actor then return _show_tip("Not in game") end
     _aim.away = away and true or false
+    _aim.switch_ms = switch_sec and switch_sec * 1000 or nil
     if not _aim.on then
         _aim.on = true
         RegisterScriptCallback("actor_on_update", _update_actor_aim)
