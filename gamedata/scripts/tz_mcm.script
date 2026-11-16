@@ -43,7 +43,7 @@ defaults = {
     perception_mutants = false,
     geo_key = GEO_KEY_DEFAULT,
     geo_record_interval = 1,
-    geo_hud_position = "center_right",
+    geo_hud_position = "off",
     geo_hud_period = 0.5,
     geo_hud_smart = true,
     geo_hud_base_owner = true,
@@ -191,7 +191,7 @@ function on_mcm_load()
 
                     { id = "div_hud", type = "line" },
                     { id = "hdr_hud", type = "desc", text = "ui_mcm_tz_geotool_hdr_hud", clr = {255, 200, 200, 200} },
-                    { id = "geo_hud_position", type = "list", val = 0, def = "center_right", content = {
+                    { id = "geo_hud_position", type = "list", val = 0, def = "off", content = {
                         {"off", "off"}, {"top_left", "topleft"}, {"top_right", "topright"},
                         {"center_left", "centerleft"}, {"center_right", "centerright"},
                         {"bottom_left", "bottomleft"}, {"bottom_right", "bottomright"},
