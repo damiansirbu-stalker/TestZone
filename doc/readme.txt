@@ -42,11 +42,38 @@ An organized group copies my work, defames, impersonates and review-bombs me acr
 You can help with a review, a rating, a proper bug report, or a coffee on Ko-fi: https://ko-fi.com/damiansirbu
 
 Features:
-Watcher - monitors all 162 engine callbacks with fire counts and payload logging
-Deep introspection - extracts detailed info from tables and userdata arguments
-Rate limiting - prevents log spam from high-frequency callbacks
-Per-callback toggles - enable/disable individual callbacks via MCM
-Periodic statistics - logs top-firing callbacks at configurable intervals
+
+Main:
+  Watcher - logs all 162 engine callbacks with fire counts, and the payload of each on request
+  Deep introspection - reads type, name, section and community out of tables and engine objects
+  Rate limiting - holds back a callback that fires faster than you can read it
+  Periodic statistics - logs the top-firing callbacks at a set interval
+  Mutant scan - mutant squads with species, faction, online state, smart terrain and commander
+  Level scan - the squads, smart terrains, stashes and AlifePlus squads on the current level
+  World scan - a squad census by faction and by level, with online and offline counts
+  Geometry scan - smart terrain distances, stash density, base spacing and feature layout per level
+  Timer queue watch - names the timer that broke the queue when every timer in the game stops
+Profiler:
+  Times a set of suspect GAMMA functions and logs their frame cost and spikes
+Perception, one switch per system, one line per change, written to testzone_perception.log:
+  Hearing - every hearing event that reaches a stalker, with its power against his threshold
+  Vision - when he starts or stops seeing you, and his detection progress
+  Memory - his visual, sound and hit memory of you
+  Danger - his held danger, the action that answers it, and how far he moved
+  Enemy - who he picks as enemy and drops, and whether he heard or saw you first
+  Radius, All sound sources and Include mutants set who the trace follows
+GeoTool:
+  A window on a key you bind, to mark a spot, write notes and record samples to geo_tool.txt
+  A HUD with the live readings: nearest smart terrain and base owner, the indoor, roof and underground tests, emission and shelter cover, and the rain around you
+  A reading turns green when it agrees with your mark and red when it does not
+Development:
+  Log level and Immediate flush for every TestZone log, and Reset to defaults
+Console tools, run through run_string in debug mode:
+  tz_commands - a stalker arena and a mutant arena, a life pump that keeps you alive, an actor drive and aim, kits, spawns, weather, time, and teleports to a smart terrain or a stash
+  tz_anim - plays a motion on the HUD, a mutant or an NPC and logs whether it played
+  HOME review tool - forces each candidate motion on the stalker you aim at and logs your call
+  tz_fx - cycles post-process effects and ambient sound loops
+  tz_loadgen - 30 load cases for checking what a JitProfiler capture caught or missed
 
 Requirements:
 Anomaly 1.5.3
@@ -54,34 +81,9 @@ Modded exes: themrdemonized 20250908 or newer, or AOEngine v0.5.2 or newer. The 
 xlibs (https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001)
 MCM
 
-Configuration:
-Main tab:
-  Watcher enabled - master toggle for callback logging
-  Periodic statistics - log callback fire counts at regular intervals
-  Stats interval - how often to log periodic stats (10-3600 seconds)
-  Log payload - log callback arguments (can create large log files)
-  Deep introspection - extract detailed info from objects
-  Table depth - recursion depth for table introspection (1-4)
-  Rate limiting - throttle repeated callback logs
-  Rate limit interval - min ms between same callback logs (100-10000)
-Tracked Events tab:
-  Per-callback enable/disable toggles for all 162 callbacks
-Perception tab, one switch per system, one line per change:
-  Hearing - every hearing event that reaches him, with its power against his threshold. The first event of each sound of yours lists his three memory lists with record ids and ages
-  Vision - when he starts or stops seeing you, and his detection progress
-  Memory - his visual, sound and hit memory of you, presence, age and payload
-  Danger - his held danger, the action answering it down to the leaf, and his reaction with the distance he moved, and under a script danger the angle his sight and body keep to you
-  Enemy - his enemy pick and drop, with whether this log saw him hear or see you first
-  Radius - how far out subjects are tracked (20-150 m)
-  All sound sources - hearing events from every source, not only yours
-  Include mutants - track mutants as well as stalkers, every line carries the kind
-Development tab:
-  Log level - minimum severity written to testzone.log
-  Immediate flush - write each line to disk at once, the perception log included
-  Reset to defaults - restore every TestZone setting
-
-The log writes to appdata/logs/testzone.log. The perception trace writes its own file, appdata/logs/testzone_perception.log.
-It reads engine state only. A run with an AI mod on and a run with it off produce the same records and compare line for line.
+Logs go to appdata/logs: testzone.log, plus a separate file for Perception, the arenas and GeoTool.
+Perception reads engine state only.
+A run with an AI mod on and a run with it off compare line for line.
 
 Compatibility:
 Coexists with everything. A callback tracer with no gameplay of its own, observation only.
@@ -90,7 +92,7 @@ How It's Built:
 
 Although it started from work by Demonized, Alundaio, and Tronex, the current code and patterns are original, learned by reverse-engineering X-Ray's callback registry.
 It taps all 162 engine callbacks through one interception seam, counting fires and logging payloads with deep table and userdata introspection.
-Rate limiters keep a high-frequency callback from flooding the log, and each callback toggles on its own through MCM.
+Rate limiters keep a high-frequency callback from flooding the log.
 The design favors the engine's own mechanisms and minimal intervention. It reads the callback bus and never drives it.
 Profiled continuously with JitProfiler, an engine-native profiler. Manual tests run on unoptimized, single-threaded exes.
 Every commit runs the full pipeline locally and in CI: luacheck, a Selene build compiled for STALKER with flags the public build lacks, and a load test that runs every script against engine stubs.
