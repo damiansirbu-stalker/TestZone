@@ -1,37 +1,72 @@
 1.0.4-snapshot
-  Added: Perception trace, its own tab and log file, one switch per system. Hearing: every event that reaches a nearby stalker or mutant with its power against his threshold.
-    Vision: when he starts or stops seeing you and his detection progress. Memory: his visual, sound and hit memory of you.
-    Danger: his held danger, the action answering it down to the leaf (take cover, look out, hold, detour, search), and his reaction with the distance he moved.
-    Enemy: his enemy pick and drop, with whether he heard or saw you first. It reads engine state only. A run with an AI mod on and a run with it off compare line for line.
-  Added: Reset to defaults button on the Development tab, and the Immediate flush switch now covers the perception log.
-  Changed: the Geo tool HUD defaults to off, so Reset to defaults hides it.
-  Changed: the hearing trace folds a sound of yours only within one frame, so every layer of a reload logs. The first event of each sound lists his 3 memory lists, ids and ages, by his memory age.
-  Added: while a script danger is live on a stalker, the Danger trace logs every half second where he looks and faces against the direction to you.
-  Fixed: a stalker with no memory of you showed the game clock as his memory age. It now reads none.
-  Fixed: rare arena census crash when the engine recycles a dead combatant's id to another object
-  Added: timed event scheduling works correctly with major modpacks (globals resolve at call time for demonized_time_events compatibility)
-  Added: version displayed at startup (mod + xlibs)
-  Changed: MCM visual refresh
-  Compatibility:
-    Requires themrdemonized modded exes 20250908+ or AOEngine v0.55+.
+  The perception trace, GeoTool, the level scans and the console test benches
+    Perception and GeoTool are new tabs. The perception trace logs what the stalkers and mutants near you hear, see, remember, fear and pick as enemy.
+    GeoTool shows what the game's place checks say at your spot on a HUD, and its window records your marks, notes and samples to geo_tool.txt.
+    The Main tab adds 4 scans and a timer queue watch, while the console commands add 2 arenas, a life pump and 2 animation benches.
 
-  Performance and Infrastructure
-    - Rebuilt the validator into layered rules for crashes, unsafe engine usage, performance, best practices, smoke load, and secret leaks.
-    - The validator runs on every change, locally and in CI, and a grade gate fails the build on any finding.
-    - Profiled and tuned with JitProfiler, an engine-native, scientific profiler.
-    - Consolidated the whole engine layer into xlibs and standardized naming and structure across every mod.
+  Main
+    - Added Mutant scan, a periodic log of every mutant squad with its species, faction, online state, smart terrain and commander.
+    - Added Level scan, a periodic log of the squads, smart terrains, stashes and AlifePlus squads on the current level.
+    - Added World scan, a squad census by faction and by level, with online and offline counts.
+    - Added Geometry scan, which logs smart terrain distances, stash density, base spacing and feature layout when a level loads, then periodically.
+    - Added Timer queue watch, for the freeze where every timer in the game stops at once. This watch records the timer that broke the queue.
+      If the game freezes, run_string tz_watcher.log_queue_state() names that timer.
+    - Added the online or offline state to every squad callback line.
+    - Fixed payload logging crashing on a server object, whose id is a field where the watcher expected a method.
+
+  Perception
+    - Added the Perception trace, with one switch per system, written to testzone_perception.log. The trace reads engine state only.
+      A run with an AI mod on and a run with it off compare line for line.
+      Hearing logs every event that reaches a stalker, with how loud it was against what he needs to notice it. The first event of each sound of yours lists his 3 memory lists.
+      Vision logs when he starts to see you, when he loses you, and his detection progress. Memory logs what he saw, heard and took as a hit from you.
+      Danger logs the danger he holds, what he does about it, and how far he moved. Enemy logs who he picks as his enemy, who he drops, and whether he heard you before he saw you.
+    - Added Radius, All sound sources and Include mutants, which set who the trace follows and which sounds it counts.
+
+  GeoTool
+    - Added GeoTool. Its open key shows a window where you mark what you know about a spot, write notes, and record samples to geo_tool.txt.
+      The HUD shows the live readings: the nearest smart terrain and base owner, the indoor, roof and underground tests, emission and shelter cover, and rain.
+      A reading turns green when your mark agrees with it, but red when your mark says otherwise.
+
+  Development
+    - Added the Development tab with Log level, Immediate flush for every TestZone log, and Reset to defaults.
+
+  Console commands
+    - Added tz_commands for testing and filming, run through run_string in debug mode.
+      The stalker arena keeps NPCs of 2 factions fighting on a ring. The mutant arena sends waves of mutants at you. Both arenas write testzone_arena.log.
+      If you need to stay alive, the life pump holds your health, stamina and psy health up and damps every hit.
+      The actor drive holds you in place or circles you, while the actor aim turns you to a mutant.
+      You also get kits, spawns, weather, time, teleports to a smart terrain or a stash, and the unlocks for the north and fast travel in the same set.
+    - Added tz_anim, an animation bench that plays a motion on the HUD, a mutant or an NPC, then logs whether it played.
+    - Added the animation review tool on HOME. This tool forces each candidate motion on the stalker you aim at, offers a prop picker, and logs your call on each motion.
+    - Added tz_fx, console cyclers for post-process effects and ambient sound loops.
+    - Added tz_loadgen, a profiler fixture of 30 load cases. check_capture() reads the last JitProfiler capture and marks each case caught, missed or inconclusive.
+
+  General
+    - Added the modded exes check. The game stops at load with a message when it finds neither demonized 20250908 or newer nor AOEngine.
+    - Changed the xlibs requirement to 1.5.1.
+    - Added a banner and the mod version to the MCM. The log names the mod, xlibs and exe versions at startup.
+    - Fixed the TestZone timers in modpacks that replace the vanilla timer queue, such as demonized time events.
 
 1.0.3
-  xlibs 1.2.3 dependency.
+  An xlibs 1.2.3 floor, with newer xlibs accepted
+    From this release the load check accepts xlibs 1.2.3 or any newer compatible version, where it used to ask for 1.2.1 exactly.
+
+  - Changed the xlibs check to accept 1.2.3 or any newer compatible version. It used to stop the game on any version but 1.2.1.
 
 1.0.2
-  Changed: xlibs dependency updated to 1.2.1
+  The xlibs 1.2.1 requirement
+    This release runs on xlibs 1.2.1, and the load check asks for that exact version.
+
+  - Changed the xlibs requirement to 1.2.1.
 
 1.0.1
-  Added: dependency gate for xlibs version check
+  The xlibs dependency check
+    The mod now checks the xlibs version at load, and stops with a message if xlibs is missing or too old.
+
+  - Added the xlibs check at load.
 
 1.0.0
-  Renamed from AlifeLogger. Multi-feature test lab.
-  Changed: renamed AlifeLogger -> TestZone (prefix al_ -> tz_)
-  Changed: log file alife_logger.log -> testzone.log
-  Changed: MCM id al -> tz
+  AlifeLogger renamed to TestZone, the callback watcher and the profiler
+    TestZone is the new name of AlifeLogger. The watcher logs every engine callback, while the profiler times suspect GAMMA functions.
+
+  - Changed the name AlifeLogger to TestZone. The log is now testzone.log, and the MCM id is tz.
