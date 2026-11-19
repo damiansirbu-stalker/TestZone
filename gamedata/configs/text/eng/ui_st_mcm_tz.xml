@@ -356,7 +356,7 @@ How often the HUD and the open window read every check.</text>
         <text>Restore all TestZone MCM settings to defaults. Use after upgrading from a version with a different MCM structure.</text>
     </string>
     <string id="ui_mcm_tz_development_reset_warning">
-        <text>Warning: save or discard pending MCM changes first, otherwise they override the reset on the next Accept.</text>
+        <text>Warning: save or discard pending MCM changes first, otherwise they override the reset on the next Apply.</text>
     </string>
     <string id="st_tz_reset_all_done">
         <text>TestZone: all settings restored to defaults.</text>
