@@ -3,12 +3,16 @@
 local RegisterScriptCallback, ResetTimeEvent, CreateTimeEvent, RemoveTimeEvent =
     RegisterScriptCallback, ResetTimeEvent, CreateTimeEvent, RemoveTimeEvent
 local ini_file, level, db, pairs, tostring, type, GetEvent = ini_file, level, db, pairs, tostring, type, GetEvent
-local string_format, table_concat = string.format, table.concat
+local string_format, table_concat, table_sort, time_global = string.format, table.concat, table.sort, time_global
+local math_ceil, math_min = math.ceil, math.min
 
 local log = xlog.get_logger("TestZone.sound_trace", { outfile = "testzone_sound_trace.log", level = "DEBUG" })
 local _levels = xlog.get_levels()
 
 local REPORT_SEC = 60
+-- A file heard again inside this window counts as a repeat in the summary.
+local REPEAT_MS = 300000
+local TOP_N = 5
 local NO_SOUND = "ambient\\no_sound"
 -- The channel files the base ambient layer reads (vanilla configs/environment); the same set SoundTool indexes.
 local CHANNEL_FILES = { "environment\\sound_channels.ltx", "environment\\ambient_channels\\backgrounds.ltx",
@@ -22,6 +26,11 @@ local _channels_of = nil
 local _walk_ini
 local _counts = {}
 local _plays_n = 0
+-- The running summary of the channel plays per map and weather state, and the last channel play for the veto check.
+local _stats = {}
+local _stats_key, _stats_since = nil, 0
+local _last_heard = {}
+local _last_play = nil
 
 --- Canonical sound-path key: lowercase, backslashes, no extension.
 local function _get_key(path)
@@ -84,6 +93,78 @@ local function _log_play(hook, channel, file, spot)
     log.info("PLAY hook=%s ch=%s file=%s %s %s", hook, channel or "-", tostring(file), spot, _get_place_tag())
 end
 
+--- The map and weather state a summary is kept for.
+local function _get_stats_key()
+    local manager = level_weathers and level_weathers.get_weather_manager and level_weathers.get_weather_manager()
+    local state = manager and manager.get_curr_ambient and manager:get_curr_ambient()
+    return string_format("lvl=%s state=%s", tostring(level.name()), tostring(state))
+end
+
+--- The middle value of a list of numbers, or nil when empty.
+local function _get_median(list)
+    if #list == 0 then return nil end
+    local sorted = {}
+    for i = 1, #list do sorted[i] = list[i] end
+    table_sort(sorted)
+    return sorted[math_ceil(#sorted / 2)]
+end
+
+--- The channels with the most plays, as "name=count", most first.
+local function _format_top(by_channel)
+    local names = {}
+    for name in pairs(by_channel) do names[#names + 1] = name end
+    table_sort(names, function(a, b) return by_channel[a] > by_channel[b] end)
+    local parts = {}
+    for i = 1, math_min(TOP_N, #names) do parts[i] = names[i] .. "=" .. by_channel[names[i]] end
+    return table_concat(parts, " ")
+end
+
+--- Write the running summary of one map and weather state.
+local function _log_stats(key, bucket)
+    local minutes = bucket.ms / 60000
+    local files = 0
+    for _ in pairs(bucket.files) do files = files + 1 end
+    log.info("STATS %s minutes=%.1f plays=%d per_min=%.1f files=%d repeats_5min=%d dist_med=%s top=[%s]", key, minutes,
+        bucket.plays, minutes > 0 and bucket.plays / minutes or 0, files, bucket.repeats,
+        tostring(_get_median(bucket.dists) and string_format("%.0f", _get_median(bucket.dists)) or "-"), _format_top(bucket.by_channel))
+end
+
+--- Close the time of the current summary, and start or resume the one for the map and state in play.
+local function _select_bucket(key, now)
+    local current = _stats_key and _stats[_stats_key]
+    if current then current.ms = current.ms + (now - _stats_since) end
+    if current and key ~= _stats_key then _log_stats(_stats_key, current) end
+    _stats_key, _stats_since = key, now
+    _stats[key] = _stats[key] or { ms = 0, plays = 0, repeats = 0, files = {}, by_channel = {}, dists = {} }
+    return _stats[key]
+end
+
+--- Take a play back out of a summary: the shuffle vetoed it, and its replacement follows at the same spot in the same millisecond.
+local function _remove_play(play)
+    local bucket = _stats[play.key]
+    bucket.plays = bucket.plays - 1
+    bucket.by_channel[play.channel] = bucket.by_channel[play.channel] - 1
+    bucket.dists[#bucket.dists] = nil
+    if play.repeated then bucket.repeats = bucket.repeats - 1 end
+end
+
+--- Count one channel play into the summary of the map and state in play.
+local function _add_play(channel, key, pos)
+    local now = time_global()
+    local actor = db.actor
+    local last = _last_play
+    if last and pos and last.t == now and last.x == pos.x and last.y == pos.y and last.z == pos.z then _remove_play(last) end
+    local bucket = _select_bucket(_get_stats_key(), now)
+    local repeated = _last_heard[key] ~= nil and now - _last_heard[key] < REPEAT_MS
+    _last_heard[key] = now
+    bucket.plays = bucket.plays + 1
+    bucket.by_channel[channel] = (bucket.by_channel[channel] or 0) + 1
+    bucket.files[key] = true
+    if repeated then bucket.repeats = bucket.repeats + 1 end
+    if pos and actor then bucket.dists[#bucket.dists + 1] = actor:position():distance_to(pos) end
+    _last_play = pos and { t = now, x = pos.x, y = pos.y, z = pos.z, key = _stats_key, channel = channel, repeated = repeated } or nil
+end
+
 -- The six hooks reach these through the xlibs seam registry. Each observes and returns nil, never a veto.
 local function _log_bed(section, file, pos)
     _log_play(HOOK_BED, tostring(section), file, _get_spot(pos))
@@ -93,7 +174,10 @@ local function _log_script(file, pos)
     local key = _get_key(file)
     if key == NO_SOUND then return end
     local channel = key and _channels_of[key]
-    if channel then return _log_play(HOOK_SCRIPT, channel, file, _get_spot(pos)) end
+    if channel then
+        _add_play(channel, key, pos)
+        return _log_play(HOOK_SCRIPT, channel, file, _get_spot(pos))
+    end
     if _config.all then _log_play(HOOK_OTHER, nil, file, _get_spot(pos)) end
 end
 
@@ -132,6 +216,8 @@ end
 local function _run_report()
     if not _enabled then return true end
     log.info("MIN plays=%d by_hook=[%s] %s", _plays_n, _format_counts(), _get_place_tag())
+    local bucket = _select_bucket(_get_stats_key(), time_global())
+    _log_stats(_stats_key, bucket)
     log.flush()
     _counts, _plays_n = {}, 0
     ResetTimeEvent("tz_sound_trace", "report", REPORT_SEC)
@@ -145,6 +231,7 @@ local function _apply_enabled()
     _enabled = wanted
     if _enabled then
         _counts, _plays_n = {}, 0
+        _stats, _stats_key, _stats_since, _last_heard, _last_play = {}, nil, time_global(), {}, nil
         local attached = 0
         for i = 1, #LISTENERS do
             if xsound.register_ambient_listener(LISTENERS[i][1], LISTENERS[i][2]) then attached = attached + 1 end
