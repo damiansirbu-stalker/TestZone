@@ -350,7 +350,7 @@ local function _get_mark_callback(wnd, i)
 end
 
 local function _try_open()
-    if _is_window_open() or not db.actor then return end
+    if Check_UI() or not db.actor then return end
     _box = tz_geo_tool_wnd()
     _box:ShowDialog(true)
     Register_UI("tz_geo_tool_wnd", "tz_geo_tool", _box)

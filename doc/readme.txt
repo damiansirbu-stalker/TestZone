@@ -66,12 +66,16 @@ GeoTool:
   A window on a key you bind, to mark a spot, write notes and record samples to geo_tool.txt
   A HUD with the live readings: nearest smart terrain and base owner, the indoor, roof and underground tests, emission and shelter cover, and the rain around you
   A reading turns green when it agrees with your mark and red when it does not
+SoundTool:
+  A window on End that plays ambience channels, dread categories, NPC voice and any .ogg on disk
+  It plays a sound as its mod does in game, or at the ear or a set distance, with its loudness
+  It browses any folder and opens playlists, and every tag or note goes to sound_tool.txt
 Development:
   Log level and Immediate flush for every TestZone log, and Reset to defaults
 Console tools, run through run_string in debug mode:
   tz_commands - a stalker arena and a mutant arena, a life pump that keeps you alive, an actor drive and aim, kits, spawns, weather, time, and teleports to a smart terrain or a stash
   tz_anim - plays a motion on the HUD, a mutant or an NPC and logs whether it played
-  HOME review tool - forces each candidate motion on the stalker you aim at and logs your call
+  AnimationTool, on PgDn - forces each candidate motion on the stalker you aim at
   tz_fx - cycles post-process effects and ambient sound loops
   tz_loadgen - 30 load cases for checking what a JitProfiler capture caught or missed
 
@@ -81,7 +85,7 @@ Modded exes: themrdemonized 20250908 or newer, or AOEngine v0.5.2 or newer. The 
 xlibs (https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001)
 MCM
 
-Logs go to appdata/logs: testzone.log, plus a separate file for Perception, the arenas and GeoTool.
+Logs go to appdata/logs: testzone.log, plus one file each for Perception, the arenas and GeoTool.
 Perception reads engine state only.
 A run with an AI mod on and a run with it off compare line for line.
 

@@ -1,0 +1,881 @@
+--- tz_sound_tool: SoundTool - audition ambience, dread, voice and any .ogg on disk, tag each sound into one notes file. MCM TestZone > SoundTool.
+
+local string_format, table_concat, table_sort = string.format, table.concat, table.sort
+local math_sqrt, ipairs = math.sqrt, ipairs
+local os_date, os_time, ini_file, RegisterScriptCallback = os.date, os.time, ini_file, RegisterScriptCallback
+
+local OUTPUT_FILE  = "sound_tool.txt"
+local LOGS_MOUNT   = "$logs$"
+local SOUNDS_MOUNT = "$game_sounds$"
+local CACHE_DIR    = "sound_tool_cache"
+local FILL_QUEUE   = "tz_sound_fill"
+local FILL_STEP    = 15
+local DREAD_ROOT   = "zs\\"
+local NO_SOUND     = "ambient\\no_sound"
+local VOICE_MARK   = "\\voice\\audio\\"
+local EXT_OGG, EXT_TXT = "ogg", "txt"
+local KIND_ATEAR, KIND_DIST, KIND_FAMILY = "atear", "dist", "family"
+local FRAC_NEAR, FRAC_FELT, FRAC_FAR = "near", "felt", "far"
+-- The channel files the ambience family indexes, all three shipped by DiegeticAmbience under configs/environment.
+local CHANNEL_FILES = { "environment\\sound_channels.ltx", "environment\\ambient_channels\\backgrounds.ltx",
+    "environment\\ambient_channels\\blowout_channels.ltx" }
+-- A bed plays 10 m above the camera (xray/xrGame/GamePersistent.cpp:347-348).
+local BED_LIFT = 10
+-- A playlist's folder under the logs names the family its lines default to.
+local REVIEW_FAMILY = { da_review = "ambience", dd_review = "dread", voice_review = "voice" }
+local FAMILY_ORDER = { "dread", "ambience", "voice", "file" }
+local COMMON_MODES = {
+    { label = "at-ear (2D)", kind = KIND_ATEAR },
+    { label = "5m", kind = KIND_DIST, dist = 5 },
+    { label = "10m", kind = KIND_DIST, dist = 10 },
+    { label = "25m", kind = KIND_DIST, dist = 25 },
+    { label = "50m", kind = KIND_DIST, dist = 50 },
+    { label = "100m", kind = KIND_DIST, dist = 100 },
+}
+-- Tag rows in window order; each tag writes one note line.
+local TAG_ROWS = {
+    { caption = "type", tags = { "outside", "inside" } },
+    { caption = "level", tags = { "low", "med", "high" } },
+    { caption = "vol", tags = { "inaudible", "faint", "loud", "painful" } },
+    { caption = "dist", tags = { "close", "far" } },
+    { caption = "fate", tags = { "keep", "cut", "unfit", "release", "dupe" } },
+}
+-- Layout anchors of the script-placed tag rows; the fixed elements sit in tz_sound_tool.xml.
+local TAG_TOP, TAG_ROW_H, TAG_CAPTION_X, TAG_FIRST_X, TAG_STEP_X = 234, 30, 444, 498, 59
+
+local log = xlog.get_logger("TestZone.soundtool", { outfile = "testzone.log" })
+
+local _channels, _channel_of, _dread_categories = {}, {}, {}
+-- xray keeps each loaded sound source by name until exit (xray/xrSound/SoundRender_Core_SourceManager.cpp:8-31), so a cache name is never reused.
+local _cache, _cache_count, _is_cache_dirty, _cache_token = {}, 0, false, nil
+local _handles = {}
+
+local function _get_extension(name)
+    return (name:match("%.([^%.\\]+)$") or ""):lower()
+end
+
+--- Canonical sound key: lowercase, backslashes, no .ogg.
+local function _format_key(path)
+    return (path:lower():gsub("/", "\\"):gsub("%.ogg$", ""))
+end
+
+local function _get_tail(path)
+    return path:match("([^\\]+)$") or path
+end
+
+local function _is_absolute(path)
+    return path:match("^%a:\\") ~= nil
+end
+
+local function _format_dir(path)
+    local dir = path:gsub("/", "\\")
+    return dir:sub(-1) == "\\" and dir or (dir .. "\\")
+end
+
+--- The parent of an absolute folder, or "" (the drive list) above a drive root.
+local function _get_parent_dir(dir)
+    return dir:match("^(.*\\)[^\\]+\\$") or ""
+end
+
+local function _get_sounds_dir()
+    return _format_dir(xfs.resolve_path(SOUNDS_MOUNT, ""))
+end
+
+local function _get_logs_dir()
+    return _format_dir(xfs.resolve_path(LOGS_MOUNT, ""))
+end
+
+local function _is_sound_known(key)
+    return xfs.has_file(SOUNDS_MOUNT, key .. ".ogg")
+end
+
+--- Delete every file in the cache folder, then rescan when one went, so the index forgets them.
+--- @return number The number of files deleted
+local function _clear_cache()
+    local dir = _get_sounds_dir() .. CACHE_DIR
+    local _, files = xfs.read_disk_entries(dir)
+    for i = 1, #files do xfs.remove_file(dir .. "\\" .. files[i]) end
+    _cache, _is_cache_dirty = {}, false
+    if #files > 0 then xfs.update_index(SOUNDS_MOUNT) end
+    return #files
+end
+
+--- A cache name unique for the whole process: the load's time token, a counter that never resets, then the file name.
+local function _build_cache_name(source)
+    _cache_token = _cache_token or os_time()
+    _cache_count = _cache_count + 1
+    local tail = _get_tail(source):lower():gsub("%.ogg$", ""):gsub("[^%w_%-]", "_")
+    return string_format("%s\\%d_%04d_%s", CACHE_DIR, _cache_token, _cache_count, tail)
+end
+
+--- Copy an outside file into the cache once and return its game name; the copy plays after the next _flush_cache.
+local function _add_cache_entry(source)
+    local key = source:lower()
+    if _cache[key] then return _cache[key] end
+    local sounds_dir = _get_sounds_dir()
+    xfs.create_folder(sounds_dir:sub(1, -2))
+    xfs.create_folder(sounds_dir .. CACHE_DIR)
+    local name = _build_cache_name(source)
+    if not xfs.clone_file(source, sounds_dir .. name .. ".ogg") then log.warn("[SOUNDTOOL] copy failed: %s", source); return nil end
+    _cache[key] = name
+    _is_cache_dirty = true
+    return name
+end
+
+local function _flush_cache()
+    if not _is_cache_dirty then return end
+    xfs.update_index(SOUNDS_MOUNT)
+    _is_cache_dirty = false
+end
+
+--- Collect the channels of one resolved ini, DLTX applied, with the placement fields the director does not read.
+local function _collect_channels(rel)
+    local ini = ini_file(rel)
+    if not (ini and ini.section_for_each) then return end
+    ini:section_for_each(function(sec)
+        if not ini:line_exist(sec, "sounds") then return end
+        local pool = {}
+        for token in (ini:r_string_ex(sec, "sounds") or ""):gmatch("[^,]+") do
+            local key = _format_key(token:match("^%s*(.-)%s*$"))
+            if key ~= "" and key ~= NO_SOUND then pool[#pool + 1] = key end
+        end
+        _channels[#_channels + 1] = { name = sec, pool = pool, min_dist = ini:r_float_ex(sec, "min_distance") or 0,
+            max_dist = ini:r_float_ex(sec, "max_distance") or 0, height = ini:r_float_ex(sec, "height") or 0 }
+    end)
+end
+
+--- Add every channel name one preset key lists in a resolved ambient ini to the set out, keyed lowercase.
+local function _collect_preset_channels(rel, key, out)
+    local ini = ini_file(rel)
+    if not (ini and ini.section_for_each) then return end
+    ini:section_for_each(function(sec)
+        if not ini:line_exist(sec, key) then return end
+        for token in (ini:r_string_ex(sec, key) or ""):gmatch("[^,]+") do out[token:match("^%s*(.-)%s*$"):lower()] = true end
+    end)
+end
+
+--- Flag each channel a bed when a preset's sound_channels lists it, and a Lua play when the level's sound_channels_dynamic does or no preset does.
+local function _apply_schedulers()
+    local beds, dynamic = {}, {}
+    local level_rel = "environment\\ambients\\" .. level.name() .. ".ltx"
+    _collect_preset_channels("environment\\ambients.ltx", "sound_channels", beds)
+    _collect_preset_channels(level_rel, "sound_channels", beds)
+    _collect_preset_channels(level_rel, "sound_channels_dynamic", dynamic)
+    for i = 1, #_channels do
+        local channel = _channels[i]
+        local key = channel.name:lower()
+        channel.is_bed = beds[key] or false
+        channel.is_lua = dynamic[key] or not channel.is_bed
+    end
+end
+
+--- Add one channel to the owner list of every sound key in its pool.
+local function _add_channel_owners(channel)
+    for k = 1, #channel.pool do
+        local owners = _channel_of[channel.pool[k]] or {}
+        owners[#owners + 1] = channel
+        _channel_of[channel.pool[k]] = owners
+    end
+end
+
+--- Build the channel list and the reverse index from a sound key to every channel that lists it.
+local function _build_ambience_index()
+    _channels, _channel_of = {}, {}
+    for i = 1, #CHANNEL_FILES do _collect_channels(CHANNEL_FILES[i]) end
+    _apply_schedulers()
+    table_sort(_channels, function(left, right) return left.name < right.name end)
+    for i = 1, #_channels do _add_channel_owners(_channels[i]) end
+end
+
+--- The point in front of the camera at a flat distance, lifted by a height from the actor's feet, or from the camera for a bed; nil without an actor.
+--- @src xray/xrGame/GamePersistent.cpp:347-348 (a bed lifts from the camera), anomaly/sound_ambient.script:126,140 (a Lua play from the actor)
+--- @param place table { dist, height, is_from_camera }
+local function _compute_position(place)
+    local actor = db.actor
+    if not actor then return nil end
+    local dev = device()
+    local dir = dev.cam_dir
+    local flat = vector():set(dir.x, 0, dir.z)
+    if flat:magnitude() < 0.01 then flat = vector():set(0, 0, 1) end
+    flat:normalize()
+    local pos = vector():set(place.is_from_camera and dev.cam_pos or actor:position()):add(flat:mul(place.dist))
+    pos.y = pos.y + (place.height or 0)
+    return pos
+end
+
+--- Where an ambience mode plays: near and far take the nearest and farthest of the channel's Lua and bed plays, felt the first play's middle.
+--- @return number flat distance, number height, boolean true when the pick is the bed play
+local function _compute_ambience_place(channel, frac)
+    local min_dist, max_dist, height = channel.min_dist, channel.max_dist, channel.height
+    local plays = {}
+    if channel.is_lua then
+        local spawn_min = GetEvent("underground") and min_dist or (min_dist + max_dist) / 2
+        if spawn_min > max_dist then spawn_min = max_dist end
+        plays[#plays + 1] = { [FRAC_NEAR] = spawn_min / 2, [FRAC_FELT] = (spawn_min + max_dist) / 4, [FRAC_FAR] = max_dist / 2,
+            height = height, is_bed = false }
+    end
+    if channel.is_bed then
+        plays[#plays + 1] = { [FRAC_NEAR] = min_dist, [FRAC_FELT] = (min_dist + max_dist) / 2, [FRAC_FAR] = max_dist,
+            height = BED_LIFT, is_bed = true }
+    end
+    local pick = plays[1]
+    if not pick then return max_dist / 2, height, false end
+    local best = pick[frac] * pick[frac] + pick.height * pick.height
+    for i = 2, #plays do
+        local candidate = plays[i][frac] * plays[i][frac] + plays[i].height * plays[i].height
+        if (frac == FRAC_NEAR and candidate < best) or (frac == FRAC_FAR and candidate > best) then pick, best = plays[i], candidate end
+    end
+    return pick[frac], pick.height, pick.is_bed
+end
+
+local function _is_ambience_available()
+    return da_director ~= nil
+end
+
+local function _is_ambience_member(item)
+    return item.key ~= nil and _channel_of[item.key] ~= nil
+end
+
+--- The channel an item plays as: the one its row was opened from, else the first that lists it.
+local function _get_item_channel(item)
+    return item.channel or _channel_of[item.key][1]
+end
+
+local function _format_ambience_where(item)
+    if item.channel then return "channel " .. item.channel.name end
+    local names = {}
+    for i, channel in ipairs(_channel_of[item.key] or {}) do names[i] = channel.name end
+    return #names > 0 and table_concat(names, "+") or "no channel"
+end
+
+--- Where and how loud an ambience mode plays: a Lua play at the director's channel volume (anomaly/sound_ambient.script:147-163), a bed at 1.0.
+local function _compute_ambience_mode(item, mode)
+    local channel = _get_item_channel(item)
+    local flat, height, is_bed = _compute_ambience_place(channel, mode.frac)
+    local volume = is_bed and 1 or da_director.get_channel_volume(channel.name)
+    local note = volume <= 0 and "silent here" or (is_bed and "bed" or "lua")
+    return flat, height, volume, note, is_bed
+end
+
+local function _play_ambience_mode(item, mode)
+    local flat, height, volume, _, is_bed = _compute_ambience_mode(item, mode)
+    local pos = _compute_position({ dist = flat, height = height, is_from_camera = is_bed })
+    return pos and da_director.play_unfiltered(item.path, { position = pos, volume = volume })
+end
+
+--- A plain play past the ambience shuffle, so the audition is exactly the sound picked.
+local function _play_ambience_plain(item, opts)
+    return da_director.play_unfiltered(item.path, opts)
+end
+
+local function _is_dread_available()
+    return dd_director ~= nil and dd_sound_metadata ~= nil
+end
+
+local function _build_dread_index()
+    _dread_categories = xfs.read_folders(SOUNDS_MOUNT, DREAD_ROOT)
+    table_sort(_dread_categories)
+end
+
+local function _is_dread_member(item)
+    return item.key ~= nil and item.key:sub(1, #DREAD_ROOT) == DREAD_ROOT
+end
+
+local function _get_dread_category(item)
+    return item.key:match("^zs\\([^\\]+)\\") or "?"
+end
+
+local function _find_dread_row(item)
+    local rows = dd_sound_metadata.categories and dd_sound_metadata.categories[_get_dread_category(item)] or {}
+    for i = 1, #rows do
+        if rows[i].path == item.key then return rows[i] end
+    end
+    return {}
+end
+
+--- The dread a mode plays at: its preset, or the live board's dread for "as heard now".
+local function _get_mode_dread(mode)
+    if mode.dread then return mode.dread end
+    local board = dd_director.get_board()
+    return board and board.dread or 0
+end
+
+--- The director's farthest roll at a mode's dread (half the band max, pulled in by dread, lifted by the row height), at the director's own volume.
+--- The audition plays at exactly this distance, so the readout and the note record what was heard.
+local function _compute_dread_mode(item, mode)
+    local row = _find_dread_row(item)
+    local dread = _get_mode_dread(mode)
+    return (row.ch_max or 100) / 2 * dd_director.get_pull_factor(dread), row.h or 0, dd_director.get_play_volume(), string_format("dread %.2f", dread)
+end
+
+local function _play_dread_mode(item, mode)
+    local row = _find_dread_row(item)
+    local flat = _compute_dread_mode(item, mode)
+    local _, handle = dd_director.play_sound(item.path, { min = row.mn or 2, max = row.mx or 100, height = row.h or 0,
+        ch_min = row.ch_min or 30, ch_max = row.ch_max or 100, dist = flat })
+    return handle
+end
+
+local function _format_dread_where(item)
+    return "category " .. _get_dread_category(item)
+end
+
+local function _start_dread_audition()
+    dd_director.set_muted(true)
+end
+
+local function _stop_dread_audition()
+    dd_director.set_muted(false)
+end
+
+local function _is_voice_member(item)
+    return item.source ~= nil and item.source:lower():find(VOICE_MARK, 1, true) ~= nil
+end
+
+local function _format_voice_where(item)
+    return item.source and item.source:lower():match("\\voice\\audio\\(.+)\\[^\\]+$") or "voice"
+end
+
+local function _format_file_where(item)
+    return item.source and item.source:match("([^\\]+)\\[^\\]+$") or "game"
+end
+
+local function _play_plain(item, opts)
+    return xsound.play_at(item.path, opts)
+end
+
+-- The families, a Strategy table: membership, modes, plays, index and audition hooks per family; no is_available means no mod needed.
+local FAMILIES = {
+    ambience = { id = "ambience", tag = "ambience", is_available = _is_ambience_available, is_member = _is_ambience_member,
+        build_index = _build_ambience_index, format_where = _format_ambience_where, compute_mode = _compute_ambience_mode,
+        play_mode = _play_ambience_mode, play_plain = _play_ambience_plain,
+        modes = { { label = "as wired - near", kind = KIND_FAMILY, frac = FRAC_NEAR },
+            { label = "as wired - felt", kind = KIND_FAMILY, frac = FRAC_FELT },
+            { label = "as wired - far", kind = KIND_FAMILY, frac = FRAC_FAR } } },
+    dread = { id = "dread", tag = "dread", is_available = _is_dread_available, is_member = _is_dread_member,
+        build_index = _build_dread_index, format_where = _format_dread_where, compute_mode = _compute_dread_mode,
+        play_mode = _play_dread_mode, play_plain = _play_plain, start_audition = _start_dread_audition, stop_audition = _stop_dread_audition,
+        modes = { { label = "as heard now", kind = KIND_FAMILY }, { label = "low dread", kind = KIND_FAMILY, dread = 0.30 },
+            { label = "med dread", kind = KIND_FAMILY, dread = 0.55 }, { label = "high dread", kind = KIND_FAMILY, dread = 0.85 } } },
+    voice = { id = "voice", tag = "voice", is_member = _is_voice_member, format_where = _format_voice_where, play_plain = _play_plain, modes = {} },
+    file = { id = "file", format_where = _format_file_where, play_plain = _play_plain, modes = {} },
+}
+local function _is_family_available(family)
+    return family.is_available == nil or family.is_available()
+end
+
+--- Run one hook on every available family that has it: build_index, start_audition or stop_audition.
+local function _run_family_hook(hook)
+    for i = 1, #FAMILY_ORDER do
+        local family = FAMILIES[FAMILY_ORDER[i]]
+        if family[hook] and _is_family_available(family) then family[hook]() end
+    end
+end
+
+--- The family an item belongs to: the playlist's own family when it claims the item, else the first family that does, else plain file.
+local function _select_family(item, default_id)
+    local preferred = default_id and FAMILIES[default_id]
+    if preferred and preferred.is_member and _is_family_available(preferred) and preferred.is_member(item) then return preferred end
+    for i = 1, #FAMILY_ORDER do
+        local family = FAMILIES[FAMILY_ORDER[i]]
+        if family.is_member and _is_family_available(family) and family.is_member(item) then return family end
+    end
+    return FAMILIES.file
+end
+
+--- The record key of an outside file: its path below a gamedata\sounds folder, so a mod's own file finds its row.
+local function _get_source_key(source)
+    local rel = source:lower():match("\\gamedata\\sounds\\(.+)%.ogg$")
+    return rel and rel:gsub("/", "\\") or nil
+end
+
+local function _build_source_item(source, default_id)
+    local item = { source = source, key = _get_source_key(source), label = _get_tail(source) }
+    item.family = _select_family(item, default_id)
+    return item
+end
+
+local function _build_game_item(key, default_id)
+    local item = { key = key, path = key, label = _get_tail(key) }
+    item.family = _select_family(item, default_id)
+    return item
+end
+
+--- Resolve one playlist line: absolute, then known under $game_sounds$, then under the base folder, then a divider or unclaimed.
+local function _resolve_line(line, base_dir, default_id)
+    local bare = line:gsub("/", "\\"):gsub("%.[oO][gG][gG]$", "")
+    if _is_absolute(bare) then return _build_source_item(bare .. ".ogg", default_id) end
+    local key = _format_key(bare)
+    if _is_sound_known(key) then return _build_game_item(key, default_id) end
+    local beside = base_dir .. bare .. ".ogg"
+    if xfs.is_file(beside) then return _build_source_item(beside, default_id) end
+    if not bare:find("\\", 1, true) then return { is_divider = true, label = "-- " .. bare .. " --" } end
+    return { label = bare .. "  [unclaimed]" }
+end
+
+--- Copy every outside item of a row into the cache, then rescan once for the whole batch.
+--- @return number copied, number failed
+local function _load_row_sources(row)
+    local copied, failed = 0, 0
+    for i = 1, #row.items do
+        local item = row.items[i]
+        if not (item.source and not item.path) then goto continue end
+        item.path = _add_cache_entry(item.source)
+        copied = copied + (item.path and 1 or 0)
+        failed = failed + (item.path and 0 or 1)
+        ::continue::
+    end
+    _flush_cache()
+    if copied + failed > 0 then log.info("[SOUNDTOOL] %s: copied %d outside files, %d failed", row.name, copied, failed) end
+    return copied, failed
+end
+
+--- A playlist from any absolute path. A "; base: <folder>" line sets where relative lines resolve; the default is the playlist's folder.
+local function _load_playlist(path)
+    local data = xfs.read_file(path)
+    if not data then return nil end
+    local base_dir = path:match("^(.*\\)") or ""
+    local folder = (base_dir:match("([^\\]+)\\$") or ""):lower()
+    local default_id = REVIEW_FAMILY[folder]
+    local items = {}
+    for raw in data:gmatch("[^\r\n]+") do
+        local line = raw:match("^%s*(.-)%s*$")
+        local base = line:match("^;%s*base:%s*(.-)%s*$")
+        if base and base ~= "" then base_dir = _format_dir(base)
+        elseif line ~= "" and line:sub(1, 1) ~= ";" then items[#items + 1] = _resolve_line(line, base_dir, default_id) end
+    end
+    log.info("[SOUNDTOOL] playlist %s: %d lines, default family %s", path, #items, default_id or "-")
+    return { name = "playlist " .. _get_tail(path), items = items }
+end
+
+local function _build_folder_row(dir)
+    local _, files = xfs.read_disk_entries(dir:sub(1, -2))
+    table_sort(files)
+    local items = {}
+    for i = 1, #files do
+        if _get_extension(files[i]) == EXT_OGG then items[#items + 1] = _build_source_item(dir .. files[i]) end
+    end
+    return { name = "folder " .. dir, items = items }
+end
+
+local function _build_dread_row(category)
+    local files = xfs.read_files(SOUNDS_MOUNT, DREAD_ROOT .. category .. "\\", ".ogg")
+    table_sort(files)
+    local items = {}
+    for i = 1, #files do items[i] = _build_game_item(DREAD_ROOT .. category .. "\\" .. files[i]:lower(), "dread") end
+    return { name = "dread " .. category, items = items }
+end
+
+local function _build_channel_row(channel)
+    local items = {}
+    for i = 1, #channel.pool do
+        items[i] = _build_game_item(channel.pool[i], "ambience")
+        items[i].channel = channel
+    end
+    return { name = string_format("channel %s  %g-%gm  h%g", channel.name, channel.min_dist, channel.max_dist, channel.height), items = items }
+end
+
+local function _is_playable(item)
+    return item ~= nil and not item.is_divider and item.path ~= nil
+end
+
+--- The modes an item offers: its family's "as in game" modes, then the plain ones.
+local function _get_modes(item)
+    local modes = {}
+    local family_modes = item and item.family and item.family.modes or {}
+    for i = 1, #family_modes do modes[#modes + 1] = family_modes[i] end
+    for i = 1, #COMMON_MODES do modes[#modes + 1] = COMMON_MODES[i] end
+    return modes
+end
+
+--- The mode with this label, else the first mode on the list.
+local function _find_mode(modes, label)
+    for i = 1, #modes do
+        if modes[i].label == label then return modes[i], i end
+    end
+    return modes[1], 1
+end
+
+--- Distance, height, volume and a short note for an item in a mode; nil distance for at-ear.
+local function _compute_place(item, mode)
+    if mode.kind == KIND_ATEAR then return nil, 0, 1, "at-ear" end
+    if mode.kind == KIND_DIST then return mode.dist, 0, 1, "camera-forward" end
+    return item.family.compute_mode(item, mode)
+end
+
+local function _format_place(item, mode)
+    local flat, height, volume, note = _compute_place(item, mode)
+    if not flat then return string_format("place:  %s | vol %.2f", mode.label, volume) end
+    return string_format("place:  %s | %.0f m | h%g | vol %.2f | %s", mode.label, flat, height, volume, note)
+end
+
+local function _format_loud(item, mode)
+    local profile = xsound.get_meta(item.key or item.path)
+    if not profile then return "loud:   (no profile)" end
+    local flat, height, volume = _compute_place(item, mode)
+    local dist = flat and math_sqrt(flat * flat + height * height) or nil
+    local delivered = xsound.compute_delivered_loudness(profile, dist, volume)
+    if not delivered then return string_format("loud:   bv %.2f | LUFS --", profile.bv or 1) end
+    return string_format("loud:   %.1f LUFS | bv %.2f | est. %.0f dB", profile.lufs, profile.bv or 1, delivered)
+end
+
+--- Start one play of the item in the mode and keep its handle; plain modes play camera-forward at volume 1.0 through the family's plain play.
+local function _play_item(item, mode)
+    if not (_is_playable(item) and db.actor) then return end
+    local family = item.family
+    local handle
+    if mode.kind == KIND_FAMILY then
+        handle = family.play_mode(item, mode)
+    else
+        local opts = mode.kind == KIND_ATEAR and { s2d = true, volume = 1 } or { position = _compute_position({ dist = mode.dist }), volume = 1 }
+        handle = family.play_plain(item, opts)
+    end
+    log.debug("[SOUNDTOOL] play %s family=%s mode=%s handle=%s", item.source or item.path, family.id, mode.label, handle or "-")
+    if handle then _handles[#_handles + 1] = handle end
+end
+
+local function _stop_plays()
+    for i = 1, #_handles do xsound.stop_shot(_handles[i]) end
+    _handles = {}
+end
+
+--- Append one note line for the item: its path, family, where it belongs, the mode with its resolved values, and the text.
+--- @return boolean True when the line was written
+local function _write_note(item, mode, text)
+    local flat, height, volume, note = _compute_place(item, mode)
+    local resolved = flat and string_format("%.0f m h%g vol %.2f %s", flat, height, volume, note) or string_format("vol %.2f", volume)
+    local line = string_format("%s [SOUND] %s  source=%s  where=%s  mode=%s (%s)  :: %s", os_date("%Y-%m-%d %H:%M:%S"),
+        item.source or item.path, item.family.id, item.family.format_where(item), mode.label, resolved, text)
+    return xfs.write_file(_get_logs_dir() .. OUTPUT_FILE, line .. "\n", true)
+end
+
+local function _try_open()
+    if Check_UI() or not db.actor then return end
+    local window = tz_sound_tool_wnd()
+    window:ShowDialog(true)
+    Register_UI("tz_sound_tool_wnd", "tz_sound_tool", window)
+end
+
+local function _on_key_press(key)
+    if key == tz_mcm.get_config("soundtool_key") then _try_open() end
+end
+
+local function _on_actor_destroy()
+    if xslice then xslice.stop_queue(FILL_QUEUE, true) end
+    _stop_plays()
+    _run_family_hook("stop_audition")
+    Unregister_UI("tz_sound_tool_wnd")
+end
+
+class "tz_sound_tool_wnd" (CUIScriptWnd)
+
+function tz_sound_tool_wnd:__init() super()
+    self:SetWndRect(Frect():set(0, 0, 1024, 768))
+    self:SetAutoDelete(true)
+    self.entries, self.is_built = {}, false
+    self.row, self.items, self.index, self.mode_label, self.dir = nil, nil, nil, nil, nil
+    self:init_controls()
+    self:init_callbacks()
+    local cleared = _clear_cache()
+    _run_family_hook("build_index")
+    _run_family_hook("start_audition")
+    self:show_root()
+    log.info("[SOUNDTOOL] open: %d ambience channels, %d dread categories, cleared %d cached files", #_channels, #_dread_categories, cleared)
+    if cleared > 0 then self.status:SetText(string_format("cleared %d cached files from the last session", cleared)) end
+end
+
+function tz_sound_tool_wnd:init_controls()
+    local xml = CScriptXmlInit()
+    xml:ParseFile("tz_sound_tool.xml")
+    local statics = { "background", "hdr_tool", "line_tool", "screen", "hdr_note" }
+    for i = 1, #statics do xml:InitStatic(statics[i], self) end
+    xml:InitFrame("list_frame", self)
+    self.list = xml:InitListBox("list", self)
+    self.list:ShowSelectedItem(true)
+    self:Register(self.list, "list")
+    self.lbl_path = xml:InitStatic("lbl_path", self):TextControl()
+    self.lbl_now = xml:InitStatic("lbl_now", self):TextControl()
+    self.lbl_place = xml:InitStatic("lbl_place", self):TextControl()
+    self.lbl_loud = xml:InitStatic("lbl_loud", self):TextControl()
+    self.status = xml:InitStatic("status", self):TextControl()
+    self.note = xml:InitEditBox("note", self)
+    self:Register(self.note, "note")
+    local buttons = { "btn_help", "btn_mode_prior", "btn_mode_next", "btn_prior", "btn_play", "btn_next", "btn_stop", "btn_note", "btn_rescan" }
+    for i = 1, #buttons do self:Register(xml:Init3tButton(buttons[i], self), buttons[i]) end
+    self:init_tags(xml)
+end
+
+--- One caption and one button per tag, a row per group, placed from the TAG_* anchors.
+function tz_sound_tool_wnd:init_tags(xml)
+    self.tag_ids = {}
+    for r = 1, #TAG_ROWS do self:init_tag_row(xml, TAG_ROWS[r], TAG_TOP + (r - 1) * TAG_ROW_H) end
+end
+
+function tz_sound_tool_wnd:init_tag_row(xml, row, row_y)
+    local caption = xml:InitStatic("tag_caption", self)
+    caption:SetWndPos(vector2():set(TAG_CAPTION_X, row_y))
+    caption:TextControl():SetText(row.caption)
+    for tag_index, tag in ipairs(row.tags) do
+        local button = xml:Init3tButton("tag_button", self)
+        button:SetWndPos(vector2():set(TAG_FIRST_X + (tag_index - 1) * TAG_STEP_X, row_y))
+        button:TextControl():SetText(tag)
+        self:Register(button, "tag_" .. tag)
+        self.tag_ids[#self.tag_ids + 1] = tag
+    end
+end
+
+function tz_sound_tool_wnd:add_tag_callback(tag)
+    self:AddCallback("tag_" .. tag, ui_events.BUTTON_CLICKED, function() self:add_note(tag) end, self)
+end
+
+function tz_sound_tool_wnd:init_callbacks()
+    self:AddCallback("list", ui_events.LIST_ITEM_CLICKED, self.select_row, self)
+    self:AddCallback("btn_help", ui_events.BUTTON_CLICKED, self.show_help, self)
+    self:AddCallback("btn_mode_prior", ui_events.BUTTON_CLICKED, function() self:select_mode(-1) end, self)
+    self:AddCallback("btn_mode_next", ui_events.BUTTON_CLICKED, function() self:select_mode(1) end, self)
+    self:AddCallback("btn_prior", ui_events.BUTTON_CLICKED, function() self:select_neighbor(-1) end, self)
+    self:AddCallback("btn_next", ui_events.BUTTON_CLICKED, function() self:select_neighbor(1) end, self)
+    self:AddCallback("btn_play", ui_events.BUTTON_CLICKED, self.play_current, self)
+    self:AddCallback("btn_stop", ui_events.BUTTON_CLICKED, self.stop_current, self)
+    self:AddCallback("btn_note", ui_events.BUTTON_CLICKED, function() self:add_note(nil) end, self)
+    self:AddCallback("btn_rescan", ui_events.BUTTON_CLICKED, self.update_indexes, self)
+    for i = 1, #self.tag_ids do self:add_tag_callback(self.tag_ids[i]) end
+end
+
+--- Replace the list with these entries; each entry is { label, on_select }, and list index i maps to entries[i + 1].
+function tz_sound_tool_wnd:set_entries(entries, title)
+    if xslice then xslice.stop_queue(FILL_QUEUE, true) end
+    if self.is_built then self.list:RemoveAll() end
+    self.is_built = true
+    self.entries = entries
+    for i = 1, #entries do
+        if entries[i].label then self.list:AddTextItem(entries[i].label) end
+    end
+    self.lbl_path:SetText(title)
+end
+
+function tz_sound_tool_wnd:select_row()
+    local list_index = self.list:GetSelectedIndex()
+    local entry = list_index and list_index >= 0 and self.entries[list_index + 1]
+    if entry and entry.on_select then entry.on_select() end
+end
+
+function tz_sound_tool_wnd:build_dread_entry(category)
+    return { label = "dread  " .. category .. "/", on_select = function() self:show_pool(_build_dread_row(category), nil) end }
+end
+
+function tz_sound_tool_wnd:build_channel_entry(channel)
+    local label = string_format("%s%s  (%d)  %g-%gm", channel.is_bed and "[bed] " or "", channel.name, #channel.pool, channel.min_dist, channel.max_dist)
+    return { label = label, on_select = function() self:show_pool(_build_channel_row(channel), nil) end }
+end
+
+function tz_sound_tool_wnd:build_folder_entry(dir)
+    return { label = _get_tail(dir:sub(1, -2)) .. "\\", on_select = function() self:show_folder(dir) end }
+end
+
+function tz_sound_tool_wnd:build_playlist_entry(path)
+    return { label = _get_tail(path), on_select = function() self:show_playlist(path) end }
+end
+
+function tz_sound_tool_wnd:build_item_entry(index)
+    return { on_select = function() self:play_item_at(index) end }
+end
+
+--- Root: browse the disk, then every dread category and ambience channel whose mod is present.
+function tz_sound_tool_wnd:show_root()
+    local entries = { { label = "[browse files]", on_select = function() self:show_folder(_get_logs_dir()) end } }
+    local categories = _is_dread_available() and _dread_categories or {}
+    for i = 1, #categories do entries[#entries + 1] = self:build_dread_entry(categories[i]) end
+    local channels = _is_ambience_available() and _channels or {}
+    for i = 1, #channels do entries[#entries + 1] = self:build_channel_entry(channels[i]) end
+    self.dir, self.row, self.items, self.index = nil, nil, nil, nil
+    self:set_entries(entries, "root    files, dread categories, ambience channels")
+    self:render()
+end
+
+--- The drive list, shown above a drive root.
+function tz_sound_tool_wnd:show_drives()
+    self.dir, self.row, self.items, self.index = "", nil, nil, nil
+    local entries = { { label = "..", on_select = function() self:show_root() end } }
+    local drives = xfs.read_drives()
+    for i = 1, #drives do entries[#entries + 1] = self:build_folder_entry(drives[i] .. "\\") end
+    self:set_entries(entries, "drives")
+    self:render()
+end
+
+--- A folder on disk: "..", then [play this folder] when it holds .ogg files, then subfolders and .txt playlists.
+function tz_sound_tool_wnd:show_folder(dir)
+    if dir == "" then return self:show_drives() end
+    self.dir, self.row, self.items, self.index = dir, nil, nil, nil
+    local entries = { { label = "..", on_select = function() self:show_folder(_get_parent_dir(dir)) end } }
+    local folders, files = xfs.read_disk_entries(dir:sub(1, -2))
+    table_sort(folders)
+    table_sort(files)
+    local oggs, playlists = 0, {}
+    for i = 1, #files do
+        local ext = _get_extension(files[i])
+        if ext == EXT_OGG then oggs = oggs + 1 elseif ext == EXT_TXT then playlists[#playlists + 1] = dir .. files[i] end
+    end
+    if oggs > 0 then
+        entries[#entries + 1] = { label = string_format("[play this folder (%d)]", oggs), on_select = function() self:show_pool(_build_folder_row(dir), dir) end }
+    end
+    for i = 1, #folders do entries[#entries + 1] = self:build_folder_entry(dir .. folders[i] .. "\\") end
+    for i = 1, #playlists do entries[#entries + 1] = self:build_playlist_entry(playlists[i]) end
+    self:set_entries(entries, dir)
+    self:render()
+end
+
+function tz_sound_tool_wnd:show_playlist(path)
+    local row = _load_playlist(path)
+    if not row then log.warn("[SOUNDTOOL] could not read playlist %s", path); self.status:SetText("could not read " .. path); return end
+    self:show_pool(row, self.dir)
+end
+
+--- Fill the list with a pool's labels, frame-spread by xslice so xsound.length never builds them all at once.
+function tz_sound_tool_wnd:add_pool_rows(items)
+    local list = self.list
+    local add_row = function(item) list:AddTextItem(self:format_item(item)); return true end
+    if xslice then return xslice.start(FILL_QUEUE, items, { step = FILL_STEP, func = add_row }) end
+    for i = 1, #items do add_row(items[i]) end
+end
+
+--- A pool of sounds: copy its outside files first, then list each with its family and length; ".." returns to back_dir or root.
+function tz_sound_tool_wnd:show_pool(row, back_dir)
+    local copied, failed = _load_row_sources(row)
+    local items = row.items
+    self.row, self.items, self.index = row, items, nil
+    local entries = { { label = "..", on_select = function()
+        if back_dir then self:show_folder(back_dir) else self:show_root() end
+    end } }
+    for i = 1, #items do entries[#entries + 1] = self:build_item_entry(i) end
+    self:set_entries(entries, string_format("%s    (%d)", row.name, #items))
+    self:add_pool_rows(items)
+    self:render()
+    if copied + failed > 0 then self.status:SetText(string_format("copied %d outside files, %d failed", copied, failed)) end
+end
+
+function tz_sound_tool_wnd:format_item(item)
+    local family = item.family
+    if item.is_divider or not family then return item.label end
+    if not item.path then return item.label .. "  [not copied]" end
+    local seconds = xsound.length(item.path) / 1000
+    if not family.tag then return string_format("%s    %.1fs", item.label, seconds) end
+    return string_format("%s  [%s]  %.1fs", item.label, family.tag, seconds)
+end
+
+--- Load the pool item at index without playing it; dividers and unclaimed lines only select.
+function tz_sound_tool_wnd:select_item(index)
+    self.index = index
+    local item = self.items[index]
+    if _is_playable(item) then self.mode_label = _find_mode(_get_modes(item), self.mode_label).label end
+    self:render()
+end
+
+function tz_sound_tool_wnd:play_item_at(index)
+    self:select_item(index)
+    self:play_current()
+end
+
+--- Step to the previous or next playable item without playing it.
+function tz_sound_tool_wnd:select_neighbor(delta)
+    local items = self.items
+    if not (items and #items > 0) then return end
+    local count = #items
+    local index = self.index or (delta < 0 and count + 1 or 0)
+    for _ = 1, count do
+        index = (index - 1 + delta) % count + 1
+        if _is_playable(items[index]) then break end
+    end
+    self.list:SetSelectedIndex(index)
+    self:select_item(index)
+end
+
+function tz_sound_tool_wnd:get_current()
+    return self.items and self.index and self.items[self.index]
+end
+
+--- Step the mode within the current item's list; it never plays.
+function tz_sound_tool_wnd:select_mode(delta)
+    local item = self:get_current()
+    if not _is_playable(item) then return end
+    local modes = _get_modes(item)
+    local _, at = _find_mode(modes, self.mode_label)
+    self.mode_label = modes[(at - 1 + delta) % #modes + 1].label
+    self:render()
+end
+
+function tz_sound_tool_wnd:play_current()
+    local item = self:get_current()
+    if not _is_playable(item) then return end
+    _play_item(item, _find_mode(_get_modes(item), self.mode_label))
+    self.status:SetText("playing:  " .. item.label)
+end
+
+function tz_sound_tool_wnd:stop_current()
+    _stop_plays()
+    self.status:SetText("stopped")
+end
+
+--- Write a note for the current item: a tag, the typed text, or both as "tag :: text". It never plays or advances.
+function tz_sound_tool_wnd:add_note(tag)
+    local item = self:get_current()
+    if not _is_playable(item) then self.status:SetText("select a sound first"); return end
+    local typed = self.note:GetText()
+    local text = tag and typed ~= "" and (tag .. " :: " .. typed) or tag or typed
+    if not text or text == "" then return end
+    local mode = _find_mode(_get_modes(item), self.mode_label)
+    local is_written = _write_note(item, mode, text)
+    self.note:SetText("")
+    if not is_written then log.warn("[SOUNDTOOL] could not write %s", OUTPUT_FILE) end
+    self.status:SetText(is_written and string_format("NOTE %s :: %s", item.label, text) or "note FAILED: could not write " .. OUTPUT_FILE)
+end
+
+--- Re-read the channel and category indexes, then the open folder or the root; an open pool stays as loaded.
+function tz_sound_tool_wnd:update_indexes()
+    _run_family_hook("build_index")
+    if self.row then return self:render() end
+    if self.dir then return self:show_folder(self.dir) end
+    self:show_root()
+end
+
+function tz_sound_tool_wnd:render()
+    local item = self:get_current()
+    if not _is_playable(item) then
+        self.lbl_now:SetText("now:    (none - click a sound)")
+        self.lbl_place:SetText("")
+        self.lbl_loud:SetText("")
+        return
+    end
+    local mode = _find_mode(_get_modes(item), self.mode_label)
+    self.lbl_now:SetText(string_format("now:    %s :: %s", item.family.format_where(item), item.label))
+    self.lbl_place:SetText(_format_place(item, mode))
+    self.lbl_loud:SetText(_format_loud(item, mode))
+end
+
+function tz_sound_tool_wnd:show_help()
+    tz_help.show_page("tz_sound_tool.xml", "st_tz_sound_tool_help_title", "st_tz_sound_tool_help")
+end
+
+--- Esc closes the window when no edit box has focus, so typing a note never closes it.
+function tz_sound_tool_wnd:OnKeyboard(dik, action)
+    local res = CUIScriptWnd.OnKeyboard(self, dik, action)
+    if action ~= ui_events.WINDOW_KEY_PRESSED then return res end
+    if res or dik ~= DIK_keys.DIK_ESCAPE then return res end
+    self:hide()
+    return true
+end
+
+--- Close: stop the tool's own plays, empty the cache, end each family's audition.
+function tz_sound_tool_wnd:hide()
+    if xslice then xslice.stop_queue(FILL_QUEUE, true) end
+    _stop_plays()
+    log.info("[SOUNDTOOL] close: cleared %d cached files", _clear_cache())
+    _run_family_hook("stop_audition")
+    self:HideDialog()
+    Unregister_UI("tz_sound_tool_wnd")
+end
+
+function on_game_start()
+    RegisterScriptCallback("on_key_press", _on_key_press)
+    RegisterScriptCallback("actor_on_net_destroy", _on_actor_destroy)
+end

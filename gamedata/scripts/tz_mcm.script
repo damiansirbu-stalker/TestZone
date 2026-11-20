@@ -6,12 +6,12 @@ local axr_main, news_manager, game, db = axr_main, news_manager, game, db
 -- Every TestZone logger, so the development tab's level and flush apply across all subsystems.
 local TZ_LOGGERS = {
     "TestZone.watcher", "TestZone.scanner", "TestZone.profiler",
-    "TestZone.geometry", "TestZone.fx", "TestZone.anim",
+    "TestZone.geometry", "TestZone.fx", "TestZone.anim", "TestZone.soundtool",
 }
 local _levels = xlog.get_levels()
 local KEY_LOG_LEVEL, KEY_LOG_FLUSH = "log_level", "log_flush"
--- DIK_DELETE (lua_help.script:1088); DIK_keys is not loaded when this table is built.
-local GEO_KEY_DEFAULT = 211
+-- DIK_DELETE, DIK_END, DIK_NEXT (lua_help.script:1088, 1092, 1132); DIK_keys is not loaded when this table is built.
+local GEO_KEY_DEFAULT, SOUNDTOOL_KEY_DEFAULT, ANIM_KEY_DEFAULT = 211, 207, 209
 
 defaults = {
     watcher_enabled = false,
@@ -54,6 +54,8 @@ defaults = {
     geo_hud_surge_cover = true,
     geo_hud_safe_cover = true,
     geo_hud_rain = true,
+    soundtool_key = SOUNDTOOL_KEY_DEFAULT,
+    anim_key = ANIM_KEY_DEFAULT,
     log_level = "WARN",
     log_flush = false,
 }
@@ -63,6 +65,7 @@ local build_path = function(key)
     if key:sub(1, 9) == "profiler_" then tab = "profiler"
     elseif key:sub(1, 11) == "perception_" then tab = "perception"
     elseif key:sub(1, 4) == "geo_" then tab = "geotool"
+    elseif key:sub(1, 10) == "soundtool_" then tab = "soundtool"
     elseif key == KEY_LOG_LEVEL or key == KEY_LOG_FLUSH then tab = "development" end
     return "tz/" .. tab .. "/" .. key
 end
@@ -130,6 +133,9 @@ function on_mcm_load()
                     { id = "div_ratelimit", type = "line" },
                     { id = "rate_limit_enabled", type = "check", val = 1, def = false },
                     { id = "rate_limit_interval", type = "track", val = 2, min = 100, max = 10000, step = 100, def = 1000 },
+
+                    { id = "div_anim_tool", type = "line" },
+                    { id = "anim_key", type = "key_bind", val = 2, def = ANIM_KEY_DEFAULT },
 
                     { id = "div_info", type = "line" },
                     { id = "info", type = "desc", text = "ui_mcm_tz_main_info", clr = {200, 200, 200, 100} },
@@ -209,6 +215,20 @@ function on_mcm_load()
 
                     { id = "div_info", type = "line" },
                     { id = "info", type = "desc", text = "ui_mcm_tz_geotool_info", clr = {200, 200, 200, 100} },
+                },
+            },
+            {
+                id = "soundtool",
+                text = "ui_mcm_menu_tz_soundtool",
+                sh = true,
+                gr = {
+                    { id = "title", type = "slide", link = "tz_mcm_banner",
+                        text = "ui_mcm_tz_soundtool_title", size = {512, 50}, spacing = 20 },
+                    { id = "desc", type = "desc", text = "ui_mcm_tz_soundtool_desc" },
+                    { id = "soundtool_key", type = "key_bind", val = 2, def = SOUNDTOOL_KEY_DEFAULT },
+
+                    { id = "div_info", type = "line" },
+                    { id = "info", type = "desc", text = "ui_mcm_tz_soundtool_info", clr = {200, 200, 200, 100} },
                 },
             },
             {

@@ -1,6 +1,6 @@
 1.0.4-snapshot
-  The perception trace, GeoTool, the level scans and the console test benches
-    Perception and GeoTool are new tabs. The perception trace logs what the stalkers and mutants near you hear, see, remember, fear and pick as enemy.
+  Perception trace, GeoTool, SoundTool, level scans and console test benches
+    Perception, GeoTool and SoundTool are new tabs. The perception trace logs what the stalkers and mutants near you hear, see, remember, fear and pick as enemy.
     GeoTool shows what the game's place checks say at your spot on a HUD, and its window records your marks, notes and samples to geo_tool.txt.
     The Main tab adds 4 scans and a timer queue watch, while the console commands add 2 arenas, a life pump and 2 animation benches.
 
@@ -27,6 +27,12 @@
       The HUD shows the live readings: the nearest smart terrain and base owner, the indoor, roof and underground tests, emission and shelter cover, and rain.
       A reading turns green when your mark agrees with it, but red when your mark says otherwise.
 
+  SoundTool
+    - Added SoundTool on End. It plays DiegeticAmbience channels, DiegeticDread categories, NPC voice and any .ogg on disk, and writes your tags and notes to sound_tool.txt.
+      An ambience channel plays near, middle or far where the game places it, and a dread sound at the live or a preset dread. Every sound also plays at the ear or at a fixed distance.
+      It browses any folder and opens playlists of game paths, absolute paths or paths next to the playlist. Files from outside the game are copied into the sounds folder for the session.
+    - Replaced the review players of DiegeticAmbience and DiegeticDread, and logged to testzone.log.
+
   Development
     - Added the Development tab with Log level, Immediate flush for every TestZone log, and Reset to defaults.
 
@@ -37,7 +43,7 @@
       The actor drive holds you in place or circles you, while the actor aim turns you to a mutant.
       You also get kits, spawns, weather, time, teleports to a smart terrain or a stash, and the unlocks for the north and fast travel in the same set.
     - Added tz_anim, an animation bench that plays a motion on the HUD, a mutant or an NPC, then logs whether it played.
-    - Added the animation review tool on HOME. This tool forces each candidate motion on the stalker you aim at, offers a prop picker, and logs your call on each motion.
+    - Added AnimationTool on PgDn, a key MCM can change. This tool forces each candidate motion on the stalker you aim at, offers a prop picker, and logs your call on each motion.
     - Added tz_fx, console cyclers for post-process effects and ambient sound loops.
     - Added tz_loadgen, a profiler fixture of 30 load cases. check_capture() reads the last JitProfiler capture and marks each case caught, missed or inconclusive.
 

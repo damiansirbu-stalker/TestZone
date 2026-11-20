@@ -1,10 +1,9 @@
---- tz_anim_tool: the animation review remote. Forces each dig candidate on the aimed NPC and logs a verdict. Dev-only, opens on HOME.
+--- tz_anim_tool: the animation review remote. Forces each dig candidate on the aimed NPC and logs a verdict. Dev-only, opens on the MCM anim_key.
 
 local table_sort, string_format, table_concat = table.sort, string.format, table.concat
 local tostring, IsStalker = tostring, IsStalker
 local RegisterScriptCallback = RegisterScriptCallback
 
-local HOME_KEY      = 199
 local LOGS_MOUNT    = "$logs$"
 local CONFIG_MOUNT  = "$game_config$"
 local ANIM_DIR      = "testzone\\anim\\"
@@ -142,8 +141,7 @@ end
 
 --- Bind the standing selection when one is live, else the stalker directly under the view-ray; nothing when the ray hits a wall, fence, or no stalker.
 local function try_open()
-    if _box and _box:IsShown() then return end
-    if not db.actor then return end
+    if Check_UI() or not db.actor then return end
     local tgt = _get_selected_npc()
     if not tgt then
         tgt = level.get_target_obj and level.get_target_obj() or nil
@@ -282,7 +280,7 @@ function tz_anim_tool_wnd:render()
             _get_clipped(tostring(live), 12), _get_mode().label, _prop or "no prop"))
     else
         self.lbl_now:SetText("** NO NPC **")
-        self.lbl_mode:SetText("look at a stalker, reopen HOME")
+        self.lbl_mode:SetText("look at a stalker, reopen the tool")
     end
 end
 
@@ -443,6 +441,6 @@ end
 
 function on_game_start()
     RegisterScriptCallback("on_key_press", function(key)
-        if key == HOME_KEY then try_open() end
+        if key == tz_mcm.get_config("anim_key") then try_open() end
     end)
 end

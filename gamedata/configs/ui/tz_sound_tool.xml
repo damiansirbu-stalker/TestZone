@@ -1,0 +1,110 @@
+<w>
+	<main x="0" y="0" width="1024" height="768"/>
+
+	<!-- The browser on the left, the player and tags on the right. -->
+	<background x="28" y="41" width="764" height="667" stretch="1">
+		<texture>ui_inGame2_pda_buttons_background</texture>
+	</background>
+
+	<!-- LEFT: the list; root, a pool, or a folder on disk. Click a row to open or play it, ".." goes up. -->
+	<lbl_path x="44" y="88" width="372" height="20">
+		<text font="letterica16" align="l" r="200" g="170" b="120"/>
+	</lbl_path>
+	<list_frame x="44" y="112" width="372" height="528">
+		<texture>ui_inGame2_servers_list_frame</texture>
+	</list_frame>
+	<list x="47" y="115" width="366" height="522" item_height="22" can_select="1">
+		<font font="letterica18"/>
+	</list>
+
+	<!-- RIGHT: title, the three-line screen (now / place / loudness) and the transport. -->
+	<hdr_tool x="444" y="88" width="300" height="22">
+		<text font="letterica18" align="l" r="200" g="170" b="120">SoundTool</text>
+	</hdr_tool>
+	<btn_help x="746" y="86" width="30" height="24" stretch="1">
+		<texture>ui_inGame2_pda_button</texture>
+		<text font="letterica16" align="c">?</text>
+	</btn_help>
+	<line_tool x="444" y="112" width="332" height="6" stretch="1">
+		<texture>ui_inGame2_pda_line_horizontal</texture>
+	</line_tool>
+	<screen x="444" y="124" width="332" height="72" stretch="1">
+		<texture>ui_inGame2_pda_Filtr_plyer_interface_off</texture>
+	</screen>
+	<lbl_now x="460" y="130" width="300" height="20">
+		<text font="letterica16" align="l" vert_align="c" r="66" g="157" b="195"/>
+	</lbl_now>
+	<lbl_place x="460" y="150" width="300" height="20">
+		<text font="letterica16" align="l" vert_align="c" r="66" g="157" b="195"/>
+	</lbl_place>
+	<lbl_loud x="460" y="170" width="300" height="20">
+		<text font="letterica16" align="l" vert_align="c" r="66" g="157" b="195"/>
+	</lbl_loud>
+
+	<!-- transport: [ mode - ] [ mode + ]   [ prev ] [ play ] [ next ] [ stop ] -->
+	<btn_mode_prior x="470" y="198" width="48" height="30" stretch="1">
+		<texture>ui_inGame2_pda_Filtr_radio_plyr_btn_v_down</texture>
+	</btn_mode_prior>
+	<btn_mode_next x="520" y="198" width="48" height="30" stretch="1">
+		<texture>ui_inGame2_pda_Filtr_radio_plyr_btn_v_up</texture>
+	</btn_mode_next>
+	<btn_prior x="584" y="198" width="48" height="30" stretch="1">
+		<texture>ui_inGame2_pda_Filtr_radio_plyr_btn_prev</texture>
+	</btn_prior>
+	<btn_play x="632" y="198" width="48" height="30" stretch="1">
+		<texture>ui_inGame2_pda_Filtr_radio_plyr_btn_start2</texture>
+	</btn_play>
+	<btn_next x="680" y="198" width="48" height="30" stretch="1">
+		<texture>ui_inGame2_pda_Filtr_radio_plyr_btn_next</texture>
+	</btn_next>
+	<btn_stop x="728" y="198" width="48" height="30" stretch="1">
+		<texture>ui_inGame2_pda_Filtr_radio_plyr_btn_stop2</texture>
+	</btn_stop>
+
+	<!-- TAGS: one caption and a row of tag buttons per group, placed by the script. A tag writes one note line. -->
+	<tag_caption x="0" y="0" width="50" height="26">
+		<text font="letterica16" align="r" vert_align="c" r="200" g="170" b="120"/>
+	</tag_caption>
+	<tag_button x="0" y="0" width="56" height="26" stretch="1">
+		<texture>ui_inGame2_pda_button</texture>
+		<text font="letterica16" align="c" r="200" g="200" b="200"/>
+	</tag_button>
+
+	<!-- NOTE: typed text alone, or carried by the next tag. -->
+	<hdr_note x="444" y="390" width="332" height="20">
+		<text font="letterica16" align="l" r="200" g="170" b="120">NOTE</text>
+	</hdr_note>
+	<note x="444" y="412" width="250" height="26" stretch="1">
+		<text x="5" font="letterica16" vert_align="c" align="l"/>
+		<texture>ui_inGame2_edit_box_2</texture>
+	</note>
+	<btn_note x="700" y="412" width="76" height="26" stretch="1">
+		<texture>ui_inGame2_pda_button</texture>
+		<text font="letterica16" align="c">add note</text>
+	</btn_note>
+
+	<!-- Rescan re-reads the channel and category indexes and the open folder; an open pool stays as loaded. -->
+	<btn_rescan x="444" y="450" width="160" height="28" stretch="1">
+		<texture>ui_inGame2_pda_button</texture>
+		<text font="letterica16" align="c">rescan</text>
+	</btn_rescan>
+
+	<status x="44" y="686" width="720" height="20">
+		<text font="letterica16" align="l" r="160" g="160" b="160"/>
+	</status>
+
+	<!-- HELP: the page tz_help opens from the ? button; tz_help sets the page height from the text. -->
+	<help_background x="132" y="134" width="760" height="300" stretch="1">
+		<texture>ui_inGame2_pda_buttons_background</texture>
+	</help_background>
+	<help_title x="152" y="148" width="720" height="22">
+		<text font="letterica18" align="l" r="200" g="170" b="120"/>
+	</help_title>
+	<help_text x="152" y="180" width="720" height="40">
+		<text font="letterica16" align="l" complex_mode="1" r="200" g="200" b="200"/>
+	</help_text>
+	<help_close x="792" y="0" width="80" height="26" stretch="1">
+		<texture>ui_inGame2_pda_button</texture>
+		<text font="letterica16" align="c">Close</text>
+	</help_close>
+</w>

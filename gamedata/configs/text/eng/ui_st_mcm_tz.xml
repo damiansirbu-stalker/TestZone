@@ -72,6 +72,12 @@
     <string id="ui_mcm_tz_main_rate_limit_interval_desc">
         <text>[milliseconds]\nMinimum time between logs for same callback type. Range 100-10000.</text>
     </string>
+    <string id="ui_mcm_tz_main_anim_key">
+        <text>AnimationTool key</text>
+    </string>
+    <string id="ui_mcm_tz_main_anim_key_desc">
+        <text>Opens the AnimationTool on the stalker you look at. Esc closes it.</text>
+    </string>
     <string id="ui_mcm_tz_main_mutant_scan_enabled">
         <text>Mutant scan enabled</text>
     </string>
@@ -327,6 +333,26 @@ How often the HUD and the open window read every check.</text>
         <text>Bottom right</text>
     </string>
 
+    <!-- ==================== SOUNDTOOL TAB ==================== -->
+    <string id="ui_mcm_menu_tz_soundtool">
+        <text>SoundTool</text>
+    </string>
+    <string id="ui_mcm_tz_soundtool_title">
+        <text>TestZone</text>
+    </string>
+    <string id="ui_mcm_tz_soundtool_desc">
+        <text>SoundTool plays DiegeticAmbience channels, DiegeticDread categories, NPC voice and any .ogg on disk, and writes your tags and notes to logs/sound_tool.txt.</text>
+    </string>
+    <string id="ui_mcm_tz_soundtool_soundtool_key">
+        <text>Open key</text>
+    </string>
+    <string id="ui_mcm_tz_soundtool_soundtool_key_desc">
+        <text>Opens the SoundTool window. Esc closes it.</text>
+    </string>
+    <string id="ui_mcm_tz_soundtool_info">
+        <text>Files from outside the game are copied into sounds/sound_tool_cache while the window is open and deleted when it closes.</text>
+    </string>
+
     <!-- ==================== DEVELOPMENT TAB ==================== -->
     <string id="ui_mcm_menu_tz_development">
         <text>Development</text>
@@ -384,6 +410,12 @@ How often the HUD and the open window read every check.</text>
         <text>AnimationTool</text>
     </string>
     <string id="st_tz_anim_tool_help">
-        <text>AnimationTool plays a motion or a state on a stalker. You judge it and log it as good or bad.\n\nLook at a stalker and press Home to bind him. Select keeps him bound when you reopen the tool. Reset clears that.\n\nThe list shows every .tsv or .txt file in configs/testzone/anim. Click a file, then click a motion to select it. Play or a double click plays it, and Stop sends the stalker back to idle.\n\nTwo arrows on the left switch between pose and moving. The other two step to the previous or next motion and play it. A prop from the prop row, a bottle or a guitar, attaches from the next play on.\n\nGood and bad log the selected motion with any typed note. Note logs the typed note alone. Everything goes to the anim curation file in the logs folder.\n\nA motion plays only when that stalker has its animation file loaded. Esc closes the tool.</text>
+        <text>AnimationTool plays a motion or a state on a stalker. You judge it and log it as good or bad.\n\nLook at a stalker and press the open key, PgDn unless MCM changed it, to bind him. Select keeps him bound when you reopen the tool. Reset clears that.\n\nThe list shows every .tsv or .txt file in configs/testzone/anim. Click a file, then click a motion to select it. Play or a double click plays it, and Stop sends the stalker back to idle.\n\nTwo arrows on the left switch between pose and moving. The other two step to the previous or next motion and play it. A prop from the prop row, a bottle or a guitar, attaches from the next play on.\n\nGood and bad log the selected motion with any typed note. Note logs the typed note alone. Everything goes to the anim curation file in the logs folder.\n\nA motion plays only when that stalker has its animation file loaded. Esc closes the tool.</text>
+    </string>
+    <string id="st_tz_sound_tool_help_title">
+        <text>SoundTool</text>
+    </string>
+    <string id="st_tz_sound_tool_help">
+        <text>SoundTool plays a sound the way the game plays it, or at a distance you pick, and you tag it.\n\nThe list starts with browse files, then each DiegeticDread category and each DiegeticAmbience channel when that mod is installed. Browse files opens the logs folder. Two dots go up a folder, and above a drive the list shows every drive. Play this folder lists the folder's .ogg files, and a .txt file opens as a playlist.\n\nA playlist line can be a game path like zs/spook/raven_1, an absolute path, or a path next to the playlist. A line with ; base: and a folder makes later relative lines start there. A line with no folder in it that names no file is a divider.\n\nFiles from outside the game are copied into sounds/sound_tool_cache, and one rescan follows the copy, which can take half a second. The cache empties when the window closes.\n\nThe mode arrows switch between the family's own modes, as wired or a dread level, and the plain at-ear and distance modes. The screen shows where the sound plays, its volume and its loudness. Prev and next move without playing, Play and a click play.\n\nEach tag writes one line to logs/sound_tool.txt with the path, family, mode and tag. Typed text goes with the next tag, or alone with add note. The DiegeticDread director and its replay of the base ambience stay silent while the window is open.\n\nEnd opens the window, and MCM can change that key. Esc closes it.</text>
     </string>
 </string_table>
