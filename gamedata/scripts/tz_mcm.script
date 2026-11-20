@@ -55,6 +55,8 @@ defaults = {
     geo_hud_safe_cover = true,
     geo_hud_rain = true,
     soundtool_key = SOUNDTOOL_KEY_DEFAULT,
+    soundtool_trace = false,
+    soundtool_trace_all = false,
     anim_key = ANIM_KEY_DEFAULT,
     log_level = "WARN",
     log_flush = false,
@@ -226,6 +228,10 @@ function on_mcm_load()
                         text = "ui_mcm_tz_soundtool_title", size = {512, 50}, spacing = 20 },
                     { id = "desc", type = "desc", text = "ui_mcm_tz_soundtool_desc" },
                     { id = "soundtool_key", type = "key_bind", val = 2, def = SOUNDTOOL_KEY_DEFAULT },
+
+                    { id = "div_trace", type = "line" },
+                    { id = "soundtool_trace", type = "check", val = 1, def = false },
+                    { id = "soundtool_trace_all", type = "check", val = 1, def = false },
 
                     { id = "div_info", type = "line" },
                     { id = "info", type = "desc", text = "ui_mcm_tz_soundtool_info", clr = {200, 200, 200, 100} },

@@ -349,6 +349,18 @@ How often the HUD and the open window read every check.</text>
     <string id="ui_mcm_tz_soundtool_soundtool_key_desc">
         <text>Opens the SoundTool window. Esc closes it.</text>
     </string>
+    <string id="ui_mcm_tz_soundtool_soundtool_trace">
+        <text>Sound trace</text>
+    </string>
+    <string id="ui_mcm_tz_soundtool_soundtool_trace_desc">
+        <text>Logs every sound the soundscape plays, with its channel, distance, map and weather, to logs/testzone_sound_trace.log.</text>
+    </string>
+    <string id="ui_mcm_tz_soundtool_soundtool_trace_all">
+        <text>Trace every script sound</text>
+    </string>
+    <string id="ui_mcm_tz_soundtool_soundtool_trace_all_desc">
+        <text>The sound trace also logs script sounds outside the ambient channels, such as music, the interface and DiegeticDread's cues.</text>
+    </string>
     <string id="ui_mcm_tz_soundtool_info">
         <text>Files from outside the game are copied into sounds/sound_tool_cache while the window is open and deleted when it closes.</text>
     </string>

@@ -70,6 +70,7 @@ SoundTool:
   A window on End that plays ambience channels, dread categories, NPC voice and any .ogg on disk
   It plays a sound as its mod does in game, or at the ear or a set distance, with its loudness
   It browses any folder and opens playlists, and every tag or note goes to sound_tool.txt
+  A sound trace logs every sound the soundscape plays, with its channel, distance, map and weather
 Development:
   Log level and Immediate flush for every TestZone log, and Reset to defaults
 Console tools, run through run_string in debug mode:
@@ -85,7 +86,7 @@ Modded exes: themrdemonized 20250908 or newer, or AOEngine v0.5.2 or newer. The 
 xlibs (https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001)
 MCM
 
-Logs go to appdata/logs: testzone.log, plus one file each for Perception, the arenas and GeoTool.
+Logs go to appdata/logs: testzone.log, and one file each for Perception, the sound trace, the arenas, GeoTool and the SoundTool notes in sound_tool.txt.
 Perception reads engine state only.
 A run with an AI mod on and a run with it off compare line for line.
 

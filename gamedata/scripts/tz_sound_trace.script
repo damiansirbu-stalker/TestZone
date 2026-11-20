@@ -1,0 +1,186 @@
+--- tz_sound_trace: the sound trace - every play of the soundscape through the six engine sound hooks, with channel, place and weather, testzone_sound_trace.log
+
+local RegisterScriptCallback, ResetTimeEvent, CreateTimeEvent, RemoveTimeEvent =
+    RegisterScriptCallback, ResetTimeEvent, CreateTimeEvent, RemoveTimeEvent
+local ini_file, level, db, pairs, tostring, type, GetEvent = ini_file, level, db, pairs, tostring, type, GetEvent
+local string_format, table_concat = string.format, table.concat
+
+local log = xlog.get_logger("TestZone.sound_trace", { outfile = "testzone_sound_trace.log", level = "DEBUG" })
+local _levels = xlog.get_levels()
+
+local REPORT_SEC = 60
+local NO_SOUND = "ambient\\no_sound"
+-- The channel files the base ambient layer reads (vanilla configs/environment); the same set SoundTool indexes.
+local CHANNEL_FILES = { "environment\\sound_channels.ltx", "environment\\ambient_channels\\backgrounds.ltx",
+    "environment\\ambient_channels\\blowout_channels.ltx" }
+local HOOK_BED, HOOK_SCRIPT, HOOK_OTHER = "bed", "script", "other"
+local HOOK_EFFECT, HOOK_THUNDER, HOOK_RAIN, HOOK_MUSIC = "effect", "thunder", "rain", "music"
+
+local _config = { on = false, all = false }
+local _enabled = false
+local _channels_of = nil
+local _walk_ini
+local _counts = {}
+local _plays_n = 0
+
+--- Canonical sound-path key: lowercase, backslashes, no extension.
+local function _get_key(path)
+    if type(path) ~= "string" then return nil end
+    return (path:lower():gsub("/", "\\"):gsub("%.ogg$", ""))
+end
+
+--- Section-walk handler: add the section to the owner list of each file its sounds line names.
+local function _collect(section)
+    if not _walk_ini:line_exist(section, "sounds") then return end
+    for token in (_walk_ini:r_string_ex(section, "sounds") or ""):gmatch("[^,]+") do
+        local key = _get_key(token:match("^%s*(.-)%s*$"))
+        if not (key and key ~= "" and key ~= NO_SOUND) then goto continue end
+        local owners = _channels_of[key] or {}
+        _channels_of[key] = owners
+        local seen = false
+        for i = 1, #owners do
+            if owners[i] == section then seen = true end
+        end
+        if not seen then owners[#owners + 1] = section end
+        ::continue::
+    end
+end
+
+--- Map every channel file to the channels that list it, joined with "+" when several share it.
+local function _build_index()
+    _channels_of = {}
+    for i = 1, #CHANNEL_FILES do
+        local ini = ini_file(CHANNEL_FILES[i])
+        if not (ini and ini.section_for_each) then goto continue end
+        _walk_ini = ini
+        ini:section_for_each(_collect)
+        ::continue::
+    end
+    for key, owners in pairs(_channels_of) do _channels_of[key] = table_concat(owners, "+") end
+end
+
+--- The level, weather state, hour and shelter every line carries; the shelter sets the base layer's volume (sound_ambient.script:147-163).
+--- It reads the shelter as da_diag does (da_diag.script:140): 0 for an indoor channel in the open, 0.3 for an outdoor one under cover.
+local function _get_place_tag()
+    local manager = level_weathers and level_weathers.get_weather_manager and level_weathers.get_weather_manager()
+    local state = manager and manager.get_curr_ambient and manager:get_curr_ambient()
+    local env = GetEvent("underground") and "ug" or GetEvent("current_safe_cover") and "cover" or "open"
+    return string_format("lvl=%s state=%s hour=%d env=%s", tostring(level.name()), tostring(state), level.get_time_hours(), env)
+end
+
+--- Distance and height from the actor to a play position, plus the position itself, or "-" for a play with no position.
+--- The position lets the offline join drop a play another mod vetoed: its replacement fires at the same spot in the same second.
+local function _get_spot(pos)
+    local actor = db.actor
+    if not (pos and actor) then return "dist=- h=- at=-" end
+    local apos = actor:position()
+    return string_format("dist=%.0f h=%.0f at=%.1f,%.1f,%.1f", apos:distance_to(pos), pos.y - apos.y, pos.x, pos.y, pos.z)
+end
+
+--- Append one play line and count it for the minute summary.
+local function _log_play(hook, channel, file, spot)
+    _plays_n = _plays_n + 1
+    _counts[hook] = (_counts[hook] or 0) + 1
+    log.info("PLAY hook=%s ch=%s file=%s %s %s", hook, channel or "-", tostring(file), spot, _get_place_tag())
+end
+
+-- The six hooks reach these through the xlibs seam registry. Each observes and returns nil, never a veto.
+local function _log_bed(section, file, pos)
+    _log_play(HOOK_BED, tostring(section), file, _get_spot(pos))
+end
+
+local function _log_script(file, pos)
+    local key = _get_key(file)
+    if key == NO_SOUND then return end
+    local channel = key and _channels_of[key]
+    if channel then return _log_play(HOOK_SCRIPT, channel, file, _get_spot(pos)) end
+    if _config.all then _log_play(HOOK_OTHER, nil, file, _get_spot(pos)) end
+end
+
+local function _log_effect(file, pos)
+    _log_play(HOOK_EFFECT, nil, file, _get_spot(pos))
+end
+
+local function _log_thunder(file, distance)
+    _log_play(HOOK_THUNDER, nil, file, string_format("dist=%.0f h=- at=-", distance or -1))
+end
+
+local function _log_rain(file)
+    _log_play(HOOK_RAIN, nil, file, "dist=- h=- at=-")
+end
+
+local function _log_music(file)
+    _log_play(HOOK_MUSIC, nil, file, "dist=- h=- at=-")
+end
+
+local LISTENERS = {
+    { "on_before_play_ambient_bed", _log_bed },
+    { "on_before_play_script_sound", _log_script },
+    { "on_before_play_ambient_effect", _log_effect },
+    { "on_before_play_thunderbolt", _log_thunder },
+    { "on_before_play_rain", _log_rain },
+    { "on_before_play_level_music", _log_music },
+}
+
+local function _format_counts()
+    local parts = {}
+    for hook, count in pairs(_counts) do parts[#parts + 1] = hook .. "=" .. count end
+    return table_concat(parts, " ")
+end
+
+--- One summary line a minute: plays per hook in that minute.
+local function _run_report()
+    if not _enabled then return true end
+    log.info("MIN plays=%d by_hook=[%s] %s", _plays_n, _format_counts(), _get_place_tag())
+    log.flush()
+    _counts, _plays_n = {}, 0
+    ResetTimeEvent("tz_sound_trace", "report", REPORT_SEC)
+    return false
+end
+
+--- Subscribe or drop every hook as the switch changes. Inert on an exe without the hooks.
+local function _apply_enabled()
+    local wanted = _config.on and xsound ~= nil and xsound.register_ambient_listener ~= nil
+    if wanted == _enabled then return end
+    _enabled = wanted
+    if _enabled then
+        _counts, _plays_n = {}, 0
+        local attached = 0
+        for i = 1, #LISTENERS do
+            if xsound.register_ambient_listener(LISTENERS[i][1], LISTENERS[i][2]) then attached = attached + 1 end
+        end
+        log.info("START hooks=%d of %d all_script=%s build=%s ambient_volume=%s %s", attached, #LISTENERS, tostring(_config.all),
+            tostring(type(get_modded_exes_version) == "function" and get_modded_exes_version() or "?"),
+            tostring(ui_options and ui_options.get("sound/environment/ambient_volume")), _get_place_tag())
+        log.flush()
+        RemoveTimeEvent("tz_sound_trace", "report")
+        CreateTimeEvent("tz_sound_trace", "report", REPORT_SEC, _run_report)
+        return
+    end
+    for i = 1, #LISTENERS do xsound.unregister_ambient_listener(LISTENERS[i][1], LISTENERS[i][2]) end
+    RemoveTimeEvent("tz_sound_trace", "report")
+    log.info("STOP")
+    log.flush()
+end
+
+local function _load_config()
+    local cfg = tz_mcm and tz_mcm.cfg
+    if not cfg then return end
+    _config.on = cfg.soundtool_trace == true
+    _config.all = cfg.soundtool_trace_all == true
+    log._logger.flush_on_level = cfg.log_flush and _levels.TRACE or _levels.ERROR
+    _apply_enabled()
+end
+
+local function _on_actor_net_destroy()
+    if _enabled then log.flush() end
+end
+
+--- Build the channel index here at load (a 5 ms walk, measured 2026-11-20), never in a gameplay frame.
+function on_game_start()
+    _build_index()
+    RegisterScriptCallback("actor_on_first_update", _load_config)
+    RegisterScriptCallback("actor_on_net_destroy", _on_actor_net_destroy)
+    RegisterScriptCallback("on_option_change", _load_config)
+    RegisterScriptCallback("mcm_option_restore_default", _load_config)
+end
