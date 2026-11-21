@@ -1,110 +1,84 @@
-<w>
+<!-- SoundTool, drawn in true 4:3 units and centered. The _16 and _21 files are generated from this one; edit only this file. -->
+<w anchor="center">
 	<main x="0" y="0" width="1024" height="768"/>
+	<panel_outer x="132" y="89" width="760" height="590" stretch="1"><texture r="12" g="12" b="12" a="255">ui_inGame2_white_rect</texture></panel_outer>
+	<panel_body x="133" y="90" width="758" height="588" stretch="1"><texture r="40" g="41" b="40" a="255">ui_inGame2_white_rect</texture></panel_body>
+	<panel_light_t x="133" y="90" width="758" height="1" stretch="1"><texture r="92" g="93" b="90" a="255">ui_inGame2_white_rect</texture></panel_light_t>
+	<panel_light_l x="133" y="90" width="1" height="588" stretch="1"><texture r="92" g="93" b="90" a="255">ui_inGame2_white_rect</texture></panel_light_l>
+	<panel_shade_b x="133" y="676" width="758" height="2" stretch="1"><texture r="20" g="20" b="20" a="255">ui_inGame2_white_rect</texture></panel_shade_b>
+	<panel_shade_r x="889" y="90" width="2" height="588" stretch="1"><texture r="20" g="20" b="20" a="255">ui_inGame2_white_rect</texture></panel_shade_r>
+	<hdr_tool x="148" y="101" width="200" height="20"><text font="letterica18" align="l" vert_align="c" r="200" g="170" b="120">SoundTool</text></hdr_tool>
+	<lamp_green x="787" y="103" width="18" height="18" stretch="1"><texture>tz_lamp_green</texture></lamp_green>
+	<lamp_red x="811" y="103" width="18" height="18" stretch="1"><texture>tz_lamp_red</texture></lamp_red>
+	<btn_help x="853" y="101" width="19" height="19"><texture_e>ui_pda2_info2</texture_e><texture_d>ui_pda2_info2</texture_d><texture_t>ui_pda2_info2</texture_t><texture_h>ui_pda2_info2</texture_h></btn_help>
+	<btn_rescan x="368" y="97" width="60" height="30"><texture>ui_inGame2_pda_Filtr_radio_btn_loop</texture></btn_rescan>
 
-	<!-- The browser on the left, the player and tags on the right. -->
-	<background x="28" y="41" width="764" height="667" stretch="1">
-		<texture>ui_inGame2_pda_buttons_background</texture>
-	</background>
+	<!-- LIST: the location on the first line, then the rows; root, a pool, or a folder on disk. Sized only here: its scrollbar is placed once. -->
+	<scr_list_rim x="148" y="133" width="314" height="488" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_list_rim>
+	<scr_list_glass x="149.5" y="134.5" width="311" height="485" stretch="1"><texture r="20" g="23" b="27" a="255">ui_inGame2_white_rect</texture></scr_list_glass>
+	<lbl_path x="158" y="137" width="294" height="20"><text font="letterica16" align="l" vert_align="c" r="140" g="95" b="55"></text></lbl_path>
+	<list_line x="152" y="159" width="306" height="1" stretch="1"><texture r="75" g="50" b="30" a="255">ui_inGame2_white_rect</texture></list_line>
+	<list x="151" y="163" width="308" height="454" item_height="20" can_select="1"><font font="letterica16" r="210" g="140" b="80"/></list>
 
-	<!-- LEFT: the list; root, a pool, or a folder on disk. Click a row to open or play it, ".." goes up. -->
-	<lbl_path x="44" y="88" width="372" height="20">
-		<text font="letterica16" align="l" r="200" g="170" b="120"/>
-	</lbl_path>
-	<list_frame x="44" y="112" width="372" height="528">
-		<texture>ui_inGame2_servers_list_frame</texture>
-	</list_frame>
-	<list x="47" y="115" width="366" height="522" item_height="22" can_select="1">
-		<font font="letterica18"/>
-	</list>
+	<!-- DISPLAY: now, place, loudness. -->
+	<scr_display_rim x="482" y="133" width="394" height="92" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_display_rim>
+	<scr_display_glass x="483.5" y="134.5" width="391" height="89" stretch="1"><texture r="20" g="23" b="27" a="255">ui_inGame2_white_rect</texture></scr_display_glass>
+	<lbl_now x="492" y="137" width="374" height="21"><text font="letterica16" align="l" vert_align="c" r="210" g="140" b="80"></text></lbl_now>
+	<lbl_place x="492" y="158" width="374" height="21"><text font="letterica16" align="l" vert_align="c" r="210" g="140" b="80"></text></lbl_place>
+	<lbl_loud x="492" y="179" width="374" height="21"><text font="letterica16" align="l" vert_align="c" r="210" g="140" b="80"></text></lbl_loud>
 
-	<!-- RIGHT: title, the three-line screen (now / place / loudness) and the transport. -->
-	<hdr_tool x="444" y="88" width="300" height="22">
-		<text font="letterica18" align="l" r="200" g="170" b="120">SoundTool</text>
-	</hdr_tool>
-	<btn_help x="746" y="86" width="30" height="24" stretch="1">
-		<texture>ui_inGame2_pda_button</texture>
-		<text font="letterica16" align="c">?</text>
-	</btn_help>
-	<line_tool x="444" y="112" width="332" height="6" stretch="1">
-		<texture>ui_inGame2_pda_line_horizontal</texture>
-	</line_tool>
-	<screen x="444" y="124" width="332" height="72" stretch="1">
-		<texture>ui_inGame2_pda_Filtr_plyer_interface_off</texture>
-	</screen>
-	<lbl_now x="460" y="130" width="300" height="20">
-		<text font="letterica16" align="l" vert_align="c" r="66" g="157" b="195"/>
-	</lbl_now>
-	<lbl_place x="460" y="150" width="300" height="20">
-		<text font="letterica16" align="l" vert_align="c" r="66" g="157" b="195"/>
-	</lbl_place>
-	<lbl_loud x="460" y="170" width="300" height="20">
-		<text font="letterica16" align="l" vert_align="c" r="66" g="157" b="195"/>
-	</lbl_loud>
+	<!-- MODE: three toggles, one lit; the volume keys step closer and farther inside the mode. TRANSPORT: prev, play, next, stop. -->
+	<btn_mode_heard x="482" y="235" width="70" height="30" frame_mode="1"><texture>tz_rkey_start</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">as heard</text></btn_mode_heard>
+	<lit_mode_heard x="482" y="235" width="70" height="30"><texture>tz_rkey_start_lit</texture></lit_mode_heard>
+	<btn_mode_2d x="552" y="235" width="70" height="30" frame_mode="1"><texture>tz_rkey</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">2D</text></btn_mode_2d>
+	<lit_mode_2d x="552" y="235" width="70" height="30"><texture>tz_rkey_lit</texture></lit_mode_2d>
+	<btn_mode_3d x="622" y="235" width="70" height="30" frame_mode="1"><texture>tz_rkey_end</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">3D</text></btn_mode_3d>
+	<lit_mode_3d x="622" y="235" width="70" height="30"><texture>tz_rkey_end_lit</texture></lit_mode_3d>
+	<btn_vol_down x="696" y="235" width="60" height="30"><texture>ui_inGame2_pda_Filtr_radio_btn_v_down</texture></btn_vol_down>
+	<btn_vol_up x="756" y="235" width="60" height="30"><texture>ui_inGame2_pda_Filtr_radio_btn_v_up</texture></btn_vol_up>
+	<btn_prior x="482" y="273" width="60" height="30"><texture>ui_inGame2_pda_Filtr_radio_btn_prev</texture></btn_prior>
+	<btn_play x="543" y="273" width="60" height="30"><texture>ui_inGame2_pda_Filtr_radio_btn_start2</texture></btn_play>
+	<btn_next x="604" y="273" width="60" height="30"><texture>ui_inGame2_pda_Filtr_radio_btn_next</texture></btn_next>
+	<btn_stop x="665" y="273" width="60" height="30"><texture>ui_inGame2_pda_Filtr_radio_btn_stop2</texture></btn_stop>
 
-	<!-- transport: [ mode - ] [ mode + ]   [ prev ] [ play ] [ next ] [ stop ] -->
-	<btn_mode_prior x="470" y="198" width="48" height="30" stretch="1">
-		<texture>ui_inGame2_pda_Filtr_radio_plyr_btn_v_down</texture>
-	</btn_mode_prior>
-	<btn_mode_next x="520" y="198" width="48" height="30" stretch="1">
-		<texture>ui_inGame2_pda_Filtr_radio_plyr_btn_v_up</texture>
-	</btn_mode_next>
-	<btn_prior x="584" y="198" width="48" height="30" stretch="1">
-		<texture>ui_inGame2_pda_Filtr_radio_plyr_btn_prev</texture>
-	</btn_prior>
-	<btn_play x="632" y="198" width="48" height="30" stretch="1">
-		<texture>ui_inGame2_pda_Filtr_radio_plyr_btn_start2</texture>
-	</btn_play>
-	<btn_next x="680" y="198" width="48" height="30" stretch="1">
-		<texture>ui_inGame2_pda_Filtr_radio_plyr_btn_next</texture>
-	</btn_next>
-	<btn_stop x="728" y="198" width="48" height="30" stretch="1">
-		<texture>ui_inGame2_pda_Filtr_radio_plyr_btn_stop2</texture>
-	</btn_stop>
+	<!-- VERDICT: one box around the tags, the selected sound and the note. A tag writes one line for the selected sound. -->
+	<verdict_box_t x="482" y="315" width="394" height="1" stretch="1"><texture r="255" g="255" b="255" a="25">ui_inGame2_white_rect</texture></verdict_box_t>
+	<verdict_box_b x="482" y="571" width="394" height="1" stretch="1"><texture r="255" g="255" b="255" a="25">ui_inGame2_white_rect</texture></verdict_box_b>
+	<verdict_box_l x="482" y="315" width="1" height="257" stretch="1"><texture r="255" g="255" b="255" a="25">ui_inGame2_white_rect</texture></verdict_box_l>
+	<verdict_box_r x="875" y="315" width="1" height="257" stretch="1"><texture r="255" g="255" b="255" a="25">ui_inGame2_white_rect</texture></verdict_box_r>
+	<tag_outside x="490" y="325" width="75" height="30" frame_mode="1"><texture>tz_rkey_start</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">outside</text></tag_outside>
+	<tag_inside x="565" y="325" width="75" height="30" frame_mode="1"><texture>tz_rkey_end</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">inside</text></tag_inside>
+	<tag_low x="490" y="359" width="75" height="30" frame_mode="1"><texture>tz_rkey_start</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">low</text></tag_low>
+	<tag_med x="565" y="359" width="75" height="30" frame_mode="1"><texture>tz_rkey</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">med</text></tag_med>
+	<tag_high x="640" y="359" width="75" height="30" frame_mode="1"><texture>tz_rkey_end</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">high</text></tag_high>
+	<tag_inaudible x="490" y="393" width="75" height="30" frame_mode="1"><texture>tz_rkey_start</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">inaudible</text></tag_inaudible>
+	<tag_faint x="565" y="393" width="75" height="30" frame_mode="1"><texture>tz_rkey</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">faint</text></tag_faint>
+	<tag_loud x="640" y="393" width="75" height="30" frame_mode="1"><texture>tz_rkey</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">loud</text></tag_loud>
+	<tag_painful x="715" y="393" width="75" height="30" frame_mode="1"><texture>tz_rkey_end</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">painful</text></tag_painful>
+	<tag_close x="490" y="427" width="75" height="30" frame_mode="1"><texture>tz_rkey_start</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">close</text></tag_close>
+	<tag_far x="565" y="427" width="75" height="30" frame_mode="1"><texture>tz_rkey_end</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">far</text></tag_far>
+	<tag_keep x="490" y="461" width="75" height="30" frame_mode="1"><texture>tz_rkey_start</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">keep</text></tag_keep>
+	<tag_cut x="565" y="461" width="75" height="30" frame_mode="1"><texture>tz_rkey</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">cut</text></tag_cut>
+	<tag_unfit x="640" y="461" width="75" height="30" frame_mode="1"><texture>tz_rkey</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">unfit</text></tag_unfit>
+	<tag_release x="715" y="461" width="75" height="30" frame_mode="1"><texture>tz_rkey</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">release</text></tag_release>
+	<tag_dupe x="790" y="461" width="75" height="30" frame_mode="1"><texture>tz_rkey_end</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">dupe</text></tag_dupe>
+	<scr_sel_rim x="490" y="499" width="378" height="29" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_sel_rim>
+	<scr_sel_glass x="491.5" y="500.5" width="375" height="26" stretch="1"><texture r="20" g="23" b="27" a="255">ui_inGame2_white_rect</texture></scr_sel_glass>
+	<sel_line x="498" y="499" width="362" height="29"><text font="letterica16" align="l" vert_align="c" r="235" g="238" b="245"></text></sel_line>
+	<scr_note_rim x="490" y="533" width="342" height="29" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_note_rim>
+	<scr_note_glass x="491.5" y="534.5" width="339" height="26" stretch="1"><texture r="20" g="23" b="27" a="255">ui_inGame2_white_rect</texture></scr_note_glass>
+	<note x="490" y="533" width="342" height="29"><text x="8" font="letterica16" vert_align="c" align="l" r="190" g="190" b="186"/></note>
+	<btn_note x="837" y="533" width="31" height="30" frame_mode="1"><texture>tz_rkey</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">+</text></btn_note>
 
-	<!-- TAGS: one caption and a row of tag buttons per group, placed by the script. A tag writes one note line. -->
-	<tag_caption x="0" y="0" width="50" height="26">
-		<text font="letterica16" align="r" vert_align="c" r="200" g="170" b="120"/>
-	</tag_caption>
-	<tag_button x="0" y="0" width="56" height="26" stretch="1">
-		<texture>ui_inGame2_pda_button</texture>
-		<text font="letterica16" align="c" r="200" g="200" b="200"/>
-	</tag_button>
+	<!-- LAST LINES: the newest lines written to sound_tool.txt. -->
+	<scr_feed_rim x="482" y="588" width="394" height="64" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_feed_rim>
+	<scr_feed_glass x="483.5" y="589.5" width="391" height="61" stretch="1"><texture r="20" g="23" b="27" a="255">ui_inGame2_white_rect</texture></scr_feed_glass>
+	<feed_row_1 x="492" y="592" width="374" height="19"><text font="letterica16" align="l" vert_align="c" r="210" g="140" b="80"></text></feed_row_1>
+	<feed_row_2 x="492" y="611" width="374" height="19"><text font="letterica16" align="l" vert_align="c" r="210" g="140" b="80"></text></feed_row_2>
 
-	<!-- NOTE: typed text alone, or carried by the next tag. -->
-	<hdr_note x="444" y="390" width="332" height="20">
-		<text font="letterica16" align="l" r="200" g="170" b="120">NOTE</text>
-	</hdr_note>
-	<note x="444" y="412" width="250" height="26" stretch="1">
-		<text x="5" font="letterica16" vert_align="c" align="l"/>
-		<texture>ui_inGame2_edit_box_2</texture>
-	</note>
-	<btn_note x="700" y="412" width="76" height="26" stretch="1">
-		<texture>ui_inGame2_pda_button</texture>
-		<text font="letterica16" align="c">add note</text>
-	</btn_note>
-
-	<!-- Rescan re-reads the channel and category indexes and the open folder; an open pool stays as loaded. -->
-	<btn_rescan x="444" y="450" width="160" height="28" stretch="1">
-		<texture>ui_inGame2_pda_button</texture>
-		<text font="letterica16" align="c">rescan</text>
-	</btn_rescan>
-
-	<status x="44" y="686" width="720" height="20">
-		<text font="letterica16" align="l" r="160" g="160" b="160"/>
-	</status>
-
-	<!-- HELP: the page tz_help opens from the ? button; tz_help sets the page height from the text. -->
-	<help_background x="132" y="134" width="760" height="300" stretch="1">
-		<texture>ui_inGame2_pda_buttons_background</texture>
-	</help_background>
-	<help_title x="152" y="148" width="720" height="22">
-		<text font="letterica18" align="l" r="200" g="170" b="120"/>
-	</help_title>
-	<help_text x="152" y="180" width="720" height="40">
-		<text font="letterica16" align="l" complex_mode="1" r="200" g="200" b="200"/>
-	</help_text>
-	<help_close x="792" y="0" width="80" height="26" stretch="1">
-		<texture>ui_inGame2_pda_button</texture>
-		<text font="letterica16" align="c">Close</text>
-	</help_close>
+	<!-- HELP: the manual page the info key opens; tz_help sets the box height and moves Close under the text. -->
+	<help_background x="148" y="133" width="728" height="300" stretch="1"><texture r="20" g="23" b="27">ui_inGame2_white_rect</texture></help_background>
+	<help_title x="168" y="145" width="688" height="22"><text font="letterica18" align="l" r="200" g="170" b="120"/></help_title>
+	<help_text x="168" y="177" width="688" height="40"><text font="letterica16" align="l" complex_mode="1" r="190" g="190" b="186"/></help_text>
+	<help_close x="790" y="0" width="70" height="30" frame_mode="1"><texture>tz_rkey</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">Close</text></help_close>
 </w>

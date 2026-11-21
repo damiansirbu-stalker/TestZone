@@ -1,6 +1,7 @@
 --- tz_anim_tool: the animation review remote. Forces each dig candidate on the aimed NPC and logs a verdict. Dev-only, opens on the MCM anim_key.
 
 local table_sort, string_format, table_concat = table.sort, string.format, table.concat
+local os_date = os.date
 local tostring, IsStalker = tostring, IsStalker
 local RegisterScriptCallback = RegisterScriptCallback
 
@@ -33,13 +34,20 @@ local PROPS = {
     { section = "anim_knife",         group = "blade" },
 }
 
+-- The last-lines screen: the newest verdicts written, clipped to the row width.
+local FEED_MAX, FEED_CHARS = 2, 30
+-- Decor the window draws and never touches again: the panel frame, the screens' rim and glass, the lines and the verdict box.
+local DECOR = { statics = { "hdr_tool", "scr_display_rim", "scr_display_glass", "scr_list_rim", "scr_list_glass", "list_line",
+    "verdict_box_t", "verdict_box_b", "verdict_box_l", "verdict_box_r", "scr_sel_rim", "scr_sel_glass", "scr_snote_rim", "scr_snote_glass",
+    "scr_feed_rim", "scr_feed_glass" } }
+
 local COL_MOTION, COL_STATE, COL_NAME = "motion", "state", "name"
 local COL_CATEGORY, COL_VERDICT = "category", "verdict"
 
--- Posture for the next play; a state item ignores it. The prop is a separate selection (_prop).
+-- Posture for the next play, one toggle each; a state item ignores it. The prop is a separate selection (_prop).
 local MODES = {
-    { label = "pose",   moving = false },
-    { label = "moving", moving = true },
+    { label = "pose",   moving = false, key = "btn_pose",   lit = "lit_pose" },
+    { label = "moving", moving = true,  key = "btn_moving", lit = "lit_moving" },
 }
 
 local _view    = VIEW_ROOT
@@ -56,6 +64,18 @@ local _selected_id   = nil
 local _box     = nil
 -- RemoveAll on the empty, not-yet-attached list (the first fill) CTDs in CUIScrollView::Clear.
 local _built   = false
+local _feed    = {}
+-- True while a motion is held on the NPC, for the lamps.
+local _is_holding = false
+-- Key label tints, built lazily: GetARGB is absent at module load under the validator.
+local _clr = nil
+
+local function _get_color(name)
+    if not _clr then
+        _clr = { key = GetARGB(255, 175, 180, 190), key_on = GetARGB(255, 235, 240, 245) }
+    end
+    return _clr[name]
+end
 
 local function _get_mode() return MODES[_mode_i] end
 
@@ -130,6 +150,12 @@ local function _write_verdict(name, verdict, note)
         string_format("%s\t%s\t%s\t%s\n", verdict, name, _get_mode().label, note or ""), true)
 end
 
+--- Put one written verdict at the top of the FILE feed, clipped so it fits its row.
+local function _add_feed_line(name, verdict)
+    local short = string_format("%s  %s = %s", os_date("%H:%M:%S"), name, verdict)
+    xcui.push_line(_feed, short, FEED_MAX, FEED_CHARS)
+end
+
 --- The standing-selected stalker's object when it is still a live online stalker, else nil (a despawn or death drops the selection on read).
 local function _get_selected_npc()
     if not _selected_id then return nil end
@@ -147,7 +173,7 @@ local function try_open()
         tgt = level.get_target_obj and level.get_target_obj() or nil
         if not (tgt and IsStalker(tgt)) then tgt = nil end
     end
-    if tgt then _npc_id, _npc_name = tgt:id(), tgt:name()
+    if tgt then _npc_id, _npc_name = tgt:id(), tgt:character_name()
     else _npc_id, _npc_name = nil, nil end
     _box = tz_anim_tool_wnd()
     _box:ShowDialog(true)
@@ -167,28 +193,38 @@ function tz_anim_tool_wnd:__init() super()
     self:render()
 end
 
+--- The window's controls in draw order. Each posture diode comes after its key, so it draws on the key's plate.
+function tz_anim_tool_wnd:get_layout()
+    local spec = {
+        { kind = "static", names = tz_ui.PANEL },
+        { kind = "static", names = DECOR.statics },
+        { kind = "text", names = xcui.get_names("feed_row_", FEED_MAX) },
+        { kind = "list", names = { "list" } },
+        { kind = "text", names = { "lbl_path", "lbl_now", "lbl_mode", "sel_line" } },
+        { kind = "static", names = { "lamp_green", "lamp_red" } },
+        { kind = "edit", names = { "snote" } },
+        { kind = "button", names = { "btn_select", "btn_reset", "btn_prior", "btn_play", "btn_stop", "btn_next",
+            "btn_good", "btn_bad", "btn_note", "btn_help" } },
+    }
+    for i = 1, #MODES do
+        spec[#spec + 1] = { kind = "button", names = { MODES[i].key } }
+        spec[#spec + 1] = { kind = "static", names = { MODES[i].lit } }
+    end
+    return spec
+end
+
 function tz_anim_tool_wnd:init_controls()
     local xml = CScriptXmlInit()
     xml:ParseFile("tz_anim_tool.xml")
-    xml:InitStatic("background", self)
-    xml:InitStatic("hdr_player", self)
-    xml:InitStatic("line_player", self)
-    xml:InitStatic("screen", self)
-    xml:InitStatic("hdr_verdict", self)
-    xml:InitStatic("hdr_snote", self)
-    xml:InitFrame("list_frame", self)
-    self.list = xml:InitListBox("list", self)
+    local ui = xcui.build(xml, self, self:get_layout())
+    self.ui = ui
+    self.list = ui.list
     self.list:ShowSelectedItem(true)
-    self:Register(self.list, "list")
-    self.lbl_path = xml:InitStatic("lbl_path", self):TextControl()
-    self.lbl_now  = xml:InitStatic("lbl_now", self):TextControl()
-    self.lbl_mode = xml:InitStatic("lbl_mode", self):TextControl()
-    self.status   = xml:InitStatic("status", self):TextControl()
-    self.snote = xml:InitEditBox("snote", self)
-    self:Register(self.snote, "snote")
-    local buttons = { "btn_select", "btn_reset", "btn_pos_down", "btn_pos_up", "btn_prior", "btn_play", "btn_stop", "btn_next",
-                      "btn_good", "btn_bad", "btn_note", "btn_help" }
-    for i = 1, #buttons do self:Register(xml:Init3tButton(buttons[i], self), buttons[i]) end
+    self.lbl_path, self.lbl_now, self.lbl_mode, self.sel_line = ui.lbl_path, ui.lbl_now, ui.lbl_mode, ui.sel_line
+    self.snote = ui.snote
+    self.feed_rows = xcui.get_controls(ui, xcui.get_names("feed_row_", FEED_MAX))
+    self.mode_keys, self.mode_lits = {}, {}
+    for i = 1, #MODES do self.mode_keys[i], self.mode_lits[i] = ui[MODES[i].key], ui[MODES[i].lit] end
 end
 
 function tz_anim_tool_wnd:init_callbacks()
@@ -196,8 +232,8 @@ function tz_anim_tool_wnd:init_callbacks()
     self:AddCallback("list",         ui_events.WINDOW_LBUTTON_DB_CLICK, function() if _view == VIEW_POOL then self:_play_current() end end, self)
     self:AddCallback("btn_select",   ui_events.BUTTON_CLICKED,    self.select_npc,      self)
     self:AddCallback("btn_reset",    ui_events.BUTTON_CLICKED,    self.clear_selection, self)
-    self:AddCallback("btn_pos_down", ui_events.BUTTON_CLICKED,    self.select_prev_mode, self)
-    self:AddCallback("btn_pos_up",   ui_events.BUTTON_CLICKED,    self.select_next_mode, self)
+    self:AddCallback("btn_pose",     ui_events.BUTTON_CLICKED, function() self:select_mode(1) end, self)
+    self:AddCallback("btn_moving",   ui_events.BUTTON_CLICKED, function() self:select_mode(2) end, self)
     self:AddCallback("btn_prior",    ui_events.BUTTON_CLICKED,    self.select_prev_item, self)
     self:AddCallback("btn_play",     ui_events.BUTTON_CLICKED,    self.play,            self)
     self:AddCallback("btn_stop",     ui_events.BUTTON_CLICKED,    self.stop,            self)
@@ -260,17 +296,37 @@ function tz_anim_tool_wnd:add_pool_rows(row)
     end })
 end
 
-function tz_anim_tool_wnd:render()
+--- Green while a motion is held on the NPC, red once it stops; the unlit lamp is faded.
+function tz_anim_tool_wnd:render_lamps()
+    tz_ui.render_lamps(self.ui, _is_holding)
+end
+
+--- Light the posture toggle in use: its diode on and its label bright.
+function tz_anim_tool_wnd:render_modes()
+    for i = 1, #MODES do
+        local is_on = i == _mode_i
+        self.mode_lits[i]:Show(is_on)
+        self.mode_keys[i]:TextControl():SetTextColor(_get_color(is_on and "key_on" or "key"))
+    end
+end
+
+--- The list's first line: the source folder, the prop picker, or the open source file and its row count.
+function tz_anim_tool_wnd:render_path()
     if _view == VIEW_ROOT then
-        self.lbl_path:SetText("sources in configs\\testzone\\anim    (click one)")
-        self.status:SetText("pick a source file, or drop a .tsv / .txt in that folder")
+        self.lbl_path:SetText("configs\\testzone\\anim")
     elseif _view == VIEW_PROP then
-        self.lbl_path:SetText("props    (click one to attach, (none) to clear)")
-        self.status:SetText("the pick attaches on the next play and persists across motions")
+        self.lbl_path:SetText("props")
     else
         self.lbl_path:SetText(string_format("%s    (%d)", _row and _row.label or "?", _row and #_row.pool or 0))
-        self.status:SetText("click a candidate to play    -    the [ prop: ] row picks an attachment")
     end
+end
+
+function tz_anim_tool_wnd:render()
+    xcui.set_lines(self.feed_rows, _feed)
+    self:render_lamps()
+    self:render_modes()
+    self:render_path()
+    self.sel_line:SetText(_cur and string_format("%s   %s", _cur.name, _cur.is_state and "state" or "motion") or "")
     if _npc_id then
         local bound = db.storage[_npc_id] and db.storage[_npc_id].object
         local live = (bound and bound:alive()) and state_mgr.get_state(bound) or "?"
@@ -292,9 +348,8 @@ end
 
 --- Pin the bound NPC as the standing selection, so it survives close and reopen; the band marks it with a leading star.
 function tz_anim_tool_wnd:select_npc()
-    if not _npc_id then self.status:SetText("no NPC bound. reopen while looking at a stalker"); return end
+    if not _npc_id then return end
     _selected_id = _npc_id
-    self.status:SetText(string_format("selected %s (stays bound on reopen)", tostring(_npc_name)))
     self:render()
 end
 
@@ -302,7 +357,6 @@ end
 function tz_anim_tool_wnd:clear_selection()
     _selected_id = nil
     _npc_id, _npc_name = nil, nil
-    self.status:SetText("selection cleared")
     self:render()
 end
 
@@ -310,9 +364,8 @@ function tz_anim_tool_wnd:_play_current()
     if not (_cur and _npc_id and tz_anim) then return end
     local mode = _get_mode()
     local item = { name = _cur.name, is_state = _cur.is_state, moving = mode.moving, prop = _prop }
-    if tz_anim.start_review_hold(_npc_id, item) then
-        self.status:SetText(string_format("playing:  %s", _cur.name))
-    end
+    _is_holding = tz_anim.start_review_hold(_npc_id, item) ~= nil
+    self:render_lamps()
 end
 
 function tz_anim_tool_wnd:select_row()
@@ -332,7 +385,7 @@ function tz_anim_tool_wnd:select_root(idx)
     local file = _sources[idx + 1]
     if not file then return end
     local row = _read_source(file)
-    if not (row and #row.pool > 0) then self.status:SetText("empty or unreadable: " .. file); return end
+    if not (row and #row.pool > 0) then return end
     _row, _view = row, VIEW_POOL
     self:build_list(); self:render()
 end
@@ -341,7 +394,7 @@ end
 function tz_anim_tool_wnd:select_pool(idx)
     if idx == 0 then
         _view, _cur = VIEW_ROOT, nil
-        if tz_anim then tz_anim.stop_review_hold() end
+        self:stop()
         self:build_list(); self:render()
         return
     end
@@ -354,7 +407,6 @@ function tz_anim_tool_wnd:select_pool(idx)
     if not entry then return end
     _cur = entry
     self:render()
-    self.status:SetText("selected:  " .. entry.name .. "   (Play or double-click)")
 end
 
 --- PROP click: index 0 returns to the pool, index 1 clears the prop, any other index selects it.
@@ -369,24 +421,19 @@ function tz_anim_tool_wnd:select_prop(idx)
     _view = VIEW_POOL
     self:build_list(); self:render()
     if _cur then self:_play_current() end
-    self.status:SetText(string_format("prop: %s", _prop or "none"))
 end
 
 function tz_anim_tool_wnd:play() self:_play_current() end
 
 function tz_anim_tool_wnd:stop()
     if tz_anim then tz_anim.stop_review_hold() end
-    self.status:SetText("stopped")
+    _is_holding = false
+    self:render_lamps()
 end
 
---- Mode steppers cycle how a motion is forced and replay the current item so the change is visible at once.
-function tz_anim_tool_wnd:select_prev_mode()
-    _mode_i = _mode_i - 1
-    if _mode_i < 1 then _mode_i = #MODES end
-    self:_play_current(); self:render()
-end
-function tz_anim_tool_wnd:select_next_mode()
-    _mode_i = _mode_i % #MODES + 1
+--- A posture toggle: light it and replay the current item so the change is visible at once.
+function tz_anim_tool_wnd:select_mode(index)
+    _mode_i = index
     self:_play_current(); self:render()
 end
 
@@ -419,15 +466,14 @@ function tz_anim_tool_wnd:add_verdict(verdict)
     local note = self.snote:GetText()
     local written = _write_verdict(_cur.name, verdict, note)
     self.snote:SetText("")
-    self.status:SetText(written and string_format("VERDICT %s = %s", _cur.name, verdict)
-        or "verdict FAILED (no logs mount?)")
+    if written then _add_feed_line(_cur.name, verdict) end
+    self:render()
 end
 
 --- Esc closes the window when no edit box has focus, so game binds are never shadowed.
 function tz_anim_tool_wnd:OnKeyboard(dik, action)
     local res = CUIScriptWnd.OnKeyboard(self, dik, action)
-    if action ~= ui_events.WINDOW_KEY_PRESSED then return res end
-    if res or dik ~= DIK_keys.DIK_ESCAPE then return res end
+    if not xcui.is_close_key(res, dik, action) then return res end
     self:hide()
     return true
 end
@@ -435,6 +481,7 @@ end
 function tz_anim_tool_wnd:hide()
     if xslice then xslice.stop_queue("tz_anim_fill") end
     if tz_anim then tz_anim.stop_review_hold() end
+    _is_holding = false
     self:HideDialog()
     Unregister_UI("tz_anim_tool_wnd")
 end

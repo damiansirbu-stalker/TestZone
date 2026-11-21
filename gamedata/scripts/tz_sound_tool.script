@@ -1,7 +1,7 @@
 --- tz_sound_tool: SoundTool - audition ambience, dread, voice and any .ogg on disk, tag each sound into one notes file. MCM TestZone > SoundTool.
 
 local string_format, table_concat, table_sort = string.format, table.concat, table.sort
-local math_sqrt, ipairs = math.sqrt, ipairs
+local math_sqrt, math_floor, ipairs = math.sqrt, math.floor, ipairs
 local os_date, os_time, ini_file, RegisterScriptCallback = os.date, os.time, ini_file, RegisterScriptCallback
 
 local OUTPUT_FILE  = "sound_tool.txt"
@@ -24,24 +24,36 @@ local BED_LIFT = 10
 -- A playlist's folder under the logs names the family its lines default to.
 local REVIEW_FAMILY = { da_review = "ambience", dd_review = "dread", voice_review = "voice" }
 local FAMILY_ORDER = { "dread", "ambience", "voice", "file" }
-local COMMON_MODES = {
-    { label = "at-ear (2D)", kind = KIND_ATEAR },
+-- The mode toggles: "as heard" is the family's own placement, 2D at the ear, 3D camera-forward; the volume keys step inside one.
+local GROUP_HEARD, GROUP_2D, GROUP_3D = "heard", "2d", "3d"
+local GROUP_ORDER = { GROUP_HEARD, GROUP_2D, GROUP_3D }
+local ATEAR_MODES = { { label = "at-ear (2D)", kind = KIND_ATEAR } }
+local DIST_MODES = {
     { label = "5m", kind = KIND_DIST, dist = 5 },
     { label = "10m", kind = KIND_DIST, dist = 10 },
     { label = "25m", kind = KIND_DIST, dist = 25 },
     { label = "50m", kind = KIND_DIST, dist = 50 },
     { label = "100m", kind = KIND_DIST, dist = 100 },
 }
--- Tag rows in window order; each tag writes one note line.
+-- Tag rows in window order, each tag laid out in tz_sound_tool.xml as tag_<tag>; each tag writes one note line.
 local TAG_ROWS = {
-    { caption = "type", tags = { "outside", "inside" } },
-    { caption = "level", tags = { "low", "med", "high" } },
-    { caption = "vol", tags = { "inaudible", "faint", "loud", "painful" } },
-    { caption = "dist", tags = { "close", "far" } },
-    { caption = "fate", tags = { "keep", "cut", "unfit", "release", "dupe" } },
+    { "outside", "inside" },
+    { "low", "med", "high" },
+    { "inaudible", "faint", "loud", "painful" },
+    { "close", "far" },
+    { "keep", "cut", "unfit", "release", "dupe" },
 }
--- Layout anchors of the script-placed tag rows; the fixed elements sit in tz_sound_tool.xml.
-local TAG_TOP, TAG_ROW_H, TAG_CAPTION_X, TAG_FIRST_X, TAG_STEP_X = 234, 30, 444, 498, 59
+-- The last-lines screen: the newest lines written, clipped to the row width.
+local FEED_MAX, FEED_CHARS = 2, 44
+-- Decor the window draws and never touches again: the panel frame, the screens' rim and glass, the lines and the verdict box.
+local DECOR = { statics = { "hdr_tool", "scr_list_rim", "scr_list_glass", "list_line", "scr_display_rim", "scr_display_glass",
+    "verdict_box_t", "verdict_box_b", "verdict_box_l", "verdict_box_r", "scr_sel_rim", "scr_sel_glass", "scr_note_rim", "scr_note_glass",
+    "scr_feed_rim", "scr_feed_glass" } }
+-- The volume keys: the playback volume each later play starts at, stepped between these bounds; a one-shot keeps the volume it started with.
+local GAIN_STEP, GAIN_MIN, GAIN_MAX = 0.1, 0.1, 1.0
+-- While a play sounds, the lamps refresh this often, in seconds, so green turns red when it ends by itself.
+local LAMP_PERIOD = 0.25
+local LAMP_EV = "tz_sound_tool"
 
 local log = xlog.get_logger("TestZone.soundtool", { outfile = "testzone.log" })
 
@@ -49,6 +61,7 @@ local _channels, _channel_of, _dread_categories = {}, {}, {}
 -- xray keeps each loaded sound source by name until exit (xray/xrSound/SoundRender_Core_SourceManager.cpp:8-31), so a cache name is never reused.
 local _cache, _cache_count, _is_cache_dirty, _cache_token = {}, 0, false, nil
 local _handles = {}
+local _feed = {}
 
 local function _get_extension(name)
     return (name:match("%.([^%.\\]+)$") or ""):lower()
@@ -257,10 +270,10 @@ local function _compute_ambience_mode(item, mode)
     return flat, height, volume, note, is_bed
 end
 
-local function _play_ambience_mode(item, mode)
+local function _play_ambience_mode(item, mode, gain)
     local flat, height, volume, _, is_bed = _compute_ambience_mode(item, mode)
     local pos = _compute_position({ dist = flat, height = height, is_from_camera = is_bed })
-    return pos and da_director.play_unfiltered(item.path, { position = pos, volume = volume })
+    return pos and da_director.play_unfiltered(item.path, { position = pos, volume = volume * gain })
 end
 
 --- A plain play past the ambience shuffle, so the audition is exactly the sound picked.
@@ -308,12 +321,11 @@ local function _compute_dread_mode(item, mode)
     return (row.ch_max or 100) / 2 * dd_director.get_pull_factor(dread), row.h or 0, dd_director.get_play_volume(), string_format("dread %.2f", dread)
 end
 
-local function _play_dread_mode(item, mode)
-    local row = _find_dread_row(item)
-    local flat = _compute_dread_mode(item, mode)
-    local _, handle = dd_director.play_sound(item.path, { min = row.mn or 2, max = row.mx or 100, height = row.h or 0,
-        ch_min = row.ch_min or 30, ch_max = row.ch_max or 100, dist = flat })
-    return handle
+--- A dread sound where the director would roll it, at its volume times the tool's; the tool plays it, as dd_director.play_sound sets its own volume.
+local function _play_dread_mode(item, mode, gain)
+    local flat, height, volume = _compute_dread_mode(item, mode)
+    local pos = _compute_position({ dist = flat, height = height })
+    return pos and xsound.play_at(item.path, { position = pos, volume = volume * gain })
 end
 
 local function _format_dread_where(item)
@@ -479,13 +491,25 @@ local function _is_playable(item)
     return item ~= nil and not item.is_divider and item.path ~= nil
 end
 
---- The modes an item offers: its family's "as in game" modes, then the plain ones.
-local function _get_modes(item)
-    local modes = {}
-    local family_modes = item and item.family and item.family.modes or {}
-    for i = 1, #family_modes do modes[#modes + 1] = family_modes[i] end
-    for i = 1, #COMMON_MODES do modes[#modes + 1] = COMMON_MODES[i] end
-    return modes
+--- The modes one toggle offers for an item: its family's "as in game" modes, the at-ear mode, or the distances.
+local function _get_group_modes(item, group)
+    if group == GROUP_HEARD then return item and item.family and item.family.modes or {} end
+    if group == GROUP_2D then return ATEAR_MODES end
+    return DIST_MODES
+end
+
+--- The lit toggle for an item: the asked one when it has modes, else 3D, which every item has.
+local function _select_group(item, group)
+    if #_get_group_modes(item, group) > 0 then return group end
+    return GROUP_3D
+end
+
+--- True while any play the tool started is still sounding; xsound sweeps a one-shot when it ends.
+local function _is_playing()
+    for i = 1, #_handles do
+        if xsound.is_active(_handles[i]) then return true end
+    end
+    return false
 end
 
 --- The mode with this label, else the first mode on the list.
@@ -520,14 +544,14 @@ local function _format_loud(item, mode)
 end
 
 --- Start one play of the item in the mode and keep its handle; plain modes play camera-forward at volume 1.0 through the family's plain play.
-local function _play_item(item, mode)
+local function _play_item(item, mode, gain)
     if not (_is_playable(item) and db.actor) then return end
     local family = item.family
     local handle
     if mode.kind == KIND_FAMILY then
-        handle = family.play_mode(item, mode)
+        handle = family.play_mode(item, mode, gain)
     else
-        local opts = mode.kind == KIND_ATEAR and { s2d = true, volume = 1 } or { position = _compute_position({ dist = mode.dist }), volume = 1 }
+        local opts = mode.kind == KIND_ATEAR and { s2d = true, volume = gain } or { position = _compute_position({ dist = mode.dist }), volume = gain }
         handle = family.play_plain(item, opts)
     end
     log.debug("[SOUNDTOOL] play %s family=%s mode=%s handle=%s", item.source or item.path, family.id, mode.label, handle or "-")
@@ -544,9 +568,16 @@ end
 local function _write_note(item, mode, text)
     local flat, height, volume, note = _compute_place(item, mode)
     local resolved = flat and string_format("%.0f m h%g vol %.2f %s", flat, height, volume, note) or string_format("vol %.2f", volume)
+    local family = item.family
     local line = string_format("%s [SOUND] %s  source=%s  where=%s  mode=%s (%s)  :: %s", os_date("%Y-%m-%d %H:%M:%S"),
-        item.source or item.path, item.family.id, item.family.format_where(item), mode.label, resolved, text)
+        item.source or item.path, family.id, family.format_where(item), mode.label, resolved, text)
     return xfs.write_file(_get_logs_dir() .. OUTPUT_FILE, line .. "\n", true)
+end
+
+--- Put one written line at the top of the FILE feed, clipped so it fits its row.
+local function _add_feed_line(item, text)
+    local short = string_format("%s  %s :: %s", os_date("%H:%M:%S"), item.label, text)
+    xcui.push_line(_feed, short, FEED_MAX, FEED_CHARS)
 end
 
 local function _try_open()
@@ -562,6 +593,7 @@ end
 
 local function _on_actor_destroy()
     if xslice then xslice.stop_queue(FILL_QUEUE, true) end
+    RemoveTimeEvent(LAMP_EV, "lamps")
     _stop_plays()
     _run_family_hook("stop_audition")
     Unregister_UI("tz_sound_tool_wnd")
@@ -574,6 +606,7 @@ function tz_sound_tool_wnd:__init() super()
     self:SetAutoDelete(true)
     self.entries, self.is_built = {}, false
     self.row, self.items, self.index, self.mode_label, self.dir = nil, nil, nil, nil, nil
+    self.mode_group, self.gain = GROUP_HEARD, GAIN_MAX
     self:init_controls()
     self:init_callbacks()
     local cleared = _clear_cache()
@@ -581,46 +614,47 @@ function tz_sound_tool_wnd:__init() super()
     _run_family_hook("start_audition")
     self:show_root()
     log.info("[SOUNDTOOL] open: %d ambience channels, %d dread categories, cleared %d cached files", #_channels, #_dread_categories, cleared)
-    if cleared > 0 then self.status:SetText(string_format("cleared %d cached files from the last session", cleared)) end
+end
+
+--- The window's controls in draw order. Each lit outline comes before its mode key, so it sits under the key's open outline and never takes the click.
+function tz_sound_tool_wnd:get_layout()
+    local spec = {
+        { kind = "static", names = tz_ui.PANEL },
+        { kind = "static", names = DECOR.statics },
+        { kind = "text", names = xcui.get_names("feed_row_", FEED_MAX) },
+        { kind = "list", names = { "list" } },
+        { kind = "text", names = { "lbl_path", "lbl_now", "lbl_place", "lbl_loud", "sel_line" } },
+        { kind = "static", names = { "lamp_green", "lamp_red" } },
+        { kind = "edit", names = { "note" } },
+        { kind = "button", names = { "btn_help", "btn_vol_down", "btn_vol_up", "btn_prior", "btn_play", "btn_next", "btn_stop", "btn_note", "btn_rescan" } },
+    }
+    for _, group in ipairs(GROUP_ORDER) do
+        spec[#spec + 1] = { kind = "line", names = { "lit_mode_" .. group } }
+        spec[#spec + 1] = { kind = "button", names = { "btn_mode_" .. group } }
+    end
+    local tags = {}
+    for i = 1, #self.tag_ids do tags[i] = "tag_" .. self.tag_ids[i] end
+    spec[#spec + 1] = { kind = "button", names = tags }
+    return spec
 end
 
 function tz_sound_tool_wnd:init_controls()
     local xml = CScriptXmlInit()
     xml:ParseFile("tz_sound_tool.xml")
-    local statics = { "background", "hdr_tool", "line_tool", "screen", "hdr_note" }
-    for i = 1, #statics do xml:InitStatic(statics[i], self) end
-    xml:InitFrame("list_frame", self)
-    self.list = xml:InitListBox("list", self)
-    self.list:ShowSelectedItem(true)
-    self:Register(self.list, "list")
-    self.lbl_path = xml:InitStatic("lbl_path", self):TextControl()
-    self.lbl_now = xml:InitStatic("lbl_now", self):TextControl()
-    self.lbl_place = xml:InitStatic("lbl_place", self):TextControl()
-    self.lbl_loud = xml:InitStatic("lbl_loud", self):TextControl()
-    self.status = xml:InitStatic("status", self):TextControl()
-    self.note = xml:InitEditBox("note", self)
-    self:Register(self.note, "note")
-    local buttons = { "btn_help", "btn_mode_prior", "btn_mode_next", "btn_prior", "btn_play", "btn_next", "btn_stop", "btn_note", "btn_rescan" }
-    for i = 1, #buttons do self:Register(xml:Init3tButton(buttons[i], self), buttons[i]) end
-    self:init_tags(xml)
-end
-
---- One caption and one button per tag, a row per group, placed from the TAG_* anchors.
-function tz_sound_tool_wnd:init_tags(xml)
     self.tag_ids = {}
-    for r = 1, #TAG_ROWS do self:init_tag_row(xml, TAG_ROWS[r], TAG_TOP + (r - 1) * TAG_ROW_H) end
-end
-
-function tz_sound_tool_wnd:init_tag_row(xml, row, row_y)
-    local caption = xml:InitStatic("tag_caption", self)
-    caption:SetWndPos(vector2():set(TAG_CAPTION_X, row_y))
-    caption:TextControl():SetText(row.caption)
-    for tag_index, tag in ipairs(row.tags) do
-        local button = xml:Init3tButton("tag_button", self)
-        button:SetWndPos(vector2():set(TAG_FIRST_X + (tag_index - 1) * TAG_STEP_X, row_y))
-        button:TextControl():SetText(tag)
-        self:Register(button, "tag_" .. tag)
-        self.tag_ids[#self.tag_ids + 1] = tag
+    for _, row in ipairs(TAG_ROWS) do
+        for i = 1, #row do self.tag_ids[#self.tag_ids + 1] = row[i] end
+    end
+    local ui = xcui.build(xml, self, self:get_layout())
+    self.ui = ui
+    self.list = ui.list
+    self.list:ShowSelectedItem(true)
+    self.lbl_path, self.lbl_now, self.lbl_place, self.lbl_loud, self.sel_line = ui.lbl_path, ui.lbl_now, ui.lbl_place, ui.lbl_loud, ui.sel_line
+    self.note = ui.note
+    self.feed_rows = xcui.get_controls(ui, xcui.get_names("feed_row_", FEED_MAX))
+    self.mode_keys, self.mode_lits = {}, {}
+    for _, group in ipairs(GROUP_ORDER) do
+        self.mode_keys[group], self.mode_lits[group] = ui["btn_mode_" .. group], ui["lit_mode_" .. group]
     end
 end
 
@@ -628,11 +662,16 @@ function tz_sound_tool_wnd:add_tag_callback(tag)
     self:AddCallback("tag_" .. tag, ui_events.BUTTON_CLICKED, function() self:add_note(tag) end, self)
 end
 
+function tz_sound_tool_wnd:add_mode_callback(group)
+    self:AddCallback("btn_mode_" .. group, ui_events.BUTTON_CLICKED, function() self:select_mode_group(group) end, self)
+end
+
 function tz_sound_tool_wnd:init_callbacks()
     self:AddCallback("list", ui_events.LIST_ITEM_CLICKED, self.select_row, self)
     self:AddCallback("btn_help", ui_events.BUTTON_CLICKED, self.show_help, self)
-    self:AddCallback("btn_mode_prior", ui_events.BUTTON_CLICKED, function() self:select_mode(-1) end, self)
-    self:AddCallback("btn_mode_next", ui_events.BUTTON_CLICKED, function() self:select_mode(1) end, self)
+    for _, group in ipairs(GROUP_ORDER) do self:add_mode_callback(group) end
+    self:AddCallback("btn_vol_down", ui_events.BUTTON_CLICKED, function() self:select_gain(-1) end, self)
+    self:AddCallback("btn_vol_up", ui_events.BUTTON_CLICKED, function() self:select_gain(1) end, self)
     self:AddCallback("btn_prior", ui_events.BUTTON_CLICKED, function() self:select_neighbor(-1) end, self)
     self:AddCallback("btn_next", ui_events.BUTTON_CLICKED, function() self:select_neighbor(1) end, self)
     self:AddCallback("btn_play", ui_events.BUTTON_CLICKED, self.play_current, self)
@@ -689,7 +728,7 @@ function tz_sound_tool_wnd:show_root()
     local channels = _is_ambience_available() and _channels or {}
     for i = 1, #channels do entries[#entries + 1] = self:build_channel_entry(channels[i]) end
     self.dir, self.row, self.items, self.index = nil, nil, nil, nil
-    self:set_entries(entries, "root    files, dread categories, ambience channels")
+    self:set_entries(entries, "root")
     self:render()
 end
 
@@ -727,7 +766,7 @@ end
 
 function tz_sound_tool_wnd:show_playlist(path)
     local row = _load_playlist(path)
-    if not row then log.warn("[SOUNDTOOL] could not read playlist %s", path); self.status:SetText("could not read " .. path); return end
+    if not row then log.warn("[SOUNDTOOL] could not read playlist %s", path); return end
     self:show_pool(row, self.dir)
 end
 
@@ -741,7 +780,7 @@ end
 
 --- A pool of sounds: copy its outside files first, then list each with its family and length; ".." returns to back_dir or root.
 function tz_sound_tool_wnd:show_pool(row, back_dir)
-    local copied, failed = _load_row_sources(row)
+    _load_row_sources(row)
     local items = row.items
     self.row, self.items, self.index = row, items, nil
     local entries = { { label = "..", on_select = function()
@@ -751,7 +790,6 @@ function tz_sound_tool_wnd:show_pool(row, back_dir)
     self:set_entries(entries, string_format("%s    (%d)", row.name, #items))
     self:add_pool_rows(items)
     self:render()
-    if copied + failed > 0 then self.status:SetText(string_format("copied %d outside files, %d failed", copied, failed)) end
 end
 
 function tz_sound_tool_wnd:format_item(item)
@@ -767,7 +805,7 @@ end
 function tz_sound_tool_wnd:select_item(index)
     self.index = index
     local item = self.items[index]
-    if _is_playable(item) then self.mode_label = _find_mode(_get_modes(item), self.mode_label).label end
+    if _is_playable(item) then self.mode_label = self:get_mode(item).label end
     self:render()
 end
 
@@ -794,40 +832,70 @@ function tz_sound_tool_wnd:get_current()
     return self.items and self.index and self.items[self.index]
 end
 
---- Step the mode within the current item's list; it never plays.
-function tz_sound_tool_wnd:select_mode(delta)
+--- The mode an item plays in: the lit toggle's mode with the kept label, else that toggle's first.
+function tz_sound_tool_wnd:get_mode(item)
+    return _find_mode(_get_group_modes(item, _select_group(item, self.mode_group)), self.mode_label)
+end
+
+--- Light one mode toggle; the label carries over when that toggle offers it. It never plays.
+--- A click on an unlit mode key lights it; a click on the lit one steps to its next choice, a distance or a dread level, and wraps. It never plays.
+function tz_sound_tool_wnd:select_mode_group(group)
     local item = self:get_current()
-    if not _is_playable(item) then return end
-    local modes = _get_modes(item)
-    local _, at = _find_mode(modes, self.mode_label)
-    self.mode_label = modes[(at - 1 + delta) % #modes + 1].label
+    local is_lit = _is_playable(item) and _select_group(item, self.mode_group) == group
+    self.mode_group = group
+    if is_lit then
+        local modes = _get_group_modes(item, group)
+        local _, at = _find_mode(modes, self.mode_label)
+        self.mode_label = modes[at % #modes + 1].label
+    elseif _is_playable(item) then
+        self.mode_label = self:get_mode(item).label
+    end
+    self:render()
+end
+
+--- The volume keys: step the playback volume down (-1) or up (+1), between GAIN_MIN and GAIN_MAX. It never plays.
+function tz_sound_tool_wnd:select_gain(delta)
+    local gain = math_floor((self.gain + delta * GAIN_STEP) * 10 + 0.5) / 10
+    if gain < GAIN_MIN then gain = GAIN_MIN elseif gain > GAIN_MAX then gain = GAIN_MAX end
+    self.gain = gain
     self:render()
 end
 
 function tz_sound_tool_wnd:play_current()
     local item = self:get_current()
     if not _is_playable(item) then return end
-    _play_item(item, _find_mode(_get_modes(item), self.mode_label))
-    self.status:SetText("playing:  " .. item.label)
+    _play_item(item, self:get_mode(item), self.gain)
+    self:render_lamps()
+    self:start_lamp_watch()
+end
+
+--- Re-arm a short timer that refreshes the lamps until no play the tool started still sounds or the window closes.
+function tz_sound_tool_wnd:start_lamp_watch()
+    CreateTimeEvent(LAMP_EV, "lamps", LAMP_PERIOD, function()
+        if not self:IsShown() then return true end
+        self:render_lamps()
+        if not _is_playing() then return true end
+        ResetTimeEvent(LAMP_EV, "lamps", LAMP_PERIOD)
+        return false
+    end)
 end
 
 function tz_sound_tool_wnd:stop_current()
     _stop_plays()
-    self.status:SetText("stopped")
+    self:render_lamps()
 end
 
 --- Write a note for the current item: a tag, the typed text, or both as "tag :: text". It never plays or advances.
 function tz_sound_tool_wnd:add_note(tag)
     local item = self:get_current()
-    if not _is_playable(item) then self.status:SetText("select a sound first"); return end
+    if not _is_playable(item) then return end
     local typed = self.note:GetText()
     local text = tag and typed ~= "" and (tag .. " :: " .. typed) or tag or typed
     if not text or text == "" then return end
-    local mode = _find_mode(_get_modes(item), self.mode_label)
-    local is_written = _write_note(item, mode, text)
+    local is_written = _write_note(item, self:get_mode(item), text)
     self.note:SetText("")
-    if not is_written then log.warn("[SOUNDTOOL] could not write %s", OUTPUT_FILE) end
-    self.status:SetText(is_written and string_format("NOTE %s :: %s", item.label, text) or "note FAILED: could not write " .. OUTPUT_FILE)
+    if is_written then _add_feed_line(item, text) else log.warn("[SOUNDTOOL] could not write %s", OUTPUT_FILE) end
+    self:render()
 end
 
 --- Re-read the channel and category indexes, then the open folder or the root; an open pool stays as loaded.
@@ -838,18 +906,36 @@ function tz_sound_tool_wnd:update_indexes()
     self:show_root()
 end
 
+--- Green while a play the tool started still sounds, red once none does; the unlit lamp is faded.
+function tz_sound_tool_wnd:render_lamps()
+    tz_ui.render_lamps(self.ui, _is_playing())
+end
+
+--- Light the toggle the current item plays in; "as heard" is disabled for a family with no placement of its own.
+function tz_sound_tool_wnd:render_modes(item)
+    local group = item and _select_group(item, self.mode_group) or self.mode_group
+    for _, key in ipairs(GROUP_ORDER) do self.mode_lits[key]:Show(key == group) end
+    self.mode_keys[GROUP_HEARD]:Enable(item == nil or #_get_group_modes(item, GROUP_HEARD) > 0)
+end
+
 function tz_sound_tool_wnd:render()
+    xcui.set_lines(self.feed_rows, _feed)
+    self:render_lamps()
     local item = self:get_current()
+    self:render_modes(_is_playable(item) and item or nil)
     if not _is_playable(item) then
         self.lbl_now:SetText("now:    (none - click a sound)")
         self.lbl_place:SetText("")
         self.lbl_loud:SetText("")
+        self.sel_line:SetText("")
         return
     end
-    local mode = _find_mode(_get_modes(item), self.mode_label)
-    self.lbl_now:SetText(string_format("now:    %s :: %s", item.family.format_where(item), item.label))
-    self.lbl_place:SetText(_format_place(item, mode))
+    local mode = self:get_mode(item)
+    local where = item.family.format_where(item)
+    self.lbl_now:SetText(string_format("now:    %s :: %s", where, item.label))
+    self.lbl_place:SetText(string_format("%s  |  gain %.1f", _format_place(item, mode), self.gain))
     self.lbl_loud:SetText(_format_loud(item, mode))
+    self.sel_line:SetText(string_format("%s   %s", item.label, where))
 end
 
 function tz_sound_tool_wnd:show_help()
@@ -859,8 +945,7 @@ end
 --- Esc closes the window when no edit box has focus, so typing a note never closes it.
 function tz_sound_tool_wnd:OnKeyboard(dik, action)
     local res = CUIScriptWnd.OnKeyboard(self, dik, action)
-    if action ~= ui_events.WINDOW_KEY_PRESSED then return res end
-    if res or dik ~= DIK_keys.DIK_ESCAPE then return res end
+    if not xcui.is_close_key(res, dik, action) then return res end
     self:hide()
     return true
 end
@@ -868,6 +953,7 @@ end
 --- Close: stop the tool's own plays, empty the cache, end each family's audition.
 function tz_sound_tool_wnd:hide()
     if xslice then xslice.stop_queue(FILL_QUEUE, true) end
+    RemoveTimeEvent(LAMP_EV, "lamps")
     _stop_plays()
     log.info("[SOUNDTOOL] close: cleared %d cached files", _clear_cache())
     _run_family_hook("stop_audition")

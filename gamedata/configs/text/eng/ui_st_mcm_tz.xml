@@ -220,7 +220,7 @@
         <text>TestZone</text>
     </string>
     <string id="ui_mcm_tz_geotool_desc">
-        <text>GeoTool saves marks, notes and recorded samples per spot to logs/geo_tool.txt. The open key shows the window, and the HUD shows the live readings.</text>
+        <text>GeoTool shows every place check live at your spot and saves notes with the position and the readings to logs/geo_tool.txt.</text>
     </string>
     <string id="ui_mcm_tz_geotool_hdr_tool">
         <text>Tool</text>
@@ -231,106 +231,15 @@
     <string id="ui_mcm_tz_geotool_geo_key_desc">
         <text>Opens the GeoTool window. Esc closes it.</text>
     </string>
-    <string id="ui_mcm_tz_geotool_geo_record_interval">
-        <text>Record every</text>
-    </string>
-    <string id="ui_mcm_tz_geotool_geo_record_interval_desc">
-        <text>[seconds]
-While Record is on, one SAMPLE line per interval with your marks and every reading.</text>
-    </string>
-    <string id="ui_mcm_tz_geotool_hdr_hud">
-        <text>HUD</text>
-    </string>
-    <string id="ui_mcm_tz_geotool_geo_hud_position">
-        <text>Position</text>
-    </string>
-    <string id="ui_mcm_tz_geotool_geo_hud_position_desc">
-        <text>Where the readings HUD sits. Off hides it.</text>
-    </string>
-    <string id="ui_mcm_tz_geotool_geo_hud_period">
+    <string id="ui_mcm_tz_geotool_geo_refresh">
         <text>Refresh</text>
     </string>
-    <string id="ui_mcm_tz_geotool_geo_hud_period_desc">
+    <string id="ui_mcm_tz_geotool_geo_refresh_desc">
         <text>[seconds]
-How often the HUD and the open window read every check.</text>
-    </string>
-    <string id="ui_mcm_tz_geotool_geo_hud_smart">
-        <text>smart</text>
-    </string>
-    <string id="ui_mcm_tz_geotool_geo_hud_smart_desc">
-        <text>Show this reading on the HUD. The nearest smart terrain, its distance, and whether it is a base or a lair.</text>
-    </string>
-    <string id="ui_mcm_tz_geotool_geo_hud_base_owner">
-        <text>base_owner</text>
-    </string>
-    <string id="ui_mcm_tz_geotool_geo_hud_base_owner_desc">
-        <text>Show this reading on the HUD. The nearest trader, medic or mechanic within 80 m, and its faction.</text>
-    </string>
-    <string id="ui_mcm_tz_geotool_geo_hud_is_indoor">
-        <text>is_indoor</text>
-    </string>
-    <string id="ui_mcm_tz_geotool_geo_hud_is_indoor_desc">
-        <text>Show this reading on the HUD. The xlibs indoor test: a roof within 4 m and at least two walls within 5 m.</text>
-    </string>
-    <string id="ui_mcm_tz_geotool_geo_hud_roof_walls">
-        <text>roof_walls</text>
-    </string>
-    <string id="ui_mcm_tz_geotool_geo_hud_roof_walls_desc">
-        <text>Show this reading on the HUD. The raw roof distance and wall count behind the xlibs indoor test.</text>
-    </string>
-    <string id="ui_mcm_tz_geotool_geo_hud_roof">
-        <text>roof</text>
-    </string>
-    <string id="ui_mcm_tz_geotool_geo_hud_roof_desc">
-        <text>Show this reading on the HUD. A roof within 4 m from an up ray, or a down ray from above when the roof only blocks from one side; walls are ignored.</text>
-    </string>
-    <string id="ui_mcm_tz_geotool_geo_hud_underground">
-        <text>underground</text>
-    </string>
-    <string id="ui_mcm_tz_geotool_geo_hud_underground_desc">
-        <text>Show this reading on the HUD. Whether the level counts as underground.</text>
-    </string>
-    <string id="ui_mcm_tz_geotool_geo_hud_surge_cover">
-        <text>surge_cover</text>
-    </string>
-    <string id="ui_mcm_tz_geotool_geo_hud_surge_cover_desc">
-        <text>Show this reading on the HUD. Whether the emission treats your spot as cover.</text>
-    </string>
-    <string id="ui_mcm_tz_geotool_geo_hud_safe_cover">
-        <text>safe_cover</text>
-    </string>
-    <string id="ui_mcm_tz_geotool_geo_hud_safe_cover_desc">
-        <text>Show this reading on the HUD. Whether the game flags you as in a safe shelter.</text>
-    </string>
-    <string id="ui_mcm_tz_geotool_geo_hud_rain">
-        <text>rain</text>
-    </string>
-    <string id="ui_mcm_tz_geotool_geo_hud_rain_desc">
-        <text>Show this reading on the HUD. How much rain reaches you.</text>
+How often the open window reads every check.</text>
     </string>
     <string id="ui_mcm_tz_geotool_info">
-        <text>A reading whose mark you set in the window turns faint green when it agrees and faded red when not. Records go to logs/geo_tool.txt, one tab-separated line each.</text>
-    </string>
-    <string id="tz_geotool_geo_hud_position_lst_off">
-        <text>Off</text>
-    </string>
-    <string id="tz_geotool_geo_hud_position_lst_topleft">
-        <text>Top left</text>
-    </string>
-    <string id="tz_geotool_geo_hud_position_lst_topright">
-        <text>Top right</text>
-    </string>
-    <string id="tz_geotool_geo_hud_position_lst_centerleft">
-        <text>Center left</text>
-    </string>
-    <string id="tz_geotool_geo_hud_position_lst_centerright">
-        <text>Center right</text>
-    </string>
-    <string id="tz_geotool_geo_hud_position_lst_bottomleft">
-        <text>Bottom left</text>
-    </string>
-    <string id="tz_geotool_geo_hud_position_lst_bottomright">
-        <text>Bottom right</text>
+        <text>Notes go to logs/geo_tool.txt, one tab-separated line each.</text>
     </string>
 
     <!-- ==================== SOUNDTOOL TAB ==================== -->
@@ -416,18 +325,18 @@ How often the HUD and the open window read every check.</text>
         <text>GeoTool</text>
     </string>
     <string id="st_tz_geo_tool_help">
-        <text>GeoTool shows what the game's place checks say at your spot. A wrong check stands out against what you know is true.\n\nThe HUD shows the live readings. MCM, TestZone, GeoTool sets its position and its rows, and Off hides it.\n\nMarks hold what you know about this spot. Set each one to yes or no, or leave it unset when you have not checked. A reading turns green when it agrees with its mark and red when it does not.\n\nNote saves the spot with every reading and your typed text, and an empty note saves the spot alone. Record saves one sample per interval until you press Stop. Turn it on and walk a route.\n\nEvery record goes to logs/geo_tool.txt as one line with the time, kind, level, position, level vertex, marks and readings.\n\nDel opens the window, and MCM can change that key. Esc closes it, and a running recording keeps going.</text>
+        <text>GeoTool shows what every place check says at your spot, live while the window is open. When a check reads your spot wrong, you write so in a note, and the note keeps the spot and every reading.\n \nThe top screen shows the level, the level vertex and your position as X, Y and Z in whole metres.\n \nThe middle screen holds the readings, and the green lamp stays lit while they refresh. Smart is the nearest smart terrain, its distance, and whether it is a base or a lair. Base owner is the nearest trader, medic or mechanic within 80 metres. Is indoor is the xlibs test, a roof within 4 metres and two walls within 5. Roof is the roof alone, from a ray up or, when that misses, a ray down. Roof walls is the raw roof distance and wall count behind the xlibs test. Underground says whether the level counts as underground. Surge cover says whether the emission treats your spot as cover, and safe cover whether the game flags you as sheltered. Rain is how much rain reaches you. Sky is how much open sky lights you, and below 0.05 the game counts you as indoor.\n \nType a note and press the plus key, and it goes to logs/geo_tool.txt as a tab-separated line. That line holds the time, the level, your position, the level vertex and every reading, and an empty note saves the spot with its readings alone. Your last two notes show on the bottom screen.\n \nDel opens the window and Esc closes it, and MCM can change the open key and how often the readings refresh.</text>
     </string>
     <string id="st_tz_anim_tool_help_title">
         <text>AnimationTool</text>
     </string>
     <string id="st_tz_anim_tool_help">
-        <text>AnimationTool plays a motion or a state on a stalker. You judge it and log it as good or bad.\n\nLook at a stalker and press the open key, PgDn unless MCM changed it, to bind him. Select keeps him bound when you reopen the tool. Reset clears that.\n\nThe list shows every .tsv or .txt file in configs/testzone/anim. Click a file, then click a motion to select it. Play or a double click plays it, and Stop sends the stalker back to idle.\n\nTwo arrows on the left switch between pose and moving. The other two step to the previous or next motion and play it. A prop from the prop row, a bottle or a guitar, attaches from the next play on.\n\nGood and bad log the selected motion with any typed note. Note logs the typed note alone. Everything goes to the anim curation file in the logs folder.\n\nA motion plays only when that stalker has its animation file loaded. Esc closes the tool.</text>
+        <text>AnimationTool plays a motion or a state on a stalker, and you judge it good or bad in the anim curation file in the logs folder.\n \nLook at a stalker and press the open key, PgDn unless MCM changed it. The tool binds him for as long as the window stays open. The screen shows his name, his current state, the posture and the prop. Select keeps him bound every time you reopen the tool, and a star marks him until Reset drops him.\n \nThe list shows every .tsv or .txt file in configs/testzone/anim. Click a file, then click a motion to select it. Play or a double click plays it on the stalker, Stop sends him back to idle, and Prev and Next step to the neighbouring motion and play it. The green lamp stays lit while a motion holds on him, and the red lamp lights when it stops.\n \nPose plays a motion standing in place, and moving plays it while he walks. A click on either key replays the motion at once. A state from the dig list plays the way the game wires it and ignores both keys.\n \nThe prop row at the top of a list attaches an item, a bottle, a guitar or a knife, from the next play on, until you pick none again.\n \nGood and bad log the selected motion with your typed note, the plus key logs the typed note alone, and the bottom screen shows the last two entries.\n \nA motion plays only when that stalker has its animation file loaded, and an unknown name plays nothing. Esc closes the tool and returns the stalker to idle.</text>
     </string>
     <string id="st_tz_sound_tool_help_title">
         <text>SoundTool</text>
     </string>
     <string id="st_tz_sound_tool_help">
-        <text>SoundTool plays a sound the way the game plays it, or at a distance you pick, and you tag it.\n\nThe list starts with browse files, then each DiegeticDread category and each DiegeticAmbience channel when that mod is installed. Browse files opens the logs folder. Two dots go up a folder, and above a drive the list shows every drive. Play this folder lists the folder's .ogg files, and a .txt file opens as a playlist.\n\nA playlist line can be a game path like zs/spook/raven_1, an absolute path, or a path next to the playlist. A line with ; base: and a folder makes later relative lines start there. A line with no folder in it that names no file is a divider.\n\nFiles from outside the game are copied into sounds/sound_tool_cache, and one rescan follows the copy, which can take half a second. The cache empties when the window closes.\n\nThe mode arrows switch between the family's own modes, as wired or a dread level, and the plain at-ear and distance modes. The screen shows where the sound plays, its volume and its loudness. Prev and next move without playing, Play and a click play.\n\nEach tag writes one line to logs/sound_tool.txt with the path, family, mode and tag. Typed text goes with the next tag, or alone with add note. The DiegeticDread director and its replay of the base ambience stay silent while the window is open.\n\nEnd opens the window, and MCM can change that key. Esc closes it.</text>
+        <text>SoundTool plays a sound the way the game plays it, or at a distance you pick, and you tag what you hear in logs/sound_tool.txt.\n \nThe list starts with browse files, then each DiegeticDread category and each DiegeticAmbience channel when that mod is installed. Browse files opens the logs folder. Two dots go up a folder, and above a drive the list shows every drive. Play this folder lists the folder's .ogg files, and a .txt file opens as a playlist. The loop key at the top reads the categories and channels again.\n \nA playlist line is a game path like zs/spook/raven_1, an absolute path, or a path next to the playlist. A comment line with base: and a folder makes the next relative lines start there, and a line that names no file and no folder is a divider.\n \nThe game plays only the files it has indexed, and a file from outside the game is copied into sounds/sound_tool_cache first. A rescan follows each batch of copies and can take half a second. The cache empties when the window opens and when it closes.\n \nA click on a sound plays it. Prev and next move without playing, and Stop ends only the sounds this tool started. The green lamp stays lit while one of them still plays, and the red lamp lights when the last one ends.\n \nThe three mode keys set where the sound plays. As heard plays it where the game would, near, felt or far for an ambience channel and at a dread level for a dread sound. 2D plays it at your ear, and 3D plays it in front of you from 5 to 100 metres. A click on the lit mode key steps to its next distance or dread level. The volume keys set how loud the next play is, from 0.1 to 1.0. As heard is off for a voice line or a plain file, because the game places neither of them.\n \nThe screen shows where the sound belongs, where it plays and how loud it arrives, and the line under the tags names the sound your tags go to. A tag writes the sound's path, family, mode and tag, with your typed note after it, and the plus key writes the typed note alone. The bottom screen shows the last two lines written. The DiegeticDread director stays silent while the window is open, and its replay of the base ambience too.\n \nEnd opens the window and Esc closes it, and MCM can change the open key.</text>
     </string>
 </string_table>

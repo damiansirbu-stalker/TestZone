@@ -1,7 +1,7 @@
 1.0.4-snapshot
   Perception trace, GeoTool, SoundTool, level scans and console test benches
     Perception, GeoTool and SoundTool are new tabs. The perception trace logs what the stalkers and mutants near you hear, see, remember, fear and pick as enemy.
-    GeoTool shows what the game's place checks say at your spot on a HUD, and its window records your marks, notes and samples to geo_tool.txt.
+    GeoTool shows what the game's place checks say at your spot, live in its window, and saves your notes with every reading to geo_tool.txt.
     The Main tab adds 4 scans and a timer queue watch, while the console commands add 2 arenas, a life pump and 2 animation benches.
 
   Main
@@ -23,9 +23,9 @@
     - Added Radius, All sound sources and Include mutants, which set who the trace follows and which sounds it counts.
 
   GeoTool
-    - Added GeoTool. Its open key shows a window where you mark what you know about a spot, write notes, and record samples to geo_tool.txt.
-      The HUD shows the live readings: the nearest smart terrain and base owner, the indoor, roof and underground tests, emission and shelter cover, and rain.
-      A reading turns green when your mark agrees with it, but red when your mark says otherwise.
+    - Added GeoTool. Its open key shows your position in a dosimeter's digits and every place check, live while the window is open.
+      The checks are the nearest smart terrain and base owner, the indoor, roof and underground tests, emission and shelter cover, rain and sky light.
+      A note saves the spot with every reading to geo_tool.txt, and the text says when a check reads the spot wrong.
 
   SoundTool
     - Added SoundTool on End. It plays DiegeticAmbience channels, DiegeticDread categories, NPC voice and any .ogg on disk, and writes your tags and notes to sound_tool.txt.
@@ -34,6 +34,14 @@
     - Replaced the review players of DiegeticAmbience and DiegeticDread, and logged to testzone.log.
     - Added the sound trace. It logs every sound the soundscape plays, with its channel, its distance from you, the map and the weather, to testzone_sound_trace.log.
       A run on plain Anomaly, GAMMA or the Diegetic mods compares line for line.
+
+  Tool windows
+    - Changed AnimationTool, GeoTool and SoundTool into devices built from the game's textures, each with a screen color and keys that set it apart.
+      Every tool has the same title row, a green lamp while it runs something, a red lamp when it stops, and an info key that opens its manual.
+    - Changed the 3 windows to keep their shape on 4:3, 16:9 and 21:9 screens. AnimationTool docks right, GeoTool docks left and SoundTool sits in the middle.
+    - Changed SoundTool's modes to 3 keys, as heard, 2D and 3D. A click on the lit key steps its distance or dread level, and the volume keys set how loud the next play is.
+    - Changed AnimationTool's posture to the pose and moving keys, and the selected motion now shows above the note.
+    - Rewrote the manual of each tool.
 
   Development
     - Added the Development tab with Log level, Immediate flush for every TestZone log, and Reset to defaults.

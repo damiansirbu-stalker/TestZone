@@ -1,0 +1,13 @@
+--- tz_ui: the parts every TestZone tool window shares, built on the xlibs xcui primitives.
+
+--- The bevelled body every tool window sits on, in draw order: the outer line, the opaque panel, the light top-left and dark bottom-right edges.
+PANEL = { "panel_outer", "panel_body", "panel_light_t", "panel_light_l", "panel_shade_b", "panel_shade_r" }
+
+--- Light the green lamp while the tool runs something and the red one when it stops; the unlit lamp is dimmed.
+--- @param controls table The window's controls from xcui.build, holding lamp_green and lamp_red
+--- @param is_on boolean True while the tool runs something
+function render_lamps(controls, is_on)
+    local lit, dim = xcui.get_color(255, 255, 255, 255), xcui.get_color(255, 90, 90, 90)
+    controls.lamp_green:SetTextureColor(is_on and lit or dim)
+    controls.lamp_red:SetTextureColor(is_on and dim or lit)
+end

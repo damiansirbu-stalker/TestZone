@@ -1,0 +1,79 @@
+<!-- Generated from tz_geo_tool.xml by stalker-manager ui-variants. Edit tz_geo_tool.xml, never this file. -->
+<w anchor="left">
+	<main x="0" y="0" width="1024" height="768"/>
+	<panel_outer x="6.3" y="16" width="172" height="418" stretch="1"><texture r="12" g="12" b="12" a="255">ui_inGame2_white_rect</texture></panel_outer>
+	<panel_body x="6.9" y="17" width="170.9" height="416" stretch="1"><texture r="40" g="41" b="40" a="255">ui_inGame2_white_rect</texture></panel_body>
+	<panel_light_t x="6.9" y="17" width="170.9" height="1" stretch="1"><texture r="92" g="93" b="90" a="255">ui_inGame2_white_rect</texture></panel_light_t>
+	<panel_light_l x="6.9" y="17" width="0.6" height="416" stretch="1"><texture r="92" g="93" b="90" a="255">ui_inGame2_white_rect</texture></panel_light_l>
+	<panel_shade_b x="6.9" y="431" width="170.9" height="2" stretch="1"><texture r="20" g="20" b="20" a="255">ui_inGame2_white_rect</texture></panel_shade_b>
+	<panel_shade_r x="176.6" y="17" width="1.1" height="416" stretch="1"><texture r="20" g="20" b="20" a="255">ui_inGame2_white_rect</texture></panel_shade_r>
+	<hdr_tool x="15.4" y="28" width="114.3" height="20"><text font="letterica18" align="l" vert_align="c" r="200" g="170" b="120">GeoTool</text></hdr_tool>
+	<lamp_green x="118.3" y="30" width="10.3" height="18" stretch="1"><texture>tz_lamp_green</texture></lamp_green>
+	<lamp_red x="132" y="30" width="10.3" height="18" stretch="1"><texture>tz_lamp_red</texture></lamp_red>
+	<btn_help x="156" y="28" width="10.9" height="19"><texture_e>ui_pda2_info2</texture_e><texture_d>ui_pda2_info2</texture_d><texture_t>ui_pda2_info2</texture_t><texture_h>ui_pda2_info2</texture_h></btn_help>
+
+	<!-- POSITION: level and level vertex, then X Y Z in the dosimeter's digits; the script sets each digit's texture. -->
+	<scr_position_rim x="15.4" y="62" width="153.7" height="66" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_position_rim>
+	<scr_position_glass x="16.3" y="63.5" width="152" height="63" stretch="1"><texture r="112" g="130" b="88" a="255">ui_inGame2_white_rect</texture></scr_position_glass>
+	<lbl_where x="18.9" y="64" width="146.9" height="16"><text font="letterica16" align="l" vert_align="c" r="28" g="36" b="24"></text></lbl_where>
+	<digit_1_sign x="19.4" y="92" width="4" height="2" stretch="1"><texture r="28" g="36" b="24" a="255">ui_inGame2_white_rect</texture></digit_1_sign>
+	<digit_1_1 x="24.6" y="80" width="5.1" height="26" stretch="1"><texture>tz_digit_0</texture></digit_1_1>
+	<digit_1_2 x="30.3" y="80" width="5.1" height="26" stretch="1"><texture>tz_digit_0</texture></digit_1_2>
+	<digit_1_3 x="36" y="80" width="5.1" height="26" stretch="1"><texture>tz_digit_0</texture></digit_1_3>
+	<digit_1_4 x="41.7" y="80" width="5.1" height="26" stretch="1"><texture>tz_digit_0</texture></digit_1_4>
+	<lbl_axis_1 x="18.9" y="108" width="28.6" height="16"><text font="letterica16" align="c" vert_align="c" r="28" g="36" b="24">X</text></lbl_axis_1>
+	<digit_2_sign x="53.7" y="92" width="4" height="2" stretch="1"><texture r="28" g="36" b="24" a="255">ui_inGame2_white_rect</texture></digit_2_sign>
+	<digit_2_1 x="58.9" y="80" width="5.1" height="26" stretch="1"><texture>tz_digit_0</texture></digit_2_1>
+	<digit_2_2 x="64.6" y="80" width="5.1" height="26" stretch="1"><texture>tz_digit_0</texture></digit_2_2>
+	<digit_2_3 x="70.3" y="80" width="5.1" height="26" stretch="1"><texture>tz_digit_0</texture></digit_2_3>
+	<digit_2_4 x="76" y="80" width="5.1" height="26" stretch="1"><texture>tz_digit_0</texture></digit_2_4>
+	<lbl_axis_2 x="53.1" y="108" width="28.6" height="16"><text font="letterica16" align="c" vert_align="c" r="28" g="36" b="24">Y</text></lbl_axis_2>
+	<digit_3_sign x="88" y="92" width="4" height="2" stretch="1"><texture r="28" g="36" b="24" a="255">ui_inGame2_white_rect</texture></digit_3_sign>
+	<digit_3_1 x="93.1" y="80" width="5.1" height="26" stretch="1"><texture>tz_digit_0</texture></digit_3_1>
+	<digit_3_2 x="98.9" y="80" width="5.1" height="26" stretch="1"><texture>tz_digit_0</texture></digit_3_2>
+	<digit_3_3 x="104.6" y="80" width="5.1" height="26" stretch="1"><texture>tz_digit_0</texture></digit_3_3>
+	<digit_3_4 x="110.3" y="80" width="5.1" height="26" stretch="1"><texture>tz_digit_0</texture></digit_3_4>
+	<lbl_axis_3 x="87.4" y="108" width="28.6" height="16"><text font="letterica16" align="c" vert_align="c" r="28" g="36" b="24">Z</text></lbl_axis_3>
+
+	<!-- READINGS: every place check, refreshed while the window is open; names faded, values dark. -->
+	<scr_readings_rim x="15.4" y="140" width="153.7" height="176" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_readings_rim>
+	<scr_readings_glass x="16.3" y="141.5" width="152" height="173" stretch="1"><texture r="146" g="168" b="140" a="255">ui_inGame2_white_rect</texture></scr_readings_glass>
+	<reading_name_1 x="18.9" y="143" width="57.1" height="17"><text font="letterica16" align="l" vert_align="c" r="92" g="106" b="74"></text></reading_name_1>
+	<reading_value_1 x="78.3" y="143" width="88.6" height="17"><text font="letterica16" align="l" vert_align="c" r="28" g="36" b="24"></text></reading_value_1>
+	<reading_name_2 x="18.9" y="160" width="57.1" height="17"><text font="letterica16" align="l" vert_align="c" r="92" g="106" b="74"></text></reading_name_2>
+	<reading_value_2 x="78.3" y="160" width="88.6" height="17"><text font="letterica16" align="l" vert_align="c" r="28" g="36" b="24"></text></reading_value_2>
+	<reading_name_3 x="18.9" y="177" width="57.1" height="17"><text font="letterica16" align="l" vert_align="c" r="92" g="106" b="74"></text></reading_name_3>
+	<reading_value_3 x="78.3" y="177" width="88.6" height="17"><text font="letterica16" align="l" vert_align="c" r="28" g="36" b="24"></text></reading_value_3>
+	<reading_name_4 x="18.9" y="194" width="57.1" height="17"><text font="letterica16" align="l" vert_align="c" r="92" g="106" b="74"></text></reading_name_4>
+	<reading_value_4 x="78.3" y="194" width="88.6" height="17"><text font="letterica16" align="l" vert_align="c" r="28" g="36" b="24"></text></reading_value_4>
+	<reading_name_5 x="18.9" y="211" width="57.1" height="17"><text font="letterica16" align="l" vert_align="c" r="92" g="106" b="74"></text></reading_name_5>
+	<reading_value_5 x="78.3" y="211" width="88.6" height="17"><text font="letterica16" align="l" vert_align="c" r="28" g="36" b="24"></text></reading_value_5>
+	<reading_name_6 x="18.9" y="228" width="57.1" height="17"><text font="letterica16" align="l" vert_align="c" r="92" g="106" b="74"></text></reading_name_6>
+	<reading_value_6 x="78.3" y="228" width="88.6" height="17"><text font="letterica16" align="l" vert_align="c" r="28" g="36" b="24"></text></reading_value_6>
+	<reading_name_7 x="18.9" y="245" width="57.1" height="17"><text font="letterica16" align="l" vert_align="c" r="92" g="106" b="74"></text></reading_name_7>
+	<reading_value_7 x="78.3" y="245" width="88.6" height="17"><text font="letterica16" align="l" vert_align="c" r="28" g="36" b="24"></text></reading_value_7>
+	<reading_name_8 x="18.9" y="262" width="57.1" height="17"><text font="letterica16" align="l" vert_align="c" r="92" g="106" b="74"></text></reading_name_8>
+	<reading_value_8 x="78.3" y="262" width="88.6" height="17"><text font="letterica16" align="l" vert_align="c" r="28" g="36" b="24"></text></reading_value_8>
+	<reading_name_9 x="18.9" y="279" width="57.1" height="17"><text font="letterica16" align="l" vert_align="c" r="92" g="106" b="74"></text></reading_name_9>
+	<reading_value_9 x="78.3" y="279" width="88.6" height="17"><text font="letterica16" align="l" vert_align="c" r="28" g="36" b="24"></text></reading_value_9>
+	<reading_name_10 x="18.9" y="296" width="57.1" height="17"><text font="letterica16" align="l" vert_align="c" r="92" g="106" b="74"></text></reading_name_10>
+	<reading_value_10 x="78.3" y="296" width="88.6" height="17"><text font="letterica16" align="l" vert_align="c" r="28" g="36" b="24"></text></reading_value_10>
+
+	<!-- NOTE: the typed text, saved with the spot and every reading. -->
+	<scr_note_rim x="15.4" y="328" width="126.3" height="29" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_note_rim>
+	<scr_note_glass x="16.3" y="329.5" width="124.6" height="26" stretch="1"><texture r="20" g="23" b="27" a="255">ui_inGame2_white_rect</texture></scr_note_glass>
+	<note x="15.4" y="328" width="126.3" height="29"><text x="8" font="letterica16" vert_align="c" align="l" r="190" g="190" b="186"/></note>
+	<btn_note x="146.3" y="330" width="22.9" height="27" frame_mode="1"><texture>tz_key</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">+</text></btn_note>
+
+	<!-- LAST LINES: the newest records written to geo_tool.txt. -->
+	<scr_feed_rim x="15.4" y="370" width="153.7" height="46" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_feed_rim>
+	<scr_feed_glass x="16.3" y="371.5" width="152" height="43" stretch="1"><texture r="112" g="130" b="88" a="255">ui_inGame2_white_rect</texture></scr_feed_glass>
+	<feed_row_1 x="18.9" y="373" width="146.9" height="20"><text font="letterica16" align="l" vert_align="c" r="28" g="36" b="24"></text></feed_row_1>
+	<feed_row_2 x="18.9" y="393" width="146.9" height="20"><text font="letterica16" align="l" vert_align="c" r="28" g="36" b="24"></text></feed_row_2>
+
+	<!-- HELP: the manual page the info key opens; tz_help sets the box height and moves Close under the text. -->
+	<help_background anchor="center" x="352" y="134" width="320" height="300" stretch="1"><texture r="20" g="23" b="27">ui_inGame2_white_rect</texture></help_background>
+	<help_title anchor="center" x="363.4" y="146" width="297.1" height="22"><text font="letterica18" align="l" r="200" g="170" b="120"/></help_title>
+	<help_text anchor="center" x="363.4" y="178" width="297.1" height="40"><text font="letterica16" align="l" complex_mode="1" r="190" g="190" b="186"/></help_text>
+	<help_close anchor="center" x="622.9" y="0" width="40" height="27" frame_mode="1"><texture>tz_key</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">Close</text></help_close>
+</w>

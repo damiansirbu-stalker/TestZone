@@ -1,112 +1,68 @@
-<w>
+<!-- AnimationTool, drawn in true 4:3 units and docked to the right edge. The _16 and _21 files are generated from this one; edit only this file. -->
+<w anchor="right">
 	<main x="0" y="0" width="1024" height="768"/>
+	<panel_outer x="712" y="16" width="301" height="690" stretch="1"><texture r="12" g="12" b="12" a="255">ui_inGame2_white_rect</texture></panel_outer>
+	<panel_body x="713" y="17" width="299" height="688" stretch="1"><texture r="40" g="41" b="40" a="255">ui_inGame2_white_rect</texture></panel_body>
+	<panel_light_t x="713" y="17" width="299" height="1" stretch="1"><texture r="92" g="93" b="90" a="255">ui_inGame2_white_rect</texture></panel_light_t>
+	<panel_light_l x="713" y="17" width="1" height="688" stretch="1"><texture r="92" g="93" b="90" a="255">ui_inGame2_white_rect</texture></panel_light_l>
+	<panel_shade_b x="713" y="703" width="299" height="2" stretch="1"><texture r="20" g="20" b="20" a="255">ui_inGame2_white_rect</texture></panel_shade_b>
+	<panel_shade_r x="1010" y="17" width="2" height="688" stretch="1"><texture r="20" g="20" b="20" a="255">ui_inGame2_white_rect</texture></panel_shade_r>
+	<hdr_tool x="728" y="28" width="200" height="20"><text font="letterica18" align="l" vert_align="c" r="200" g="170" b="120">AnimationTool</text></hdr_tool>
+	<lamp_green x="908" y="30" width="18" height="18" stretch="1"><texture>tz_lamp_green</texture></lamp_green>
+	<lamp_red x="932" y="30" width="18" height="18" stretch="1"><texture>tz_lamp_red</texture></lamp_red>
+	<btn_help x="974" y="28" width="19" height="19"><texture_e>ui_pda2_info2</texture_e><texture_d>ui_pda2_info2</texture_d><texture_t>ui_pda2_info2</texture_t><texture_h>ui_pda2_info2</texture_h></btn_help>
 
-	<!-- A compact band docked to the right edge. The rest of the screen stays transparent so the
-	     aimed NPC is visible and you watch the motion play while you browse and verdict. -->
-	<background x="790" y="16" width="226" height="620" stretch="1">
-		<texture>ui_inGame2_pda_buttons_background</texture>
-	</background>
+	<!-- DISPLAY: the NPC, then its live state, the posture and the prop. -->
+	<scr_display_rim x="728" y="64" width="269" height="50" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_display_rim>
+	<scr_display_glass x="729.5" y="65.5" width="266" height="47" stretch="1"><texture r="20" g="23" b="27" a="255">ui_inGame2_white_rect</texture></scr_display_glass>
+	<lbl_now x="738" y="68" width="249" height="21"><text font="letterica16" align="l" vert_align="c" r="120" g="205" b="200"></text></lbl_now>
+	<lbl_mode x="738" y="89" width="249" height="21"><text font="letterica16" align="l" vert_align="c" r="120" g="205" b="200"></text></lbl_mode>
 
-	<hdr_player x="798" y="22" width="80" height="20">
-		<text font="letterica18" align="l" r="200" g="170" b="120">ANIM</text>
-	</hdr_player>
-	<btn_reset x="846" y="20" width="76" height="24" stretch="1">
-		<texture>ui_inGame2_pda_button</texture>
-		<text font="letterica16" align="c" r="200" g="160" b="120">reset</text>
-	</btn_reset>
-	<btn_select x="926" y="20" width="56" height="24" stretch="1">
-		<texture>ui_inGame2_pda_button</texture>
-		<text font="letterica16" align="c" r="66" g="157" b="195">select</text>
-	</btn_select>
-	<btn_help x="984" y="20" width="24" height="24" stretch="1">
-		<texture>ui_inGame2_pda_button</texture>
-		<text font="letterica16" align="c">?</text>
-	</btn_help>
-	<line_player x="798" y="44" width="210" height="4" stretch="1">
-		<texture>ui_inGame2_pda_line_horizontal</texture>
-	</line_player>
+	<!-- The NPC: select pins the bound NPC across reopens, reset drops it. -->
+	<btn_select x="728" y="124" width="133" height="27" frame_mode="1"><texture>tz_key</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">select</text></btn_select>
+	<btn_reset x="864" y="124" width="133" height="27" frame_mode="1"><texture>tz_key</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">reset</text></btn_reset>
 
-	<screen x="798" y="52" width="210" height="42" stretch="1">
-		<texture>ui_inGame2_pda_Filtr_plyer_interface_off</texture>
-	</screen>
-	<lbl_now x="802" y="54" width="202" height="18">
-		<text font="letterica16" align="l" vert_align="c" r="66" g="157" b="195"/>
-	</lbl_now>
-	<lbl_mode x="802" y="74" width="202" height="18">
-		<text font="letterica16" align="l" vert_align="c" r="66" g="157" b="195"/>
-	</lbl_mode>
+	<!-- LIST: the source file on the first line, then the rows. Sized only here: its scrollbar is placed once. -->
+	<scr_list_rim x="728" y="162" width="269" height="262" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_list_rim>
+	<scr_list_glass x="729.5" y="163.5" width="266" height="259" stretch="1"><texture r="20" g="23" b="27" a="255">ui_inGame2_white_rect</texture></scr_list_glass>
+	<lbl_path x="738" y="166" width="249" height="20"><text font="letterica16" align="l" vert_align="c" r="76" g="130" b="128"></text></lbl_path>
+	<list_line x="732" y="188" width="261" height="1" stretch="1"><texture r="36" g="70" b="68" a="255">ui_inGame2_white_rect</texture></list_line>
+	<list x="731" y="192" width="263" height="228" item_height="20" can_select="1"><font font="letterica16" r="120" g="205" b="200"/></list>
 
-	<lbl_path x="798" y="98" width="210" height="18">
-		<text font="letterica16" align="l" r="200" g="170" b="120"/>
-	</lbl_path>
-	<list_frame x="798" y="118" width="210" height="318">
-		<texture>ui_inGame2_servers_list_frame</texture>
-	</list_frame>
-	<list x="801" y="121" width="204" height="312" item_height="20" can_select="1">
-		<font font="letterica16"/>
-	</list>
+	<!-- POSTURE: two toggles, the lit one shows its diode. TRANSPORT: prev, play, next, stop. -->
+	<btn_pose x="728" y="434" width="133" height="27" frame_mode="1"><texture>tz_key</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">pose</text></btn_pose>
+	<lit_pose x="735" y="444" width="8" height="8" stretch="1"><texture>ui_mod_green_diode</texture></lit_pose>
+	<btn_moving x="864" y="434" width="133" height="27" frame_mode="1"><texture>tz_key</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">moving</text></btn_moving>
+	<lit_moving x="871" y="444" width="8" height="8" stretch="1"><texture>ui_mod_green_diode</texture></lit_moving>
+	<btn_prior x="728" y="466" width="65" height="27" frame_mode="1"><texture>tz_key</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">prev</text></btn_prior>
+	<btn_play x="796" y="466" width="65" height="27" frame_mode="1"><texture>tz_key</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">play</text></btn_play>
+	<btn_next x="864" y="466" width="65" height="27" frame_mode="1"><texture>tz_key</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">next</text></btn_next>
+	<btn_stop x="932" y="466" width="65" height="27" frame_mode="1"><texture>tz_key</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">stop</text></btn_stop>
 
-	<!-- transport: [ mode - ] [ mode + ]  [ prev ] [ play ] [ next ] [ stop ] -->
-	<btn_pos_down x="798" y="442" width="32" height="26" stretch="1">
-		<texture>ui_inGame2_pda_Filtr_radio_plyr_btn_v_down</texture>
-	</btn_pos_down>
-	<btn_pos_up x="832" y="442" width="32" height="26" stretch="1">
-		<texture>ui_inGame2_pda_Filtr_radio_plyr_btn_v_up</texture>
-	</btn_pos_up>
-	<btn_prior x="872" y="442" width="32" height="26" stretch="1">
-		<texture>ui_inGame2_pda_Filtr_radio_plyr_btn_prev</texture>
-	</btn_prior>
-	<btn_play x="906" y="442" width="32" height="26" stretch="1">
-		<texture>ui_inGame2_pda_Filtr_radio_plyr_btn_start2</texture>
-	</btn_play>
-	<btn_next x="940" y="442" width="32" height="26" stretch="1">
-		<texture>ui_inGame2_pda_Filtr_radio_plyr_btn_next</texture>
-	</btn_next>
-	<btn_stop x="974" y="442" width="32" height="26" stretch="1">
-		<texture>ui_inGame2_pda_Filtr_radio_plyr_btn_stop2</texture>
-	</btn_stop>
+	<!-- VERDICT: one box around good, bad, the selected motion and the note. -->
+	<verdict_box_t x="728" y="504" width="269" height="1" stretch="1"><texture r="255" g="255" b="255" a="25">ui_inGame2_white_rect</texture></verdict_box_t>
+	<verdict_box_b x="728" y="617" width="269" height="1" stretch="1"><texture r="255" g="255" b="255" a="25">ui_inGame2_white_rect</texture></verdict_box_b>
+	<verdict_box_l x="728" y="504" width="1" height="114" stretch="1"><texture r="255" g="255" b="255" a="25">ui_inGame2_white_rect</texture></verdict_box_l>
+	<verdict_box_r x="996" y="504" width="1" height="114" stretch="1"><texture r="255" g="255" b="255" a="25">ui_inGame2_white_rect</texture></verdict_box_r>
+	<btn_good x="736" y="513" width="75" height="27" frame_mode="1"><texture>tz_key</texture><text font="letterica16" align="c" vert_align="c" r="150" g="205" b="140">good</text></btn_good>
+	<btn_bad x="814" y="513" width="75" height="27" frame_mode="1"><texture>tz_key</texture><text font="letterica16" align="c" vert_align="c" r="215" g="125" b="115">bad</text></btn_bad>
+	<scr_sel_rim x="736" y="548" width="253" height="29" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_sel_rim>
+	<scr_sel_glass x="737.5" y="549.5" width="250" height="26" stretch="1"><texture r="20" g="23" b="27" a="255">ui_inGame2_white_rect</texture></scr_sel_glass>
+	<sel_line x="744" y="548" width="237" height="29"><text font="letterica16" align="l" vert_align="c" r="235" g="238" b="245"></text></sel_line>
+	<scr_snote_rim x="736" y="582" width="217" height="29" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_snote_rim>
+	<scr_snote_glass x="737.5" y="583.5" width="214" height="26" stretch="1"><texture r="20" g="23" b="27" a="255">ui_inGame2_white_rect</texture></scr_snote_glass>
+	<snote x="736" y="582" width="217" height="29"><text x="8" font="letterica16" vert_align="c" align="l" r="190" g="190" b="186"/></snote>
+	<btn_note x="957" y="583" width="32" height="27" frame_mode="1"><texture>tz_key</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">+</text></btn_note>
 
-	<hdr_verdict x="798" y="476" width="210" height="16">
-		<text font="letterica16" align="l" r="200" g="170" b="120">VERDICT</text>
-	</hdr_verdict>
-	<btn_good x="798" y="494" width="100" height="28" stretch="1">
-		<texture>ui_inGame2_pda_button</texture>
-		<text font="letterica16" align="c" r="120" g="200" b="120">good</text>
-	</btn_good>
-	<btn_bad x="904" y="494" width="104" height="28" stretch="1">
-		<texture>ui_inGame2_pda_button</texture>
-		<text font="letterica16" align="c" r="210" g="90" b="90">bad</text>
-	</btn_bad>
+	<!-- LAST LINES: the newest verdicts written to tz_anim_curation.txt. -->
+	<scr_feed_rim x="728" y="630" width="269" height="46" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_feed_rim>
+	<scr_feed_glass x="729.5" y="631.5" width="266" height="43" stretch="1"><texture r="20" g="23" b="27" a="255">ui_inGame2_white_rect</texture></scr_feed_glass>
+	<feed_row_1 x="738" y="634" width="249" height="19"><text font="letterica16" align="l" vert_align="c" r="120" g="205" b="200"></text></feed_row_1>
+	<feed_row_2 x="738" y="653" width="249" height="19"><text font="letterica16" align="l" vert_align="c" r="120" g="205" b="200"></text></feed_row_2>
 
-	<hdr_snote x="798" y="532" width="210" height="16">
-		<text font="letterica16" align="l" r="200" g="170" b="120">NOTE</text>
-	</hdr_snote>
-	<snote x="798" y="550" width="140" height="26" stretch="1">
-		<text x="5" font="letterica16" vert_align="c" align="l"/>
-		<texture>ui_inGame2_edit_box_2</texture>
-	</snote>
-	<btn_note x="944" y="550" width="62" height="26" stretch="1">
-		<texture>ui_inGame2_pda_button</texture>
-		<text font="letterica16" align="c">note</text>
-	</btn_note>
-
-	<status x="798" y="584" width="210" height="44">
-		<text font="letterica16" align="l" complex_mode="1" r="160" g="160" b="160"/>
-	</status>
-
-	<!-- HELP: the page tz_help opens from the ? button. The text is 720 wide so a 200-character paragraph fits one line;
-	     tz_help sets the page height and the Close row from the text height. -->
-	<help_background x="132" y="134" width="760" height="300" stretch="1">
-		<texture>ui_inGame2_pda_buttons_background</texture>
-	</help_background>
-	<help_title x="152" y="148" width="720" height="22">
-		<text font="letterica18" align="l" r="200" g="170" b="120"/>
-	</help_title>
-	<help_text x="152" y="180" width="720" height="40">
-		<text font="letterica16" align="l" complex_mode="1" r="200" g="200" b="200"/>
-	</help_text>
-	<help_close x="792" y="0" width="80" height="26" stretch="1">
-		<texture>ui_inGame2_pda_button</texture>
-		<text font="letterica16" align="c">Close</text>
-	</help_close>
+	<!-- HELP: the manual page the info key opens; tz_help sets the box height and moves Close under the text. -->
+	<help_background anchor="center" x="232" y="134" width="560" height="300" stretch="1"><texture r="20" g="23" b="27">ui_inGame2_white_rect</texture></help_background>
+	<help_title anchor="center" x="252" y="146" width="520" height="22"><text font="letterica18" align="l" r="200" g="170" b="120"/></help_title>
+	<help_text anchor="center" x="252" y="178" width="520" height="40"><text font="letterica16" align="l" complex_mode="1" r="190" g="190" b="186"/></help_text>
+	<help_close anchor="center" x="706" y="0" width="70" height="27" frame_mode="1"><texture>tz_key</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">Close</text></help_close>
 </w>
