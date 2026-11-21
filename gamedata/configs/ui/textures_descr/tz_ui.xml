@@ -1,21 +1,6 @@
 <!-- TestZone texture parts: named cut-outs of vanilla textures, so a key or panel draws its ends at native size and repeats the middle
      (xray UIFrameLineWnd.cpp:36-40, UIFrameWindow.cpp:48-56). No new image. -->
 <w>
-	<!-- The demo player key (ui_inGame2_demo_player_button_2): normal, pressed, hover; 8-unit ends, a 40-unit middle. -->
-	<file name="ui\ui_actor_MP_screen">
-		<texture id="tz_key_e_b" x="943" y="34" width="8" height="27"/>
-		<texture id="tz_key_e_back" x="963" y="34" width="40" height="27"/>
-		<texture id="tz_key_e_e" x="1012" y="34" width="8" height="27"/>
-		<texture id="tz_key_d_b" x="943" y="34" width="8" height="27"/>
-		<texture id="tz_key_d_back" x="963" y="34" width="40" height="27"/>
-		<texture id="tz_key_d_e" x="1012" y="34" width="8" height="27"/>
-		<texture id="tz_key_t_b" x="943" y="154" width="8" height="27"/>
-		<texture id="tz_key_t_back" x="963" y="154" width="40" height="27"/>
-		<texture id="tz_key_t_e" x="1012" y="154" width="8" height="27"/>
-		<texture id="tz_key_h_b" x="943" y="274" width="8" height="27"/>
-		<texture id="tz_key_h_back" x="963" y="274" width="40" height="27"/>
-		<texture id="tz_key_h_e" x="1012" y="274" width="8" height="27"/>
-	</file>
 	<!-- The PDA radio key outline: normal row 652, lit row 682; 12-unit ends, a 4-unit icon-free middle from the stop key. A group start takes the prev key's left end, a group end the next key's right end. -->
 	<file name="ui\ui_actor_radio">
 		<texture id="tz_rkey_e_b" x="240" y="652" width="12" height="30"/>

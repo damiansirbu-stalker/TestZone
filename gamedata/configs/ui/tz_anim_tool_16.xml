@@ -19,8 +19,8 @@
 	<lbl_mode x="809.5" y="89" width="186.8" height="21"><text font="letterica16" align="l" vert_align="c" r="120" g="205" b="200"></text></lbl_mode>
 
 	<!-- The NPC: select pins the bound NPC across reopens, reset drops it. -->
-	<btn_select x="802" y="124" width="99.8" height="27" frame_mode="1"><texture>tz_key</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">select</text></btn_select>
-	<btn_reset x="904" y="124" width="99.8" height="27" frame_mode="1"><texture>tz_key</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">reset</text></btn_reset>
+	<btn_select x="802" y="124" width="101.2" height="30" frame_mode="1"><texture>tz_rkey_start</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">select</text></btn_select>
+	<btn_reset x="903.2" y="124" width="100.5" height="30" frame_mode="1"><texture>tz_rkey_end</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">reset</text></btn_reset>
 
 	<!-- LIST: the source file on the first line, then the rows. Sized only here: its scrollbar is placed once. -->
 	<scr_list_rim x="802" y="162" width="201.8" height="262" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_list_rim>
@@ -30,39 +30,41 @@
 	<list x="804.2" y="192" width="197.2" height="228" item_height="20" can_select="1"><font font="letterica16" r="120" g="205" b="200"/></list>
 
 	<!-- POSTURE: two toggles, the lit one shows its diode. TRANSPORT: prev, play, next, stop. -->
-	<btn_pose x="802" y="434" width="99.8" height="27" frame_mode="1"><texture>tz_key</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">pose</text></btn_pose>
-	<lit_pose x="807.2" y="444" width="6" height="8" stretch="1"><texture>ui_mod_green_diode</texture></lit_pose>
-	<btn_moving x="904" y="434" width="99.8" height="27" frame_mode="1"><texture>tz_key</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">moving</text></btn_moving>
-	<lit_moving x="909.2" y="444" width="6" height="8" stretch="1"><texture>ui_mod_green_diode</texture></lit_moving>
-	<btn_prior x="802" y="466" width="48.8" height="27" frame_mode="1"><texture>tz_key</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">prev</text></btn_prior>
-	<btn_play x="853" y="466" width="48.8" height="27" frame_mode="1"><texture>tz_key</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">play</text></btn_play>
-	<btn_next x="904" y="466" width="48.8" height="27" frame_mode="1"><texture>tz_key</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">next</text></btn_next>
-	<btn_stop x="955" y="466" width="48.8" height="27" frame_mode="1"><texture>tz_key</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">stop</text></btn_stop>
+	<btn_pose x="802" y="434" width="101.2" height="30" frame_mode="1"><texture>tz_rkey_start</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">pose</text></btn_pose>
+	<lit_pose x="807.2" y="445" width="6" height="8" stretch="1"><texture>ui_mod_green_diode</texture></lit_pose>
+	<btn_moving x="903.2" y="434" width="100.5" height="30" frame_mode="1"><texture>tz_rkey_end</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">moving</text></btn_moving>
+	<lit_moving x="908.5" y="445" width="6" height="8" stretch="1"><texture>ui_mod_green_diode</texture></lit_moving>
+	<btn_prior x="802" y="469" width="50.2" height="30" frame_mode="1"><texture>tz_rkey_start</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">prev</text></btn_prior>
+	<btn_play x="852.2" y="469" width="50.2" height="30" frame_mode="1"><texture>tz_rkey</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">play</text></btn_play>
+	<btn_next x="902.5" y="469" width="50.2" height="30" frame_mode="1"><texture>tz_rkey</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">next</text></btn_next>
+	<btn_stop x="952.8" y="469" width="51" height="30" frame_mode="1"><texture>tz_rkey_end</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">stop</text></btn_stop>
 
 	<!-- VERDICT: one box around good, bad, the selected motion and the note. -->
-	<verdict_box_t x="802" y="504" width="201.8" height="1" stretch="1"><texture r="255" g="255" b="255" a="25">ui_inGame2_white_rect</texture></verdict_box_t>
-	<verdict_box_b x="802" y="617" width="201.8" height="1" stretch="1"><texture r="255" g="255" b="255" a="25">ui_inGame2_white_rect</texture></verdict_box_b>
-	<verdict_box_l x="802" y="504" width="0.8" height="114" stretch="1"><texture r="255" g="255" b="255" a="25">ui_inGame2_white_rect</texture></verdict_box_l>
-	<verdict_box_r x="1003" y="504" width="0.8" height="114" stretch="1"><texture r="255" g="255" b="255" a="25">ui_inGame2_white_rect</texture></verdict_box_r>
-	<btn_good x="808" y="513" width="56.2" height="27" frame_mode="1"><texture>tz_key</texture><text font="letterica16" align="c" vert_align="c" r="150" g="205" b="140">good</text></btn_good>
-	<btn_bad x="866.5" y="513" width="56.2" height="27" frame_mode="1"><texture>tz_key</texture><text font="letterica16" align="c" vert_align="c" r="215" g="125" b="115">bad</text></btn_bad>
-	<scr_sel_rim x="808" y="548" width="189.8" height="29" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_sel_rim>
-	<scr_sel_glass x="809.1" y="549.5" width="187.5" height="26" stretch="1"><texture r="20" g="23" b="27" a="255">ui_inGame2_white_rect</texture></scr_sel_glass>
-	<sel_line x="814" y="548" width="177.8" height="29"><text font="letterica16" align="l" vert_align="c" r="235" g="238" b="245"></text></sel_line>
-	<scr_snote_rim x="808" y="582" width="162.8" height="29" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_snote_rim>
-	<scr_snote_glass x="809.1" y="583.5" width="160.5" height="26" stretch="1"><texture r="20" g="23" b="27" a="255">ui_inGame2_white_rect</texture></scr_snote_glass>
-	<snote x="808" y="582" width="162.8" height="29"><text x="8" font="letterica16" vert_align="c" align="l" r="190" g="190" b="186"/></snote>
-	<btn_note x="973.8" y="583" width="24" height="27" frame_mode="1"><texture>tz_key</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">+</text></btn_note>
+	<verdict_box_t x="802" y="510" width="201.8" height="1" stretch="1"><texture r="255" g="255" b="255" a="25">ui_inGame2_white_rect</texture></verdict_box_t>
+	<verdict_box_b x="802" y="626" width="201.8" height="1" stretch="1"><texture r="255" g="255" b="255" a="25">ui_inGame2_white_rect</texture></verdict_box_b>
+	<verdict_box_l x="802" y="510" width="0.8" height="117" stretch="1"><texture r="255" g="255" b="255" a="25">ui_inGame2_white_rect</texture></verdict_box_l>
+	<verdict_box_r x="1003" y="510" width="0.8" height="117" stretch="1"><texture r="255" g="255" b="255" a="25">ui_inGame2_white_rect</texture></verdict_box_r>
+	<btn_good x="808" y="519" width="56.2" height="30" frame_mode="1"><texture>tz_rkey_start</texture><text font="letterica16" align="c" vert_align="c" r="150" g="205" b="140">good</text></btn_good>
+	<btn_bad x="864.2" y="519" width="56.2" height="30" frame_mode="1"><texture>tz_rkey_end</texture><text font="letterica16" align="c" vert_align="c" r="215" g="125" b="115">bad</text></btn_bad>
+	<scr_sel_rim x="808" y="557" width="189.8" height="29" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_sel_rim>
+	<scr_sel_glass x="809.1" y="558.5" width="187.5" height="26" stretch="1"><texture r="20" g="23" b="27" a="255">ui_inGame2_white_rect</texture></scr_sel_glass>
+	<sel_line x="814" y="557" width="177.8" height="29"><text font="letterica16" align="l" vert_align="c" r="235" g="238" b="245"></text></sel_line>
+	<scr_snote_rim x="808" y="591" width="162.8" height="29" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_snote_rim>
+	<scr_snote_glass x="809.1" y="592.5" width="160.5" height="26" stretch="1"><texture r="20" g="23" b="27" a="255">ui_inGame2_white_rect</texture></scr_snote_glass>
+	<snote x="808" y="591" width="162.8" height="29"><text x="8" font="letterica16" vert_align="c" align="l" r="190" g="190" b="186"/></snote>
+	<note_plus_h x="981.2" y="605" width="9" height="2" stretch="1"><texture r="175" g="180" b="190" a="255">ui_inGame2_white_rect</texture></note_plus_h>
+	<note_plus_v x="985" y="600" width="1.5" height="12" stretch="1"><texture r="175" g="180" b="190" a="255">ui_inGame2_white_rect</texture></note_plus_v>
+	<btn_note x="973.8" y="591" width="24" height="30" frame_mode="1"><texture>tz_rkey</texture></btn_note>
 
 	<!-- LAST LINES: the newest verdicts written to tz_anim_curation.txt. -->
-	<scr_feed_rim x="802" y="630" width="201.8" height="46" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_feed_rim>
-	<scr_feed_glass x="803.1" y="631.5" width="199.5" height="43" stretch="1"><texture r="20" g="23" b="27" a="255">ui_inGame2_white_rect</texture></scr_feed_glass>
-	<feed_row_1 x="809.5" y="634" width="186.8" height="19"><text font="letterica16" align="l" vert_align="c" r="120" g="205" b="200"></text></feed_row_1>
-	<feed_row_2 x="809.5" y="653" width="186.8" height="19"><text font="letterica16" align="l" vert_align="c" r="120" g="205" b="200"></text></feed_row_2>
+	<scr_feed_rim x="802" y="639" width="201.8" height="46" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_feed_rim>
+	<scr_feed_glass x="803.1" y="640.5" width="199.5" height="43" stretch="1"><texture r="20" g="23" b="27" a="255">ui_inGame2_white_rect</texture></scr_feed_glass>
+	<feed_row_1 x="809.5" y="643" width="186.8" height="19"><text font="letterica16" align="l" vert_align="c" r="120" g="205" b="200"></text></feed_row_1>
+	<feed_row_2 x="809.5" y="662" width="186.8" height="19"><text font="letterica16" align="l" vert_align="c" r="120" g="205" b="200"></text></feed_row_2>
 
 	<!-- HELP: the manual page the info key opens; tz_help sets the box height and moves Close under the text. -->
 	<help_background anchor="center" x="302" y="134" width="420" height="300" stretch="1"><texture r="20" g="23" b="27">ui_inGame2_white_rect</texture></help_background>
 	<help_title anchor="center" x="317" y="146" width="390" height="22"><text font="letterica18" align="l" r="200" g="170" b="120"/></help_title>
 	<help_text anchor="center" x="317" y="178" width="390" height="40"><text font="letterica16" align="l" complex_mode="1" r="190" g="190" b="186"/></help_text>
-	<help_close anchor="center" x="657.5" y="0" width="52.5" height="27" frame_mode="1"><texture>tz_key</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">Close</text></help_close>
+	<help_close anchor="center" x="657.5" y="0" width="52.5" height="30" frame_mode="1"><texture>tz_rkey</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">Close</text></help_close>
 </w>

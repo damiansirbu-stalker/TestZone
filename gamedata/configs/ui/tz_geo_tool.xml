@@ -63,7 +63,9 @@
 	<scr_note_rim x="27" y="328" width="221" height="29" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_note_rim>
 	<scr_note_glass x="28.5" y="329.5" width="218" height="26" stretch="1"><texture r="20" g="23" b="27" a="255">ui_inGame2_white_rect</texture></scr_note_glass>
 	<note x="27" y="328" width="221" height="29"><text x="8" font="letterica16" vert_align="c" align="l" r="190" g="190" b="186"/></note>
-	<btn_note x="256" y="330" width="40" height="27" frame_mode="1"><texture>tz_key</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">+</text></btn_note>
+	<note_plus_h x="270" y="342" width="12" height="2" stretch="1"><texture r="175" g="180" b="190" a="255">ui_inGame2_white_rect</texture></note_plus_h>
+	<note_plus_v x="275" y="337" width="2" height="12" stretch="1"><texture r="175" g="180" b="190" a="255">ui_inGame2_white_rect</texture></note_plus_v>
+	<btn_note x="256" y="328" width="40" height="30" frame_mode="1"><texture>tz_rkey</texture></btn_note>
 
 	<!-- LAST LINES: the newest records written to geo_tool.txt. -->
 	<scr_feed_rim x="27" y="370" width="269" height="46" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_feed_rim>
@@ -75,5 +77,5 @@
 	<help_background anchor="center" x="232" y="134" width="560" height="300" stretch="1"><texture r="20" g="23" b="27">ui_inGame2_white_rect</texture></help_background>
 	<help_title anchor="center" x="252" y="146" width="520" height="22"><text font="letterica18" align="l" r="200" g="170" b="120"/></help_title>
 	<help_text anchor="center" x="252" y="178" width="520" height="40"><text font="letterica16" align="l" complex_mode="1" r="190" g="190" b="186"/></help_text>
-	<help_close anchor="center" x="706" y="0" width="70" height="27" frame_mode="1"><texture>tz_key</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">Close</text></help_close>
+	<help_close anchor="center" x="706" y="0" width="70" height="30" frame_mode="1"><texture>tz_rkey</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">Close</text></help_close>
 </w>

@@ -10,6 +10,9 @@ local CONFIG_MOUNT  = "$game_config$"
 local ANIM_DIR      = "testzone\\anim\\"
 local CURATION_FILE = "tz_anim_curation.txt"
 local VIEW_ROOT, VIEW_POOL, VIEW_PROP = "root", "pool", "prop"
+local FILL_QUEUE, FILL_STEP = "tz_anim_fill", 20
+-- Posture key labels: the layout's key color, brighter on the lit toggle.
+local LABEL_RGB, LABEL_LIT_RGB = { 175, 180, 190 }, { 235, 240, 245 }
 
 -- Attachable props the engine spawns + attaches via the `{a=section}` hook (state_mgr_animation.script:480-495); the only blade is anim_knife, no firearms.
 local PROPS = {
@@ -39,7 +42,7 @@ local FEED_MAX, FEED_CHARS = 2, 30
 -- Decor the window draws and never touches again: the panel frame, the screens' rim and glass, the lines and the verdict box.
 local DECOR = { statics = { "hdr_tool", "scr_display_rim", "scr_display_glass", "scr_list_rim", "scr_list_glass", "list_line",
     "verdict_box_t", "verdict_box_b", "verdict_box_l", "verdict_box_r", "scr_sel_rim", "scr_sel_glass", "scr_snote_rim", "scr_snote_glass",
-    "scr_feed_rim", "scr_feed_glass" } }
+    "note_plus_h", "note_plus_v", "scr_feed_rim", "scr_feed_glass" } }
 
 local COL_MOTION, COL_STATE, COL_NAME = "motion", "state", "name"
 local COL_CATEGORY, COL_VERDICT = "category", "verdict"
@@ -61,26 +64,13 @@ local _npc_id  = nil
 local _npc_name = nil
 -- The standing selection: an NPC pinned via the Select button that persists across opens, so the tool binds and shows it until you re-select.
 local _selected_id   = nil
-local _box     = nil
 -- RemoveAll on the empty, not-yet-attached list (the first fill) CTDs in CUIScrollView::Clear.
 local _built   = false
 local _feed    = {}
 -- True while a motion is held on the NPC, for the lamps.
 local _is_holding = false
--- Key label tints, built lazily: GetARGB is absent at module load under the validator.
-local _clr = nil
-
-local function _get_color(name)
-    if not _clr then
-        _clr = { key = GetARGB(255, 175, 180, 190), key_on = GetARGB(255, 235, 240, 245) }
-    end
-    return _clr[name]
-end
 
 local function _get_mode() return MODES[_mode_i] end
-
--- Shorten a long name with a trailing ~ so the fixed-width header never runs off the panel.
-local function _get_clipped(s, n) return #s > n and (s:sub(1, n - 1) .. "~") or s end
 
 -- Split a TSV line on tabs, preserving empty fields so columns stay aligned.
 local function _split_tab(line)
@@ -94,7 +84,7 @@ local function _find_sources()
     local out = {}
     local exts = { ".tsv", ".txt" }
     for e = 1, #exts do
-        local found = (xfs and xfs.read_files and xfs.read_files(CONFIG_MOUNT, ANIM_DIR, exts[e])) or {}
+        local found = xfs.read_files(CONFIG_MOUNT, ANIM_DIR, exts[e])
         for i = 1, #found do out[#out + 1] = found[i] .. exts[e] end
     end
     table_sort(out)
@@ -104,9 +94,7 @@ end
 -- Read one source file into a candidate pool, auto-detecting a TSV header or a plain one-name-per-line txt.
 -- A TSV with a "state" column holds states (held directly); anything else is motions (a temp state is built).
 local function _read_source(file)
-    local base = getFS and getFS():update_path(CONFIG_MOUNT, "")
-    if not base then return nil end
-    local data = xfs and xfs.read_file and xfs.read_file(base .. ANIM_DIR .. file)
+    local data = xfs.read_file(getFS():update_path(CONFIG_MOUNT, "") .. ANIM_DIR .. file)
     if not data then return nil end
     local lines = {}
     for line in data:gmatch("[^\r\n]+") do lines[#lines + 1] = line end
@@ -144,9 +132,7 @@ local function _read_source(file)
 end
 
 local function _write_verdict(name, verdict, note)
-    local base = getFS and getFS():update_path(LOGS_MOUNT, "")
-    if not base then return false end
-    return xfs.write_file(base .. CURATION_FILE,
+    return xfs.write_file(getFS():update_path(LOGS_MOUNT, "") .. CURATION_FILE,
         string_format("%s\t%s\t%s\t%s\n", verdict, name, _get_mode().label, note or ""), true)
 end
 
@@ -166,7 +152,7 @@ local function _get_selected_npc()
 end
 
 --- Bind the standing selection when one is live, else the stalker directly under the view-ray; nothing when the ray hits a wall, fence, or no stalker.
-local function try_open()
+local function _try_open()
     if Check_UI() or not db.actor then return end
     local tgt = _get_selected_npc()
     if not tgt then
@@ -175,9 +161,21 @@ local function try_open()
     end
     if tgt then _npc_id, _npc_name = tgt:id(), tgt:character_name()
     else _npc_id, _npc_name = nil, nil end
-    _box = tz_anim_tool_wnd()
-    _box:ShowDialog(true)
-    Register_UI("tz_anim_tool_wnd", "tz_anim_tool", _box)
+    local window = tz_anim_tool_wnd()
+    window:ShowDialog(true)
+    Register_UI("tz_anim_tool_wnd", "tz_anim_tool", window)
+end
+
+local function _on_key_press(key)
+    if key == tz_mcm.get_config("anim_key") then _try_open() end
+end
+
+--- A level change with the window open: drop the fill, the held motion and the open-window entry, so Check_UI never stays blocked.
+local function _on_actor_destroy()
+    xslice.stop_queue(FILL_QUEUE)
+    tz_anim.stop_review_hold()
+    _is_holding = false
+    Unregister_UI("tz_anim_tool_wnd")
 end
 
 class "tz_anim_tool_wnd" (CUIScriptWnd)
@@ -249,7 +247,7 @@ function tz_anim_tool_wnd:show_help()
 end
 
 function tz_anim_tool_wnd:build_list()
-    if xslice then xslice.stop_queue("tz_anim_fill") end
+    xslice.stop_queue(FILL_QUEUE)
     if _built then self.list:RemoveAll() end
     _built = true
     if _view == VIEW_ROOT then
@@ -271,7 +269,6 @@ function tz_anim_tool_wnd:add_source_rows()
     for i = 1, #_sources do self.list:AddTextItem(_sources[i]) end
 end
 
---- Fill one source's pool, frame-spread by xslice so a large motion list never builds in one frame.
 --- Fill the prop picker: back, a clear entry, then every attachable prop labelled by its group.
 function tz_anim_tool_wnd:add_prop_rows()
     self.list:AddTextItem("..")
@@ -281,16 +278,13 @@ function tz_anim_tool_wnd:add_prop_rows()
     end
 end
 
+--- Fill one source's pool, frame-spread by xslice so a large motion list never builds in one frame.
 function tz_anim_tool_wnd:add_pool_rows(row)
     if not row then return end
     self.list:AddTextItem("..")
     self.list:AddTextItem(string_format("[ prop:  %s ]", _prop or "none"))
     local list = self.list
-    if not xslice then
-        for i = 1, #row.pool do list:AddTextItem(row.pool[i].label) end
-        return
-    end
-    xslice.start("tz_anim_fill", row.pool, { step = 20, func = function(entry)
+    xslice.start(FILL_QUEUE, row.pool, { step = FILL_STEP, func = function(entry)
         list:AddTextItem(entry.label)
         return true
     end })
@@ -306,7 +300,8 @@ function tz_anim_tool_wnd:render_modes()
     for i = 1, #MODES do
         local is_on = i == _mode_i
         self.mode_lits[i]:Show(is_on)
-        self.mode_keys[i]:TextControl():SetTextColor(_get_color(is_on and "key_on" or "key"))
+        local rgb = is_on and LABEL_LIT_RGB or LABEL_RGB
+        self.mode_keys[i]:TextControl():SetTextColor(xcui.get_color(rgb[1], rgb[2], rgb[3], 255))
     end
 end
 
@@ -331,19 +326,13 @@ function tz_anim_tool_wnd:render()
         local bound = db.storage[_npc_id] and db.storage[_npc_id].object
         local live = (bound and bound:alive()) and state_mgr.get_state(bound) or "?"
         local mark = (_selected_id and _npc_id == _selected_id) and "* " or ""
-        self.lbl_now:SetText(mark .. _get_clipped(tostring(_npc_name), 24))
+        self.lbl_now:SetText(mark .. xcui.get_clipped(tostring(_npc_name), 24))
         self.lbl_mode:SetText(string_format("%s  |  %s  |  %s",
-            _get_clipped(tostring(live), 12), _get_mode().label, _prop or "no prop"))
+            xcui.get_clipped(tostring(live), 12), _get_mode().label, _prop or "no prop"))
     else
         self.lbl_now:SetText("** NO NPC **")
         self.lbl_mode:SetText("look at a stalker, reopen the tool")
     end
-end
-
---- The mode label; it reads "(state - as wired)" for a state item, since modes only shape a raw motion.
-function tz_anim_tool_wnd:_get_mode_label()
-    if _cur and _cur.is_state then return _get_mode().label .. "  (state - as wired)" end
-    return _get_mode().label
 end
 
 --- Pin the bound NPC as the standing selection, so it survives close and reopen; the band marks it with a leading star.
@@ -361,7 +350,7 @@ function tz_anim_tool_wnd:clear_selection()
 end
 
 function tz_anim_tool_wnd:_play_current()
-    if not (_cur and _npc_id and tz_anim) then return end
+    if not (_cur and _npc_id) then return end
     local mode = _get_mode()
     local item = { name = _cur.name, is_state = _cur.is_state, moving = mode.moving, prop = _prop }
     _is_holding = tz_anim.start_review_hold(_npc_id, item) ~= nil
@@ -390,7 +379,7 @@ function tz_anim_tool_wnd:select_root(idx)
     self:build_list(); self:render()
 end
 
---- POOL click: index 0 returns to the source list; any other index plays that candidate on the bound NPC.
+--- POOL click: index 0 returns to the source list, index 1 opens the prop picker, any other index selects that candidate; Play or a double click plays it.
 function tz_anim_tool_wnd:select_pool(idx)
     if idx == 0 then
         _view, _cur = VIEW_ROOT, nil
@@ -426,7 +415,7 @@ end
 function tz_anim_tool_wnd:play() self:_play_current() end
 
 function tz_anim_tool_wnd:stop()
-    if tz_anim then tz_anim.stop_review_hold() end
+    tz_anim.stop_review_hold()
     _is_holding = false
     self:render_lamps()
 end
@@ -479,15 +468,14 @@ function tz_anim_tool_wnd:OnKeyboard(dik, action)
 end
 
 function tz_anim_tool_wnd:hide()
-    if xslice then xslice.stop_queue("tz_anim_fill") end
-    if tz_anim then tz_anim.stop_review_hold() end
+    xslice.stop_queue(FILL_QUEUE)
+    tz_anim.stop_review_hold()
     _is_holding = false
     self:HideDialog()
     Unregister_UI("tz_anim_tool_wnd")
 end
 
 function on_game_start()
-    RegisterScriptCallback("on_key_press", function(key)
-        if key == tz_mcm.get_config("anim_key") then try_open() end
-    end)
+    RegisterScriptCallback("on_key_press", _on_key_press)
+    RegisterScriptCallback("actor_on_net_destroy", _on_actor_destroy)
 end

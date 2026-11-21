@@ -48,7 +48,7 @@ local FEED_MAX, FEED_CHARS = 2, 44
 -- Decor the window draws and never touches again: the panel frame, the screens' rim and glass, the lines and the verdict box.
 local DECOR = { statics = { "hdr_tool", "scr_list_rim", "scr_list_glass", "list_line", "scr_display_rim", "scr_display_glass",
     "verdict_box_t", "verdict_box_b", "verdict_box_l", "verdict_box_r", "scr_sel_rim", "scr_sel_glass", "scr_note_rim", "scr_note_glass",
-    "scr_feed_rim", "scr_feed_glass" } }
+    "note_plus_h", "note_plus_v", "scr_feed_rim", "scr_feed_glass" } }
 -- The volume keys: the playback volume each later play starts at, stepped between these bounds; a one-shot keeps the volume it started with.
 local GAIN_STEP, GAIN_MIN, GAIN_MAX = 0.1, 0.1, 1.0
 -- While a play sounds, the lamps refresh this often, in seconds, so green turns red when it ends by itself.
@@ -384,13 +384,18 @@ local function _run_family_hook(hook)
     end
 end
 
+--- True when the family's mod is present and the item is one of its sounds.
+local function _is_family_claiming(family, item)
+    return family.is_member ~= nil and _is_family_available(family) and family.is_member(item)
+end
+
 --- The family an item belongs to: the playlist's own family when it claims the item, else the first family that does, else plain file.
 local function _select_family(item, default_id)
     local preferred = default_id and FAMILIES[default_id]
-    if preferred and preferred.is_member and _is_family_available(preferred) and preferred.is_member(item) then return preferred end
+    if preferred and _is_family_claiming(preferred, item) then return preferred end
     for i = 1, #FAMILY_ORDER do
         local family = FAMILIES[FAMILY_ORDER[i]]
-        if family.is_member and _is_family_available(family) and family.is_member(item) then return family end
+        if _is_family_claiming(family, item) then return family end
     end
     return FAMILIES.file
 end
@@ -431,11 +436,11 @@ local function _load_row_sources(row)
     local copied, failed = 0, 0
     for i = 1, #row.items do
         local item = row.items[i]
-        if not (item.source and not item.path) then goto continue end
-        item.path = _add_cache_entry(item.source)
-        copied = copied + (item.path and 1 or 0)
-        failed = failed + (item.path and 0 or 1)
-        ::continue::
+        if item.source and not item.path then
+            item.path = _add_cache_entry(item.source)
+            copied = copied + (item.path and 1 or 0)
+            failed = failed + (item.path and 0 or 1)
+        end
     end
     _flush_cache()
     if copied + failed > 0 then log.info("[SOUNDTOOL] %s: copied %d outside files, %d failed", row.name, copied, failed) end
@@ -591,8 +596,9 @@ local function _on_key_press(key)
     if key == tz_mcm.get_config("soundtool_key") then _try_open() end
 end
 
+--- A level change with the window open: stop the fill, the lamp watch, the tool's plays and each audition, and drop the open-window entry.
 local function _on_actor_destroy()
-    if xslice then xslice.stop_queue(FILL_QUEUE, true) end
+    xslice.stop_queue(FILL_QUEUE)
     RemoveTimeEvent(LAMP_EV, "lamps")
     _stop_plays()
     _run_family_hook("stop_audition")
@@ -683,7 +689,7 @@ end
 
 --- Replace the list with these entries; each entry is { label, on_select }, and list index i maps to entries[i + 1].
 function tz_sound_tool_wnd:set_entries(entries, title)
-    if xslice then xslice.stop_queue(FILL_QUEUE, true) end
+    xslice.stop_queue(FILL_QUEUE)
     if self.is_built then self.list:RemoveAll() end
     self.is_built = true
     self.entries = entries
@@ -773,9 +779,10 @@ end
 --- Fill the list with a pool's labels, frame-spread by xslice so xsound.length never builds them all at once.
 function tz_sound_tool_wnd:add_pool_rows(items)
     local list = self.list
-    local add_row = function(item) list:AddTextItem(self:format_item(item)); return true end
-    if xslice then return xslice.start(FILL_QUEUE, items, { step = FILL_STEP, func = add_row }) end
-    for i = 1, #items do add_row(items[i]) end
+    xslice.start(FILL_QUEUE, items, { step = FILL_STEP, func = function(item)
+        list:AddTextItem(self:format_item(item))
+        return true
+    end })
 end
 
 --- A pool of sounds: copy its outside files first, then list each with its family and length; ".." returns to back_dir or root.
@@ -837,7 +844,6 @@ function tz_sound_tool_wnd:get_mode(item)
     return _find_mode(_get_group_modes(item, _select_group(item, self.mode_group)), self.mode_label)
 end
 
---- Light one mode toggle; the label carries over when that toggle offers it. It never plays.
 --- A click on an unlit mode key lights it; a click on the lit one steps to its next choice, a distance or a dread level, and wraps. It never plays.
 function tz_sound_tool_wnd:select_mode_group(group)
     local item = self:get_current()
@@ -952,7 +958,7 @@ end
 
 --- Close: stop the tool's own plays, empty the cache, end each family's audition.
 function tz_sound_tool_wnd:hide()
-    if xslice then xslice.stop_queue(FILL_QUEUE, true) end
+    xslice.stop_queue(FILL_QUEUE)
     RemoveTimeEvent(LAMP_EV, "lamps")
     _stop_plays()
     log.info("[SOUNDTOOL] close: cleared %d cached files", _clear_cache())

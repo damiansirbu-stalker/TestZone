@@ -1,7 +1,7 @@
---- tz_help: the help page each TestZone tool opens from its ? button, laid out by the tool's own XML and filled from one string id.
+--- tz_help: the help page each TestZone tool opens from its info key, laid out by the tool's own XML and filled from one string id.
 
--- Space under the text before the Close button and under the button; the page grows to fit the text, like UIHint (utils_ui.script:3434-3442).
-local GAP, CLOSE_H = 16, 26
+-- Space under the text before the Close key and under the key; the page grows to fit the text, like UIHint (utils_ui.script:3434-3442).
+local GAP = 16
 
 class "tz_help_wnd" (CUIScriptWnd)
 
@@ -19,7 +19,7 @@ function tz_help_wnd:__init(xml_file, title_id, text_id) super()
     local close_y = text:GetWndPos().y + text:GetHeight() + GAP
     close:SetWndPos(vector2():set(close:GetWndPos().x, close_y))
     local top = background:GetWndPos().y
-    background:SetWndSize(vector2():set(background:GetWidth(), close_y + CLOSE_H + GAP - top))
+    background:SetWndSize(vector2():set(background:GetWidth(), close_y + close:GetHeight() + GAP - top))
     self:Register(close, "help_close")
     self:AddCallback("help_close", ui_events.BUTTON_CLICKED, self.hide, self)
 end

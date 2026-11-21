@@ -27,7 +27,7 @@
 	<lbl_place x="492" y="158" width="374" height="21"><text font="letterica16" align="l" vert_align="c" r="210" g="140" b="80"></text></lbl_place>
 	<lbl_loud x="492" y="179" width="374" height="21"><text font="letterica16" align="l" vert_align="c" r="210" g="140" b="80"></text></lbl_loud>
 
-	<!-- MODE: three toggles, one lit; the volume keys step closer and farther inside the mode. TRANSPORT: prev, play, next, stop. -->
+	<!-- MODE: three toggles, one lit; a click on the lit one steps its choices. VOLUME: the playback volume of the next play. TRANSPORT: prev, play, next, stop. -->
 	<btn_mode_heard x="482" y="235" width="70" height="30" frame_mode="1"><texture>tz_rkey_start</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">as heard</text></btn_mode_heard>
 	<lit_mode_heard x="482" y="235" width="70" height="30"><texture>tz_rkey_start_lit</texture></lit_mode_heard>
 	<btn_mode_2d x="552" y="235" width="70" height="30" frame_mode="1"><texture>tz_rkey</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">2D</text></btn_mode_2d>
@@ -68,7 +68,9 @@
 	<scr_note_rim x="490" y="533" width="342" height="29" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_note_rim>
 	<scr_note_glass x="491.5" y="534.5" width="339" height="26" stretch="1"><texture r="20" g="23" b="27" a="255">ui_inGame2_white_rect</texture></scr_note_glass>
 	<note x="490" y="533" width="342" height="29"><text x="8" font="letterica16" vert_align="c" align="l" r="190" g="190" b="186"/></note>
-	<btn_note x="837" y="533" width="31" height="30" frame_mode="1"><texture>tz_rkey</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">+</text></btn_note>
+	<note_plus_h x="846.5" y="547" width="12" height="2" stretch="1"><texture r="175" g="180" b="190" a="255">ui_inGame2_white_rect</texture></note_plus_h>
+	<note_plus_v x="851.5" y="542" width="2" height="12" stretch="1"><texture r="175" g="180" b="190" a="255">ui_inGame2_white_rect</texture></note_plus_v>
+	<btn_note x="837" y="533" width="31" height="30" frame_mode="1"><texture>tz_rkey</texture></btn_note>
 
 	<!-- LAST LINES: the newest lines written to sound_tool.txt. -->
 	<scr_feed_rim x="482" y="588" width="394" height="64" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_feed_rim>

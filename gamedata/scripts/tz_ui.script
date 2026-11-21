@@ -3,11 +3,15 @@
 --- The bevelled body every tool window sits on, in draw order: the outer line, the opaque panel, the light top-left and dark bottom-right edges.
 PANEL = { "panel_outer", "panel_body", "panel_light_t", "panel_light_l", "panel_shade_b", "panel_shade_r" }
 
+-- Lamp tints as r, g, b, a: a lit lamp shows its texture as drawn; the unlit one stays opaque at about a third of its brightness.
+local LAMP_LIT, LAMP_DIM = { 255, 255, 255, 255 }, { 90, 90, 90, 255 }
+
 --- Light the green lamp while the tool runs something and the red one when it stops; the unlit lamp is dimmed.
 --- @param controls table The window's controls from xcui.build, holding lamp_green and lamp_red
 --- @param is_on boolean True while the tool runs something
 function render_lamps(controls, is_on)
-    local lit, dim = xcui.get_color(255, 255, 255, 255), xcui.get_color(255, 90, 90, 90)
+    local lit = xcui.get_color(LAMP_LIT[1], LAMP_LIT[2], LAMP_LIT[3], LAMP_LIT[4])
+    local dim = xcui.get_color(LAMP_DIM[1], LAMP_DIM[2], LAMP_DIM[3], LAMP_DIM[4])
     controls.lamp_green:SetTextureColor(is_on and lit or dim)
     controls.lamp_red:SetTextureColor(is_on and dim or lit)
 end

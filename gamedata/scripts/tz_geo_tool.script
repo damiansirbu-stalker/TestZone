@@ -23,7 +23,8 @@ local WALL_NEAR, BASE_OWNER_RADIUS = 5, 80
 local AXES, AXIS_DIGITS, AXIS_MAX = 3, 4, 9999
 -- Decor the window draws and never touches again: the panel frame, the screens' rim and glass.
 local DECOR = { statics = { "hdr_tool", "scr_position_rim", "scr_position_glass", "lbl_axis_1", "lbl_axis_2", "lbl_axis_3",
-    "scr_readings_rim", "scr_readings_glass", "scr_note_rim", "scr_note_glass", "scr_feed_rim", "scr_feed_glass" } }
+    "scr_readings_rim", "scr_readings_glass", "scr_note_rim", "scr_note_glass", "note_plus_h", "note_plus_v",
+    "scr_feed_rim", "scr_feed_glass" } }
 
 local _readings = {}
 local _feed = {}
@@ -140,17 +141,17 @@ end
 -- Append one record to the output file: time, kind, level, x y z, level vertex, payload.
 local function _write_record(kind, payload)
     local actor = db.actor
+    if not actor then return false end
     local base = getFS():update_path(LOGS_MOUNT, "")
-    if not (actor and base) then return false end
     local pos = actor:position()
     local stamp = os_date("%H:%M:%S")
     local line = string_format("%s %s\t%s\t%s\t%.2f %.2f %.2f\t%d\t%s", os_date("%Y-%m-%d"), stamp, kind,
         level.name(), pos.x, pos.y, pos.z, actor:level_vertex_id(), payload or "")
-    local ok = xfs.write_file(base .. OUTPUT_FILE, line .. "\n", true)
-    local short = string_format("%s %s %s", stamp, kind, payload or "")
-    xcui.push_line(_feed, short, FEED_MAX, FEED_CHARS)
+    local is_written = xfs.write_file(base .. OUTPUT_FILE, line .. "\n", true)
+    if not is_written then return false end
+    xcui.push_line(_feed, string_format("%s %s %s", stamp, kind, payload or ""), FEED_MAX, FEED_CHARS)
     if _is_window_open() then _box:render() end
-    return ok
+    return true
 end
 
 --- One live tick for the open window; it re-arms first and stops once the window closes.
@@ -177,21 +178,24 @@ local function _get_digit_names(axis)
     return names
 end
 
-local function _on_actor_destroy()
-    RemoveTimeEvent(EV, "live")
-    _live_on = false
-end
-
+--- Open the window with the refresh already started, so its first render shows the green lamp; the first tick comes a refresh period later.
 local function _try_open()
     if Check_UI() or not db.actor then return end
+    _start_live()
     _box = tz_geo_tool_wnd()
     _box:ShowDialog(true)
     Register_UI("tz_geo_tool_wnd", "tz_geo_tool", _box)
-    _start_live()
 end
 
 local function _on_key_press(key)
     if key == _get_setting("key") then _try_open() end
+end
+
+--- A level change with the window open: stop the refresh and drop the open-window entry, so Check_UI never stays blocked.
+local function _on_actor_destroy()
+    RemoveTimeEvent(EV, "live")
+    _live_on = false
+    Unregister_UI("tz_geo_tool_wnd")
 end
 
 class "tz_geo_tool_wnd" (CUIScriptWnd)

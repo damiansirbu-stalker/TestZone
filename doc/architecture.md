@@ -67,8 +67,8 @@ Style, an analog Soviet device built from vanilla parts:
 
 - Each tool is a separate device with a key family and a screen color of its kind, and every tool shares one title row.
   The title sits left, and the green lamp, the red lamp and the info key sit at the right edge.
-- SoundTool keys belong to the PDA radio player: icon keys at their native 60x30, text keys in the radio key's outline with a cut corner at each group end.
-- AnimationTool and GeoTool keys are the demo player's slate key. The info key is the PDA's circled i, and the add-note key is the device window's plus key.
+- Every tool's keys are the PDA radio player's: text keys in the radio key's outline with a cut corner at each group end. SoundTool alone adds icon keys at their native 60x30.
+- The info key is the PDA's circled i. The add-note key is a radio outline key with its plus drawn as two bars, so its stroke is heavier than a font's.
 - A key wider than its texture draws in frame-line mode, its ends at native size and its middle repeated.
   `configs/ui/textures_descr/tz_ui.xml` names those parts as cut-outs of vanilla textures, and X-Ray stretches a plain button's texture to the button (`UI3tButton.cpp`, `CUI3tButton::DrawTexture`).
 - A screen is a gray rim, (50,50,50), with its glass 1.5 units inside, both the vanilla white rectangle tinted in the layout.
