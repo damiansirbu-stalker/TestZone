@@ -15,6 +15,7 @@ Requires: Anomaly 1.5.3, modded exes (themrdemonized or AOEngine), [xlibs](https
 
 - [readme.txt](doc/readme.txt) - full description, compatibility and install
 - [changelog](https://github.com/damiansirbu-stalker/TestZone/blob/main/doc/changelog) - version history
+- [architecture.md](doc/architecture.md) - the system's architecture, for modders and agents
 
 ## My work
 
