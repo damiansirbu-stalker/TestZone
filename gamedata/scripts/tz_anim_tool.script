@@ -9,7 +9,9 @@ local CONFIG_MOUNT  = "$game_config$"
 local ANIM_DIR      = "testzone\\anim\\"
 -- The prefix of this tool's file per game run in the logs folder (tz_ui.write_line).
 local OUTPUT_TOOL   = "animation_tool"
-local VIEW_ROOT, VIEW_POOL, VIEW_PROP = "root", "pool", "prop"
+local VIEW_ROOT, VIEW_POOL, VIEW_PROP, VIEW_FOLDER = "root", "pool", "prop", "folder"
+-- The playlist kinds the disk browser lists.
+local PLAYLIST_EXTS = { "tsv", "txt" }
 local FILL_QUEUE, FILL_STEP = "tz_anim_fill", 20
 -- While the window is open the display refreshes this often, in seconds, so the NPC's states stay current.
 local LIVE_EV, LIVE_PERIOD = "tz_anim_tool", 0.5
@@ -75,6 +77,9 @@ local _feed    = {}
 local _is_holding = false
 -- The list's selected row and scroll when the window last closed, put back on the next open.
 local _place = nil
+-- The disk browser's folder, "" for the drive list, and the rows it shows.
+local _dir = nil
+local _browse = {}
 
 local function _get_mode() return MODES[_mode_i] end
 
@@ -97,10 +102,10 @@ local function _find_playlists()
     return out
 end
 
--- Read one playlist into a candidate pool, auto-detecting a TSV header or a plain one-name-per-line txt; a ; line is a comment.
--- A TSV with a "state" column holds states (held directly); anything else is motions (a temp state is built).
-local function _read_playlist(file)
-    local data = xfs.read_file(getFS():update_path(CONFIG_MOUNT, "") .. ANIM_DIR .. file)
+-- Read one playlist from an absolute path into a candidate pool, auto-detecting a TSV header or a plain one-name-per-line txt; a ; line is a comment.
+-- A TSV with a "state" column holds states (held directly); anything else is motions (a temp state is built). The source names it in every verdict line.
+local function _read_playlist(path, source)
+    local data = xfs.read_file(path)
     if not data then return nil end
     local lines = {}
     for line in data:gmatch("[^\r\n]+") do lines[#lines + 1] = line end
@@ -133,7 +138,7 @@ local function _read_playlist(file)
         end
         if name and name ~= "" then pool[#pool + 1] = { name = name, is_state = is_state, label = label } end
     end
-    return { label = file, pool = pool }
+    return { label = source, pool = pool }
 end
 
 --- One verdict line in this game run's file: the playlist, the verdict, the motion, the posture, the note.
@@ -282,18 +287,31 @@ function tz_anim_tool_wnd:build_list(place)
     _built = true
     local on_filled = place and function() xcui.set_list_place(self.list, place) end
     if _view == VIEW_POOL then return self:add_pool_rows(_row, on_filled) end
-    if _view == VIEW_ROOT then self:add_playlist_rows() else self:add_prop_rows() end
+    if _view == VIEW_ROOT then
+        self:add_playlist_rows()
+    elseif _view == VIEW_FOLDER then
+        self:add_folder_rows()
+    else
+        self:add_prop_rows()
+    end
     if on_filled then on_filled() end
 end
 
---- Fill the root list with the playlists in the anim folder, or a hint when none are present.
+--- Fill the root list: the disk browser, then the playlists in the anim folder, or a hint when none are present.
 function tz_anim_tool_wnd:add_playlist_rows()
+    self.list:AddTextItem("[browse files]")
     _playlists = _find_playlists()
     if #_playlists == 0 then
         self.list:AddTextItem("(empty - drop a .tsv or .txt in configs\\testzone\\anim)")
         return
     end
     for i = 1, #_playlists do self.list:AddTextItem(_playlists[i]) end
+end
+
+--- Fill the disk browser at the current folder: "..", the subfolders, then the .tsv and .txt playlists.
+function tz_anim_tool_wnd:add_folder_rows()
+    _browse = tz_ui.get_browse_rows(_dir, PLAYLIST_EXTS)
+    for i = 1, #_browse do self.list:AddTextItem(_browse[i].label) end
 end
 
 --- Fill the prop picker: back, a clear entry, then every attachable prop labelled by its group.
@@ -336,6 +354,8 @@ end
 function tz_anim_tool_wnd:render_path()
     if _view == VIEW_ROOT then
         self.lbl_path:SetText("configs\\testzone\\anim")
+    elseif _view == VIEW_FOLDER then
+        self.lbl_path:SetText(_dir == "" and "drives" or _dir)
     elseif _view == VIEW_PROP then
         self.lbl_path:SetText("props")
     else
@@ -388,6 +408,8 @@ function tz_anim_tool_wnd:select_row()
     if not idx or idx < 0 then return end
     if _view == VIEW_ROOT then
         self:select_root(idx)
+    elseif _view == VIEW_FOLDER then
+        self:select_folder(idx)
     elseif _view == VIEW_PROP then
         self:select_prop(idx)
     else
@@ -395,20 +417,42 @@ function tz_anim_tool_wnd:select_row()
     end
 end
 
---- ROOT click: load the chosen playlist into a pool and switch to the candidate list.
-function tz_anim_tool_wnd:select_root(idx)
-    local file = _playlists[idx + 1]
-    if not file then return end
-    local row = _read_playlist(file)
+--- Load a playlist into a pool and switch to the candidate list; ".." in the pool returns to back_dir, or to root when nil.
+function tz_anim_tool_wnd:show_playlist(path, label, back_dir)
+    local row = _read_playlist(path, label)
     if not (row and #row.pool > 0) then return end
+    row.back_dir = back_dir
     _row, _view = row, VIEW_POOL
     self:build_list(); self:render()
 end
 
---- POOL click: index 0 returns to the playlists, index 1 opens the prop picker, any other index selects that candidate; Play or a double click plays it.
+--- ROOT click: index 0 opens the disk browser at the logs folder, any other index loads that shipped playlist.
+function tz_anim_tool_wnd:select_root(idx)
+    if idx == 0 then
+        _view, _dir = VIEW_FOLDER, tz_ui.get_logs_dir()
+        self:build_list(); self:render()
+        return
+    end
+    local file = _playlists[idx]
+    if not file then return end
+    self:show_playlist(xfs.resolve_path(CONFIG_MOUNT, "") .. ANIM_DIR .. file, file, nil)
+end
+
+--- FOLDER click: a folder opens, a playlist loads, and the drive list's ".." returns to root.
+function tz_anim_tool_wnd:select_folder(idx)
+    local row = _browse[idx + 1]
+    if not row then return end
+    if row.path then return self:show_playlist(row.path, row.label, _dir) end
+    if row.dir then _dir = row.dir else _view = VIEW_ROOT end
+    self:build_list(); self:render()
+end
+
+--- POOL click: 0 returns to where the playlist came from, 1 opens the prop picker, any other index selects that candidate; Play or a double click plays it.
 function tz_anim_tool_wnd:select_pool(idx)
     if idx == 0 then
-        _view, _cur = VIEW_ROOT, nil
+        local back_dir = _row and _row.back_dir
+        _view, _cur = back_dir and VIEW_FOLDER or VIEW_ROOT, nil
+        if back_dir then _dir = back_dir end
         self:stop()
         self:build_list(); self:render()
         return

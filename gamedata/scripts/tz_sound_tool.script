@@ -1,12 +1,11 @@
 --- tz_sound_tool: SoundTool - audition ambience, dread, voice and any .ogg on disk, tag each sound into one notes file. MCM TestZone > SoundTool.
 
-local string_format, table_concat, table_sort = string.format, table.concat, table.sort
+local string_format, table_concat, table_sort, table_insert = string.format, table.concat, table.sort, table.insert
 local math_sqrt, math_floor, ipairs = math.sqrt, math.floor, ipairs
 local os_date, os_time, ini_file, RegisterScriptCallback = os.date, os.time, ini_file, RegisterScriptCallback
 
 -- The prefix of this tool's file per game run in the logs folder (tz_ui.write_line).
 local OUTPUT_TOOL  = "sound_tool"
-local LOGS_MOUNT   = "$logs$"
 local SOUNDS_MOUNT = "$game_sounds$"
 local CACHE_DIR    = "sound_tool_cache"
 local FILL_QUEUE   = "tz_sound_fill"
@@ -84,22 +83,8 @@ local function _is_absolute(path)
     return path:match("^%a:\\") ~= nil
 end
 
-local function _format_dir(path)
-    local dir = path:gsub("/", "\\")
-    return dir:sub(-1) == "\\" and dir or (dir .. "\\")
-end
-
---- The parent of an absolute folder, or "" (the drive list) above a drive root.
-local function _get_parent_dir(dir)
-    return dir:match("^(.*\\)[^\\]+\\$") or ""
-end
-
 local function _get_sounds_dir()
-    return _format_dir(xfs.resolve_path(SOUNDS_MOUNT, ""))
-end
-
-local function _get_logs_dir()
-    return _format_dir(xfs.resolve_path(LOGS_MOUNT, ""))
+    return xfs.format_dir(xfs.resolve_path(SOUNDS_MOUNT, ""))
 end
 
 local function _is_sound_known(key)
@@ -462,7 +447,7 @@ local function _load_playlist(path)
     for raw in data:gmatch("[^\r\n]+") do
         local line = raw:match("^%s*(.-)%s*$")
         local base = line:match("^;%s*base:%s*(.-)%s*$")
-        if base and base ~= "" then base_dir = _format_dir(base)
+        if base and base ~= "" then base_dir = xfs.format_dir(base)
         elseif line ~= "" and line:sub(1, 1) ~= ";" then items[#items + 1] = _resolve_line(line, base_dir, default_id) end
     end
     log.info("[SOUNDTOOL] playlist %s: %d lines, default family %s", path, #items, default_id or "-")
@@ -718,8 +703,11 @@ function tz_sound_tool_wnd:build_channel_entry(channel)
     return { label = label, on_select = function() self:show_pool(function() return _build_channel_row(channel) end, nil) end }
 end
 
-function tz_sound_tool_wnd:build_folder_entry(dir)
-    return { label = _get_tail(dir:sub(1, -2)) .. "\\", on_select = function() self:show_folder(dir) end }
+--- A disk browser row as an entry: a folder opens, a playlist plays, and the drive list's ".." returns to root.
+function tz_sound_tool_wnd:build_browse_entry(row)
+    if row.path then return self:build_playlist_entry(row.path) end
+    if row.dir then return { label = row.label, on_select = function() self:show_folder(row.dir) end } end
+    return { label = row.label, on_select = function() self:show_root() end }
 end
 
 function tz_sound_tool_wnd:build_playlist_entry(path)
@@ -751,7 +739,7 @@ end
 
 --- Root: browse the disk, then every dread category and ambience channel whose mod is present.
 function tz_sound_tool_wnd:show_root()
-    local entries = { { label = "[browse files]", on_select = function() self:show_folder(_get_logs_dir()) end } }
+    local entries = { { label = "[browse files]", on_select = function() self:show_folder(tz_ui.get_logs_dir()) end } }
     local categories = _is_dread_available() and _dread_categories or {}
     for i = 1, #categories do entries[#entries + 1] = self:build_dread_entry(categories[i]) end
     local channels = _is_ambience_available() and _channels or {}
@@ -764,9 +752,9 @@ end
 --- The drive list, shown above a drive root.
 function tz_sound_tool_wnd:show_drives()
     self.dir, self.row, self.items, self.index, self.view = "", nil, nil, nil, { kind = VIEW_DRIVES }
-    local entries = { { label = "..", on_select = function() self:show_root() end } }
-    local drives = xfs.read_drives()
-    for i = 1, #drives do entries[#entries + 1] = self:build_folder_entry(drives[i] .. "\\") end
+    local rows = tz_ui.get_browse_rows("", {})
+    local entries = {}
+    for i = 1, #rows do entries[i] = self:build_browse_entry(rows[i]) end
     self:set_entries(entries, "drives")
     self:render()
 end
@@ -775,20 +763,17 @@ end
 function tz_sound_tool_wnd:show_folder(dir)
     if dir == "" then return self:show_drives() end
     self.dir, self.row, self.items, self.index, self.view = dir, nil, nil, nil, { kind = VIEW_FOLDER, dir = dir }
-    local entries = { { label = "..", on_select = function() self:show_folder(_get_parent_dir(dir)) end } }
-    local folders, files = xfs.read_disk_entries(dir:sub(1, -2))
-    table_sort(folders)
-    table_sort(files)
-    local oggs, playlists = 0, {}
+    local rows, files = tz_ui.get_browse_rows(dir, { EXT_TXT })
+    local entries = {}
+    for i = 1, #rows do entries[i] = self:build_browse_entry(rows[i]) end
+    local oggs = 0
     for i = 1, #files do
-        local ext = _get_extension(files[i])
-        if ext == EXT_OGG then oggs = oggs + 1 elseif ext == EXT_TXT then playlists[#playlists + 1] = dir .. files[i] end
+        if _get_extension(files[i]) == EXT_OGG then oggs = oggs + 1 end
     end
     if oggs > 0 then
-        entries[#entries + 1] = { label = string_format("[play this folder (%d)]", oggs), on_select = function() self:show_pool(function() return _build_folder_row(dir) end, dir) end }
+        table_insert(entries, 2, { label = string_format("[play this folder (%d)]", oggs),
+            on_select = function() self:show_pool(function() return _build_folder_row(dir) end, dir) end })
     end
-    for i = 1, #folders do entries[#entries + 1] = self:build_folder_entry(dir .. folders[i] .. "\\") end
-    for i = 1, #playlists do entries[#entries + 1] = self:build_playlist_entry(playlists[i]) end
     self:set_entries(entries, dir)
     self:render()
 end

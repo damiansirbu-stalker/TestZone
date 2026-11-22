@@ -42,6 +42,7 @@
     - Changed the 3 windows to keep their shape on 4:3, 16:9 and 21:9 screens. AnimationTool docks right, GeoTool docks left and SoundTool sits in the middle.
     - Changed SoundTool's modes to 3 keys, as heard, 2D and 3D. A click on the lit key steps its distance or dread level, and the volume keys set how loud the next play is.
     - Changed AnimationTool's posture to the pose and moving keys, and the selected motion now shows above the note.
+    - Changed AnimationTool to browse any folder for a playlist, as SoundTool does. Its shipped playlists stay at the root.
     - Rewrote the manual of each tool.
 
   Development

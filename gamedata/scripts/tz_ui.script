@@ -1,7 +1,7 @@
 --- tz_ui: the parts every TestZone tool window shares, built on the xlibs xcui primitives.
 
 local os_date, os_time, os_clock, math_abs, math_floor = os.date, os.time, os.clock, math.abs, math.floor
-local string_format, table_concat, tonumber, tostring, select = string.format, table.concat, tonumber, tostring, select
+local string_format, table_concat, table_sort, tonumber, tostring, select = string.format, table.concat, table.sort, tonumber, tostring, select
 
 --- The bevelled body every tool window sits on, in draw order: the outer line, the opaque panel, the light top-left and dark bottom-right edges.
 PANEL = { "panel_outer", "panel_body", "panel_light_t", "panel_light_l", "panel_shade_b", "panel_shade_r" }
@@ -30,14 +30,47 @@ function render_lamps(controls, is_on)
     controls.lamp_red:SetTextureColor(is_on and dim or lit)
 end
 
+--- The game's logs folder in xfs.format_dir form, where every tool writes and every disk browser opens.
+--- @return string The absolute folder, ending in a backslash
+function get_logs_dir()
+    return xfs.format_dir(xfs.resolve_path("$logs$", ""))
+end
+
+--- The rows of a disk browser at dir: "..", the subfolders, then the files with one of the extensions, each group by name; dir "" lists the drives.
+--- A row is { label, dir } for a folder or { label, path } for a file. The drive list's ".." row carries neither, and leads back to the tool's root.
+--- @param dir string An absolute folder in xfs.format_dir form, or "" for the drive list
+--- @param exts table The file extensions listed, lowercase and without the dot, as { "txt" }
+--- @return table The rows
+--- @return table Every file name in the folder, sorted, for a tool that counts kinds of its own
+function get_browse_rows(dir, exts)
+    if dir == "" then
+        local rows, drives = { { label = ".." } }, xfs.read_drives()
+        for i = 1, #drives do rows[#rows + 1] = { label = drives[i] .. "\\", dir = drives[i] .. "\\" } end
+        return rows, {}
+    end
+    local rows = { { label = "..", dir = xfs.get_parent_dir(dir) } }
+    local folders, files = xfs.read_disk_entries(dir:sub(1, -2))
+    table_sort(folders)
+    table_sort(files)
+    local is_listed = {}
+    for i = 1, #exts do is_listed[exts[i]] = true end
+    for i = 1, #folders do
+        local sub = dir .. folders[i] .. "\\"
+        rows[#rows + 1] = { label = folders[i] .. "\\", dir = sub }
+    end
+    for i = 1, #files do
+        if is_listed[(files[i]:match("%.([^%.]+)$") or ""):lower()] then rows[#rows + 1] = { label = files[i], path = dir .. files[i] } end
+    end
+    return rows, files
+end
+
 --- The tool's file for this game run, named by the launch time os.time() - os.clock(), since os.clock counts from process start (luajit lib_os.c:122-126).
 --- A level change rebuilds the Lua state (xray alife_simulator.cpp:28-37 restart_all), so the file is found again by its launch time.
 --- @param tool string The file prefix, as sound_tool
 --- @return string The absolute path
 function get_session_path(tool)
     if _paths[tool] then return _paths[tool] end
-    local dir = xfs.resolve_path("$logs$", ""):gsub("/", "\\")
-    dir = dir:sub(-1) == "\\" and dir or (dir .. "\\")
+    local dir = get_logs_dir()
     local launch = os_time() - os_clock()
     local _, files = xfs.read_disk_entries(dir:sub(1, -2))
     local name

@@ -76,7 +76,7 @@ Development:
 Console tools, run through run_string in debug mode:
   tz_commands - a stalker arena and a mutant arena, a life pump that keeps you alive, an actor drive and aim, kits, spawns, weather, time, and teleports to a smart terrain or a stash
   tz_anim - plays a motion on the HUD, a mutant or an NPC and logs whether it played
-  AnimationTool, on PgDn - forces each candidate motion on the stalker you aim at
+  AnimationTool, on PgDn - plays each motion of a playlist from any folder on the stalker you aim at
   tz_fx - cycles post-process effects and ambient sound loops
   tz_loadgen - 30 load cases for checking what a JitProfiler capture caught or missed
 

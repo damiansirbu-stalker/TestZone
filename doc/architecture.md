@@ -30,7 +30,7 @@ Saved game state and the target mods stay as the tool found them.
 - `_tz_manifest.script` and `_tz_init.script` hold the identity and the xlibs dependency gate.
 - `tz_mcm.script` owns every option, and `build_path()` routes a key to its tab by prefix.
 - `tz_help.script` opens a tool's manual page from the help elements in that tool's layout.
-- `tz_ui.script` holds what every tool window shares beyond the xlibs primitives, the lamp pair.
+- `tz_ui.script` holds what every tool window shares beyond the xlibs primitives: the lamp pair, the disk browser's rows and the file of each game run.
 - The tools are `tz_anim_tool.script`, `tz_geo_tool.script` and `tz_sound_tool.script`, each with its base layout and variants in `configs/ui`.
 - `tz_anim.script` is the animation bench AnimationTool plays through.
 - The traces are `tz_watcher.script`, `tz_perception.script` and `tz_sound_trace.script`.
@@ -63,6 +63,8 @@ Layout:
 - A list box is sized only in XML. Its scrollbar is placed once, when the list is built.
 - A tool reopens where it closed: its view, selected row and scroll, kept in the script until the Lua state is rebuilt, which a save load and a level change both do. SoundTool rebuilds an open pool from its recipe, which copies its outside files again.
 - A tool reads playlists: a `.txt` of one item per line or a `.tsv` whose first column is the item, a `;` line a comment.
+  `[browse files]` at the root opens the logs folder, and `..` climbs to the drive list, through `tz_ui.get_browse_rows()`.
+  AnimationTool lists `.tsv` and `.txt` files, SoundTool `.txt` and its folders of `.ogg`.
 - A tool writes one file per game run in the logs folder through `tz_ui.write_line()`: `<tool>_<launch date>_<launch time>.txt`, every line tab-separated as time, source (the playlist, the pool or the level), what was pressed, the item, the tool's own details, the note last.
   The launch time is `os.time() - os.clock()`, since `os.clock` counts from process start, so every Lua state of one run finds the same file.
 - AnimationTool docks right and GeoTool left, and the world stays visible beside them. SoundTool fills the middle.
