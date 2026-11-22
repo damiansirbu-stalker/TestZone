@@ -44,8 +44,8 @@ defaults = {
     geo_key = GEO_KEY_DEFAULT,
     geo_refresh = 0.5,
     soundtool_key = SOUNDTOOL_KEY_DEFAULT,
-    soundtool_trace = false,
-    soundtool_trace_all = false,
+    sound_trace_enabled = false,
+    sound_trace_all = false,
     anim_key = ANIM_KEY_DEFAULT,
     log_level = "WARN",
     log_flush = false,
@@ -57,6 +57,7 @@ local build_path = function(key)
     elseif key:sub(1, 11) == "perception_" then tab = "perception"
     elseif key:sub(1, 4) == "geo_" then tab = "geotool"
     elseif key:sub(1, 10) == "soundtool_" then tab = "soundtool"
+    elseif key:sub(1, 12) == "sound_trace_" then tab = "sound_trace"
     elseif key == KEY_LOG_LEVEL or key == KEY_LOG_FLUSH then tab = "development" end
     return "tz/" .. tab .. "/" .. key
 end
@@ -200,12 +201,23 @@ function on_mcm_load()
                     { id = "desc", type = "desc", text = "ui_mcm_tz_soundtool_desc" },
                     { id = "soundtool_key", type = "key_bind", val = 2, def = SOUNDTOOL_KEY_DEFAULT },
 
-                    { id = "div_trace", type = "line" },
-                    { id = "soundtool_trace", type = "check", val = 1, def = false },
-                    { id = "soundtool_trace_all", type = "check", val = 1, def = false },
-
                     { id = "div_info", type = "line" },
                     { id = "info", type = "desc", text = "ui_mcm_tz_soundtool_info", clr = {200, 200, 200, 100} },
+                },
+            },
+            {
+                id = "sound_trace",
+                text = "ui_mcm_menu_tz_sound_trace",
+                sh = true,
+                gr = {
+                    { id = "title", type = "slide", link = "tz_mcm_banner",
+                        text = "ui_mcm_tz_sound_trace_title", size = {512, 50}, spacing = 20 },
+                    { id = "desc", type = "desc", text = "ui_mcm_tz_sound_trace_desc" },
+                    { id = "sound_trace_enabled", type = "check", val = 1, def = false },
+                    { id = "sound_trace_all", type = "check", val = 1, def = false },
+
+                    { id = "div_info", type = "line" },
+                    { id = "info", type = "desc", text = "ui_mcm_tz_sound_trace_info", clr = {200, 200, 200, 100} },
                 },
             },
             {

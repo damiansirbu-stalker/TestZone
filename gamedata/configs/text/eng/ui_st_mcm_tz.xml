@@ -258,20 +258,34 @@ How often the open window reads every check.</text>
     <string id="ui_mcm_tz_soundtool_soundtool_key_desc">
         <text>Opens the SoundTool window. Esc closes it.</text>
     </string>
-    <string id="ui_mcm_tz_soundtool_soundtool_trace">
-        <text>Sound trace</text>
-    </string>
-    <string id="ui_mcm_tz_soundtool_soundtool_trace_desc">
-        <text>Logs every sound the soundscape plays, with its channel, distance, map and weather, to logs/testzone_sound_trace.log.</text>
-    </string>
-    <string id="ui_mcm_tz_soundtool_soundtool_trace_all">
-        <text>Trace every script sound</text>
-    </string>
-    <string id="ui_mcm_tz_soundtool_soundtool_trace_all_desc">
-        <text>The sound trace also logs script sounds outside the ambient channels, such as music, the interface and DiegeticDread's cues.</text>
-    </string>
     <string id="ui_mcm_tz_soundtool_info">
         <text>Files from outside the game are copied into sounds/sound_tool_cache while the window is open and deleted when it closes.</text>
+    </string>
+
+    <!-- ==================== SOUND TRACE TAB ==================== -->
+    <string id="ui_mcm_menu_tz_sound_trace">
+        <text>Sound trace</text>
+    </string>
+    <string id="ui_mcm_tz_sound_trace_title">
+        <text>TestZone</text>
+    </string>
+    <string id="ui_mcm_tz_sound_trace_desc">
+        <text>Every sound the soundscape plays, with its channel, distance, map and weather. On a modded exe with the mix meter, also how loud the mix is. Output: logs/testzone_sound_trace.log</text>
+    </string>
+    <string id="ui_mcm_tz_sound_trace_sound_trace_enabled">
+        <text>Sound trace</text>
+    </string>
+    <string id="ui_mcm_tz_sound_trace_sound_trace_enabled_desc">
+        <text>Logs every sound the soundscape plays, with its channel, distance, map and weather, to logs/testzone_sound_trace.log.</text>
+    </string>
+    <string id="ui_mcm_tz_sound_trace_sound_trace_all">
+        <text>Trace every script sound</text>
+    </string>
+    <string id="ui_mcm_tz_sound_trace_sound_trace_all_desc">
+        <text>The sound trace also logs script sounds outside the ambient channels, such as music, the interface and DiegeticDread's cues.</text>
+    </string>
+    <string id="ui_mcm_tz_sound_trace_info">
+        <text>A run on plain Anomaly, GAMMA or the Diegetic mods compares line for line. Log output: logs/testzone_sound_trace.log</text>
     </string>
 
     <!-- ==================== DEVELOPMENT TAB ==================== -->
@@ -331,7 +345,7 @@ How often the open window reads every check.</text>
         <text>AnimationTool</text>
     </string>
     <string id="st_tz_anim_tool_help">
-        <text>AnimationTool plays a motion or a state on a stalker, and you judge it good or bad in its file in the logs folder, one per game run.\n \nLook at a stalker and press the open key, PgDn unless MCM changed it. The tool binds him for as long as the window stays open. The screen shows his name, then the state last asked of him and, after the arrow, the animation he plays now, refreshed twice a second. Select pins the stalker you aim at, or the bound one when you aim at no one, and keeps him bound every time you reopen the tool. Its diode stays lit until Reset drops him.\n \nThe list shows every .tsv or .txt file in configs/testzone/anim. Click a file, then click a motion to select it. Play or a double click plays it on the stalker, Stop sends him back to idle, and Prev and Next step to the neighbouring motion and play it. The green lamp stays lit while a motion holds on him, and the red lamp lights when it stops.\n \nPose plays a motion standing in place, and moving plays it while he walks. A click on either key replays the motion at once. A state from the dig list plays the way the game wires it and ignores both keys.\n \nThe prop row at the top of a list attaches an item, a bottle, a guitar or a knife, from the next play on, until you pick none again.\n \nGood and bad log the selected motion with your typed note, the plus key logs the typed note alone, and the bottom screen shows the last two entries.\n \nA motion plays only when that stalker has its animation file loaded, and an unknown name plays nothing. Esc closes the tool and returns the stalker to idle.</text>
+        <text>AnimationTool plays a motion or a state on a stalker, and you judge it good or bad in its file in the logs folder, one per game run.\n \nLook at a stalker and press the open key, PgDn unless MCM changed it. The tool binds him for as long as the window stays open. The screen shows his name, then the state last asked of him and, after the arrow, the animation he plays now, refreshed twice a second. Select pins the stalker you aim at, or the bound one when you aim at no one, and keeps him bound every time you reopen the tool. Its diode stays lit until Reset drops him.\n \nThe list starts with browse files, then every .tsv or .txt file in configs/testzone/anim. Browse files opens the logs folder, two dots go up a folder, and above a drive the list shows every drive. Click a file, then click a motion to select it. Play or a double click plays it on the stalker, Stop sends him back to idle, and Prev and Next step to the neighbouring motion and play it. The green lamp stays lit while a motion holds on him, and the red lamp lights when it stops.\n \nPose plays a motion standing in place, and moving plays it while he walks. A click on either key replays the motion at once. A state from the dig list plays the way the game wires it and ignores both keys.\n \nThe prop row at the top of a list attaches an item, a bottle, a guitar or a knife, from the next play on, until you pick none again.\n \nGood and bad log the selected motion with your typed note, the plus key logs the typed note alone, and the bottom screen shows the last two entries.\n \nA motion plays only when that stalker has its animation file loaded, and an unknown name plays nothing. Esc closes the tool and returns the stalker to idle.</text>
     </string>
     <string id="st_tz_sound_tool_help_title">
         <text>SoundTool</text>

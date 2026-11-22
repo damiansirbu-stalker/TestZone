@@ -279,8 +279,8 @@ end
 local function _load_config()
     local cfg = tz_mcm and tz_mcm.cfg
     if not cfg then return end
-    _config.on = cfg.soundtool_trace == true
-    _config.all = cfg.soundtool_trace_all == true
+    _config.on = cfg.sound_trace_enabled == true
+    _config.all = cfg.sound_trace_all == true
     log._logger.flush_on_level = cfg.log_flush and _levels.TRACE or _levels.ERROR
     _apply_enabled()
 end
