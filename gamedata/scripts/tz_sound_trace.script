@@ -10,6 +10,8 @@ local log = xlog.get_logger("TestZone.sound_trace", { outfile = "testzone_sound_
 local _levels = xlog.get_levels()
 
 local REPORT_SEC = 60
+-- The LOUD line's cadence: one read of the mix meter a second.
+local LOUD_SEC = 1
 -- A file heard again inside this window counts as a repeat in the summary.
 local REPEAT_MS = 300000
 local TOP_N = 5
@@ -22,6 +24,8 @@ local HOOK_EFFECT, HOOK_THUNDER, HOOK_RAIN, HOOK_MUSIC = "effect", "thunder", "r
 
 local _config = { on = false, all = false }
 local _enabled = false
+-- True when the exe carries xray's mix meter, found by the read at START.
+local _meter = false
 local _channels_of = nil
 local _walk_ini
 local _counts = {}
@@ -86,11 +90,19 @@ local function _get_spot(pos)
     return string_format("dist=%.0f h=%.0f at=%.1f,%.1f,%.1f", apos:distance_to(pos), pos.y - apos.y, pos.x, pos.y, pos.z)
 end
 
+--- The mix loudness of the 400 ms and 3 s before now, "-" while the meter warms up, and nothing on an exe without the meter.
+local function _format_loudness()
+    if not _meter then return "" end
+    local ok, momentary, short_term = xsound.get_output_loudness()
+    if not ok then return " lufs_m=- lufs_s=-" end
+    return string_format(" lufs_m=%.1f lufs_s=%.1f", momentary, short_term)
+end
+
 --- Append one play line and count it for the minute summary.
 local function _log_play(hook, channel, file, spot)
     _plays_n = _plays_n + 1
     _counts[hook] = (_counts[hook] or 0) + 1
-    log.info("PLAY hook=%s ch=%s file=%s %s %s", hook, channel or "-", tostring(file), spot, _get_place_tag())
+    log.info("PLAY hook=%s ch=%s file=%s %s%s %s", hook, channel or "-", tostring(file), spot, _format_loudness(), _get_place_tag())
 end
 
 --- The map and weather state a summary is kept for.
@@ -224,7 +236,17 @@ local function _run_report()
     return false
 end
 
+--- One line a second with the mix meter's momentary, short-term and peak values, for the offline join against the plays.
+local function _run_loud()
+    if not (_enabled and _meter) then return true end
+    local ok, momentary, short_term, peak = xsound.get_output_loudness()
+    if ok then log.info("LOUD m=%.1f s=%.1f p=%.1f", momentary, short_term, peak) end
+    ResetTimeEvent("tz_sound_trace", "loud", LOUD_SEC)
+    return false
+end
+
 --- Subscribe or drop every hook as the switch changes. Inert on an exe without the hooks.
+--- The START read of the mix meter also starts it, and its nil answer marks an exe without the meter.
 local function _apply_enabled()
     local wanted = _config.on and xsound ~= nil and xsound.register_ambient_listener ~= nil
     if wanted == _enabled then return end
@@ -236,16 +258,20 @@ local function _apply_enabled()
         for i = 1, #LISTENERS do
             if xsound.register_ambient_listener(LISTENERS[i][1], LISTENERS[i][2]) then attached = attached + 1 end
         end
-        log.info("START hooks=%d of %d all_script=%s build=%s ambient_volume=%s %s", attached, #LISTENERS, tostring(_config.all),
+        _meter = xsound.get_output_loudness ~= nil and xsound.get_output_loudness() ~= nil
+        log.info("START hooks=%d of %d all_script=%s build=%s ambient_volume=%s meter=%s %s", attached, #LISTENERS, tostring(_config.all),
             tostring(type(get_modded_exes_version) == "function" and get_modded_exes_version() or "?"),
-            tostring(ui_options and ui_options.get("sound/environment/ambient_volume")), _get_place_tag())
+            tostring(ui_options and ui_options.get("sound/environment/ambient_volume")), _meter and "on" or "absent", _get_place_tag())
         log.flush()
         RemoveTimeEvent("tz_sound_trace", "report")
         CreateTimeEvent("tz_sound_trace", "report", REPORT_SEC, _run_report)
+        RemoveTimeEvent("tz_sound_trace", "loud")
+        if _meter then CreateTimeEvent("tz_sound_trace", "loud", LOUD_SEC, _run_loud) end
         return
     end
     for i = 1, #LISTENERS do xsound.unregister_ambient_listener(LISTENERS[i][1], LISTENERS[i][2]) end
     RemoveTimeEvent("tz_sound_trace", "report")
+    RemoveTimeEvent("tz_sound_trace", "loud")
     log.info("STOP")
     log.flush()
 end

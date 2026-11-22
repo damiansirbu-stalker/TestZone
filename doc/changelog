@@ -34,6 +34,7 @@
     - Replaced the review players of DiegeticAmbience and DiegeticDread, and logged to testzone.log.
     - Added the sound trace. It logs every sound the soundscape plays, with its channel, its distance from you, the map and the weather, to testzone_sound_trace.log.
       A run on plain Anomaly, GAMMA or the Diegetic mods compares line for line.
+      On a modded exe with the mix meter, every play line carries the mix loudness, and a loudness line follows each second.
 
   Tool windows
     - Changed AnimationTool, GeoTool and SoundTool into devices built from the game's textures, each with a screen color and keys that set it apart.
