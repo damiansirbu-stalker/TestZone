@@ -61,7 +61,10 @@ Layout:
 - A tool builds its controls with `xcui.build()` from one ordered list of layout names and kinds, which is also the draw order.
 - After editing a base layout, rerun `stalker-manager.sh ui-variants TestZone` and commit the variants with it. A variant is never edited by hand.
 - A list box is sized only in XML. Its scrollbar is placed once, when the list is built.
-- A tool reopens where it closed: its view, selected row and scroll, kept in the script until a save loads. SoundTool rebuilds an open pool from its recipe, which copies its outside files again.
+- A tool reopens where it closed: its view, selected row and scroll, kept in the script until the Lua state is rebuilt, which a save load and a level change both do. SoundTool rebuilds an open pool from its recipe, which copies its outside files again.
+- A tool reads playlists: a `.txt` of one item per line or a `.tsv` whose first column is the item, a `;` line a comment.
+- A tool writes one file per game run in the logs folder through `tz_ui.write_line()`: `<tool>_<launch date>_<launch time>.txt`, every line tab-separated as time, source (the playlist, the pool or the level), what was pressed, the item, the tool's own details, the note last.
+  The launch time is `os.time() - os.clock()`, since `os.clock` counts from process start, so every Lua state of one run finds the same file.
 - AnimationTool docks right and GeoTool left, and the world stays visible beside them. SoundTool fills the middle.
 
 Style, an analog Soviet device built from vanilla parts:
@@ -89,7 +92,7 @@ Each MCM tab is one component, in tab order.
 - Profiler wraps suspect functions with `xprofiler` and reports slow calls.
 - Perception traces what the stalkers and mutants near the actor hear, see, remember and fear, and whom they pick as enemy.
 - GeoTool holds its key and the refresh period. The window shows the position and every place check, refreshed while it is open.
-  A note saves the spot with every reading to `geo_tool.txt`.
-- SoundTool holds its key. The window plays ambience channels, dread categories, voice and any `.ogg` on disk, and writes tags and notes to `sound_tool.txt`.
+  A note saves the spot with every reading to the GeoTool file of the run.
+- SoundTool holds its key. The window plays ambience channels, dread categories, voice and any `.ogg` on disk, and writes tags and notes to the SoundTool file of the run.
   A file from outside the game is copied into `sounds/sound_tool_cache`, and the index rescans once per batch. The game plays only indexed names.
 - Development sets the log level and flush for every logger in `TZ_LOGGERS` and resets every option.

@@ -72,7 +72,7 @@
 	<note_plus_v x="766.6" y="542" width="1.5" height="12" stretch="1"><texture r="175" g="180" b="190" a="255">ui_inGame2_white_rect</texture></note_plus_v>
 	<btn_note x="755.8" y="533" width="23.2" height="30" frame_mode="1"><texture>tz_rkey</texture></btn_note>
 
-	<!-- LAST LINES: the newest lines written to sound_tool.txt. -->
+	<!-- LAST LINES: the newest lines written to this game run's SoundTool file. -->
 	<scr_feed_rim x="489.5" y="588" width="295.5" height="64" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_feed_rim>
 	<scr_feed_glass x="490.6" y="589.5" width="293.2" height="61" stretch="1"><texture r="20" g="23" b="27" a="255">ui_inGame2_white_rect</texture></scr_feed_glass>
 	<feed_row_1 x="497" y="592" width="280.5" height="19"><text font="letterica16" align="l" vert_align="c" r="210" g="140" b="80"></text></feed_row_1>

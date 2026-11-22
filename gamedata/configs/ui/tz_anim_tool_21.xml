@@ -57,7 +57,7 @@
 	<note_plus_v x="994.3" y="600" width="1.1" height="12" stretch="1"><texture r="175" g="180" b="190" a="255">ui_inGame2_white_rect</texture></note_plus_v>
 	<btn_note x="985.7" y="591" width="18.3" height="30" frame_mode="1"><texture>tz_rkey</texture></btn_note>
 
-	<!-- LAST LINES: the newest verdicts written to tz_anim_curation.txt. -->
+	<!-- LAST LINES: the newest verdicts written to this game run's AnimationTool file. -->
 	<scr_feed_rim x="854.9" y="639" width="153.7" height="46" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_feed_rim>
 	<scr_feed_glass x="855.7" y="640.5" width="152" height="43" stretch="1"><texture r="20" g="23" b="27" a="255">ui_inGame2_white_rect</texture></scr_feed_glass>
 	<feed_row_1 x="860.6" y="643" width="142.3" height="19"><text font="letterica16" align="l" vert_align="c" r="120" g="205" b="200"></text></feed_row_1>

@@ -1,5 +1,5 @@
-# anim-manager proof - built from YOUR curated KEEP list (curation-anomaly.tsv), barman standing poses.
-# Aim at a stalker, HOME, pick this file, then a motion. Upright + reads clean = OMF loaded, bones mapped.
+; anim-manager proof - built from YOUR curated KEEP list (curation-anomaly.tsv), barman standing poses.
+; Aim at a stalker, PgDn, pick this file, then a motion. Upright + reads clean = OMF loaded, bones mapped.
 ap_keep_commander
 ap_keep_armscross
 ap_keep_hello

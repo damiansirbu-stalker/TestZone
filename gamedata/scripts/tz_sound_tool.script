@@ -4,7 +4,8 @@ local string_format, table_concat, table_sort = string.format, table.concat, tab
 local math_sqrt, math_floor, ipairs = math.sqrt, math.floor, ipairs
 local os_date, os_time, ini_file, RegisterScriptCallback = os.date, os.time, ini_file, RegisterScriptCallback
 
-local OUTPUT_FILE  = "sound_tool.txt"
+-- The prefix of this tool's file per game run in the logs folder (tz_ui.write_line).
+local OUTPUT_TOOL  = "sound_tool"
 local LOGS_MOUNT   = "$logs$"
 local SOUNDS_MOUNT = "$game_sounds$"
 local CACHE_DIR    = "sound_tool_cache"
@@ -571,15 +572,14 @@ local function _stop_plays()
     _handles = {}
 end
 
---- Append one note line for the item: its path, family, where it belongs, the mode with its resolved values, and the text.
+--- One line in this game run's file: the playlist or pool, the tag or note, the sound, its family, where it belongs, the mode, the typed note.
 --- @return boolean True when the line was written
-local function _write_note(item, mode, text)
+local function _write_note(source, tag, item, mode, typed)
     local flat, height, volume, note = _compute_place(item, mode)
     local resolved = flat and string_format("%.0f m h%g vol %.2f %s", flat, height, volume, note) or string_format("vol %.2f", volume)
     local family = item.family
-    local line = string_format("%s [SOUND] %s  source=%s  where=%s  mode=%s (%s)  :: %s", os_date("%Y-%m-%d %H:%M:%S"),
-        item.source or item.path, family.id, family.format_where(item), mode.label, resolved, text)
-    return xfs.write_file(_get_logs_dir() .. OUTPUT_FILE, line .. "\n", true)
+    return tz_ui.write_line(OUTPUT_TOOL, source, tag or "note", item.source or item.path, family.id, family.format_where(item),
+        string_format("%s (%s)", mode.label, resolved), typed)
 end
 
 --- Put one written line at the top of the FILE feed, clipped so it fits its row.
@@ -927,9 +927,9 @@ function tz_sound_tool_wnd:add_note(tag)
     local typed = self.note:GetText()
     local text = tag and typed ~= "" and (tag .. " :: " .. typed) or tag or typed
     if not text or text == "" then return end
-    local is_written = _write_note(item, self:get_mode(item), text)
+    local is_written = _write_note(self.row and self.row.name or "", tag, item, self:get_mode(item), typed)
     self.note:SetText("")
-    if is_written then _add_feed_line(item, text) else log.warn("[SOUNDTOOL] could not write %s", OUTPUT_FILE) end
+    if is_written then _add_feed_line(item, text) else log.warn("[SOUNDTOOL] could not write %s", tz_ui.get_session_path(OUTPUT_TOOL)) end
     self:render()
 end
 

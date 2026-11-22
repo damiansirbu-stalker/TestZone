@@ -4,8 +4,8 @@ local string_format, table_concat = string.format, table.concat
 local tostring, ipairs, math_floor, math_abs = tostring, ipairs, math.floor, math.abs
 local os_date, RegisterScriptCallback = os.date, RegisterScriptCallback
 
-local OUTPUT_FILE = "geo_tool.txt"
-local LOGS_MOUNT  = "$logs$"
+-- The prefix of this tool's file per game run in the logs folder (tz_ui.write_line).
+local OUTPUT_TOOL = "geo_tool"
 local EV          = "tz_geo_tool"
 local RQ_STATIC   = 2
 local STOP_SHORT  = 0.4
@@ -138,18 +138,15 @@ local function _is_window_open()
     return _box ~= nil and _box:IsShown()
 end
 
--- Append one record to the output file: time, kind, level, x y z, level vertex, payload.
+-- One record in this game run's file: the level, the kind, x y z, the level vertex, the payload.
 local function _write_record(kind, payload)
     local actor = db.actor
     if not actor then return false end
-    local base = getFS():update_path(LOGS_MOUNT, "")
     local pos = actor:position()
-    local stamp = os_date("%H:%M:%S")
-    local line = string_format("%s %s\t%s\t%s\t%.2f %.2f %.2f\t%d\t%s", os_date("%Y-%m-%d"), stamp, kind,
-        level.name(), pos.x, pos.y, pos.z, actor:level_vertex_id(), payload or "")
-    local is_written = xfs.write_file(base .. OUTPUT_FILE, line .. "\n", true)
+    local is_written = tz_ui.write_line(OUTPUT_TOOL, level.name(), kind, string_format("%.2f %.2f %.2f", pos.x, pos.y, pos.z),
+        actor:level_vertex_id(), payload)
     if not is_written then return false end
-    xcui.push_line(_feed, string_format("%s %s %s", stamp, kind, payload or ""), FEED_MAX, FEED_CHARS)
+    xcui.push_line(_feed, string_format("%s %s %s", os_date("%H:%M:%S"), kind, payload or ""), FEED_MAX, FEED_CHARS)
     if _is_window_open() then _box:render() end
     return true
 end
@@ -191,7 +188,7 @@ local function _on_key_press(key)
     if key == _get_setting("key") then _try_open() end
 end
 
---- A level change with the window open: stop the refresh and drop the open-window entry, so Check_UI never stays blocked.
+--- A level change with the window open: stop the refresh and drop the open-window entry before the Lua state is rebuilt.
 local function _on_actor_destroy()
     RemoveTimeEvent(EV, "live")
     _live_on = false
@@ -224,6 +221,7 @@ function tz_geo_tool_wnd:get_layout()
         { kind = "text", names = xcui.get_names("reading_name_", #CHECK_ORDER) },
         { kind = "text", names = xcui.get_names("reading_value_", #CHECK_ORDER) },
         { kind = "static", names = { "lamp_green", "lamp_red" } },
+        { kind = "text", names = { "note_tint" } },
         { kind = "edit", names = { "note" } },
         { kind = "button", names = { "btn_note", "btn_help" } },
         { kind = "text", names = xcui.get_names("feed_row_", FEED_MAX) },
@@ -236,6 +234,7 @@ function tz_geo_tool_wnd:init_controls()
     local ui = xcui.build(xml, self, self:get_layout())
     self.ui = ui
     self.lbl_where, self.note = ui.lbl_where, ui.note
+    ui.note_tint:SetText(" ")
     self.reading_names = xcui.get_controls(ui, xcui.get_names("reading_name_", #CHECK_ORDER))
     self.reading_values = xcui.get_controls(ui, xcui.get_names("reading_value_", #CHECK_ORDER))
     self.feed_rows = xcui.get_controls(ui, xcui.get_names("feed_row_", FEED_MAX))

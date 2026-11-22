@@ -63,13 +63,13 @@ Perception, one switch per system, one line per change, written to testzone_perc
   Enemy - who he picks as enemy and drops, and whether he heard or saw you first
   Radius, All sound sources and Include mutants set who the trace follows
 GeoTool:
-  A window on a key you bind, to mark a spot, write notes and record samples to geo_tool.txt
-  A HUD with the live readings: nearest smart terrain and base owner, the indoor, roof and underground tests, emission and shelter cover, and the rain around you
-  A reading turns green when it agrees with your mark and red when it does not
+  A window on a key you bind, with your position and every place check live at your spot
+  The checks: nearest smart terrain and base owner, the indoor, roof and underground tests, emission and shelter cover, rain and sky light
+  A note saves the spot and every reading to the GeoTool file of this game run
 SoundTool:
   A window on End that plays ambience channels, dread categories, NPC voice and any .ogg on disk
   It plays a sound as its mod does in game, or at the ear or a set distance, with its loudness
-  It browses any folder and opens playlists, and every tag or note goes to sound_tool.txt
+  It browses any folder and opens playlists, and every tag or note goes to the SoundTool file of this game run
   A sound trace logs every sound the soundscape plays, with its channel, distance, map and weather
 Development:
   Log level and Immediate flush for every TestZone log, and Reset to defaults
@@ -86,7 +86,8 @@ Modded exes: themrdemonized 20250908 or newer, or AOEngine v0.5.2 or newer. The 
 xlibs (https://www.moddb.com/mods/stalker-anomaly/addons/xlibs-1001)
 MCM
 
-Logs go to appdata/logs: testzone.log, and one file each for Perception, the sound trace, the arenas, GeoTool and the SoundTool notes in sound_tool.txt.
+Logs go to appdata/logs: testzone.log, and one file each for Perception, the sound trace and the arenas.
+Each tool writes one file per game run, named by the tool and the launch time, as sound_tool_20261122_162100.txt. Every line starts with the time and the playlist, pool or level it came from.
 Perception reads engine state only.
 A run with an AI mod on and a run with it off compare line for line.
 

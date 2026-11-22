@@ -62,12 +62,14 @@
 	<!-- NOTE: the typed text, saved with the spot and every reading. -->
 	<scr_note_rim x="20.2" y="328" width="165.8" height="29" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_note_rim>
 	<scr_note_glass x="21.4" y="329.5" width="163.5" height="26" stretch="1"><texture r="20" g="23" b="27" a="255">ui_inGame2_white_rect</texture></scr_note_glass>
+	<!-- An empty edit box draws its cursor in the font's last colour (xray UILines.cpp:392-396, UICustomEdit.cpp:251-259); this one-space text, drawn just before it, makes that colour light. -->
+	<note_tint x="20.2" y="328" width="165.8" height="29"><text font="letterica16" r="190" g="190" b="186"/></note_tint>
 	<note x="20.2" y="328" width="165.8" height="29"><text x="8" font="letterica16" vert_align="c" align="l" r="190" g="190" b="186"/></note>
 	<note_plus_h x="202.5" y="342" width="9" height="2" stretch="1"><texture r="175" g="180" b="190" a="255">ui_inGame2_white_rect</texture></note_plus_h>
 	<note_plus_v x="206.2" y="337" width="1.5" height="12" stretch="1"><texture r="175" g="180" b="190" a="255">ui_inGame2_white_rect</texture></note_plus_v>
 	<btn_note x="192" y="328" width="30" height="30" frame_mode="1"><texture>tz_rkey</texture></btn_note>
 
-	<!-- LAST LINES: the newest records written to geo_tool.txt. -->
+	<!-- LAST LINES: the newest records written to this game run's GeoTool file. -->
 	<scr_feed_rim x="20.2" y="370" width="201.8" height="46" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_feed_rim>
 	<scr_feed_glass x="21.4" y="371.5" width="199.5" height="43" stretch="1"><texture r="112" g="130" b="88" a="255">ui_inGame2_white_rect</texture></scr_feed_glass>
 	<feed_row_1 x="24.8" y="373" width="192.8" height="20"><text font="letterica16" align="l" vert_align="c" r="28" g="36" b="24"></text></feed_row_1>

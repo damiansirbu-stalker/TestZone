@@ -1,7 +1,7 @@
 1.0.4-snapshot
   Perception trace, GeoTool, SoundTool, level scans and console test benches
     Perception, GeoTool and SoundTool are new tabs. The perception trace logs what the stalkers and mutants near you hear, see, remember, fear and pick as enemy.
-    GeoTool shows what the game's place checks say at your spot, live in its window, and saves your notes with every reading to geo_tool.txt.
+    GeoTool shows what the game's place checks say at your spot, live in its window, and saves your notes with every reading to its file for the game run.
     The Main tab adds 4 scans and a timer queue watch, while the console commands add 2 arenas, a life pump and 2 animation benches.
 
   Main
@@ -25,10 +25,10 @@
   GeoTool
     - Added GeoTool. Its open key shows your position in a dosimeter's digits and every place check, live while the window is open.
       The checks are the nearest smart terrain and base owner, the indoor, roof and underground tests, emission and shelter cover, rain and sky light.
-      A note saves the spot with every reading to geo_tool.txt, and the text says when a check reads the spot wrong.
+      A note saves the spot with every reading to the GeoTool file of the game run, and the text says when a check reads the spot wrong.
 
   SoundTool
-    - Added SoundTool on End. It plays DiegeticAmbience channels, DiegeticDread categories, NPC voice and any .ogg on disk, and writes your tags and notes to sound_tool.txt.
+    - Added SoundTool on End. It plays DiegeticAmbience channels, DiegeticDread categories, NPC voice and any .ogg on disk, and writes your tags and notes to the SoundTool file of the game run.
       An ambience channel plays near, middle or far where the game places it, and a dread sound at the live or a preset dread. Every sound also plays at the ear or at a fixed distance.
       It browses any folder and opens playlists of game paths, absolute paths or paths next to the playlist. Files from outside the game are copied into the sounds folder for the session.
     - Replaced the review players of DiegeticAmbience and DiegeticDread, and logged to testzone.log.

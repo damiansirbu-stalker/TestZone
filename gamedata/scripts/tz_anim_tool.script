@@ -5,10 +5,10 @@ local os_date = os.date
 local tostring, IsStalker = tostring, IsStalker
 local RegisterScriptCallback = RegisterScriptCallback
 
-local LOGS_MOUNT    = "$logs$"
 local CONFIG_MOUNT  = "$game_config$"
 local ANIM_DIR      = "testzone\\anim\\"
-local CURATION_FILE = "tz_anim_curation.txt"
+-- The prefix of this tool's file per game run in the logs folder (tz_ui.write_line).
+local OUTPUT_TOOL   = "animation_tool"
 local VIEW_ROOT, VIEW_POOL, VIEW_PROP = "root", "pool", "prop"
 local FILL_QUEUE, FILL_STEP = "tz_anim_fill", 20
 -- While the window is open the display refreshes this often, in seconds, so the NPC's states stay current.
@@ -58,7 +58,7 @@ local MODES = {
 }
 
 local _view    = VIEW_ROOT
-local _sources = {}
+local _playlists = {}
 local _row     = nil
 local _cur     = nil
 local _mode_i  = 1
@@ -85,8 +85,8 @@ local function _split_tab(line)
     return out
 end
 
--- Find every source file (.tsv or .txt) shipped or dropped in configs\testzone\anim.
-local function _find_sources()
+-- Find every playlist (.tsv or .txt) shipped or dropped in configs\testzone\anim.
+local function _find_playlists()
     local out = {}
     local exts = { ".tsv", ".txt" }
     for e = 1, #exts do
@@ -97,9 +97,9 @@ local function _find_sources()
     return out
 end
 
--- Read one source file into a candidate pool, auto-detecting a TSV header or a plain one-name-per-line txt.
+-- Read one playlist into a candidate pool, auto-detecting a TSV header or a plain one-name-per-line txt; a ; line is a comment.
 -- A TSV with a "state" column holds states (held directly); anything else is motions (a temp state is built).
-local function _read_source(file)
+local function _read_playlist(file)
     local data = xfs.read_file(getFS():update_path(CONFIG_MOUNT, "") .. ANIM_DIR .. file)
     if not data then return nil end
     local lines = {}
@@ -128,18 +128,17 @@ local function _read_source(file)
             label = name and (#extra > 0 and string_format("%s  [%s]", name, table_concat(extra, " ")) or name)
         else
             name = lines[k]:match("^%s*(.-)%s*$")
-            if name == "" or name:sub(1, 1) == "#" then name = nil end
+            if name == "" or name:sub(1, 1) == ";" then name = nil end
             label = name
         end
         if name and name ~= "" then pool[#pool + 1] = { name = name, is_state = is_state, label = label } end
     end
-    table_sort(pool, function(left, right) return left.name < right.name end)
     return { label = file, pool = pool }
 end
 
+--- One verdict line in this game run's file: the playlist, the verdict, the motion, the posture, the note.
 local function _write_verdict(name, verdict, note)
-    return xfs.write_file(getFS():update_path(LOGS_MOUNT, "") .. CURATION_FILE,
-        string_format("%s\t%s\t%s\t%s\n", verdict, name, _get_mode().label, note or ""), true)
+    return tz_ui.write_line(OUTPUT_TOOL, _row and _row.label, verdict, name, _get_mode().label, note)
 end
 
 --- Put one written verdict at the top of the FILE feed, clipped so it fits its row.
@@ -188,7 +187,7 @@ local function _on_key_press(key)
     if key == tz_mcm.get_config("anim_key") then _try_open() end
 end
 
---- A level change with the window open: drop the fill, the held motion and the open-window entry, so Check_UI never stays blocked.
+--- A level change with the window open: drop the fill, the held motion and the open-window entry before the Lua state is rebuilt.
 local function _on_actor_destroy()
     xslice.stop_queue(FILL_QUEUE, true)
     RemoveTimeEvent(LIVE_EV, "live")
@@ -283,18 +282,18 @@ function tz_anim_tool_wnd:build_list(place)
     _built = true
     local on_filled = place and function() xcui.set_list_place(self.list, place) end
     if _view == VIEW_POOL then return self:add_pool_rows(_row, on_filled) end
-    if _view == VIEW_ROOT then self:add_source_rows() else self:add_prop_rows() end
+    if _view == VIEW_ROOT then self:add_playlist_rows() else self:add_prop_rows() end
     if on_filled then on_filled() end
 end
 
---- Fill the root list with the source files in the anim folder, or a hint when none are present.
-function tz_anim_tool_wnd:add_source_rows()
-    _sources = _find_sources()
-    if #_sources == 0 then
+--- Fill the root list with the playlists in the anim folder, or a hint when none are present.
+function tz_anim_tool_wnd:add_playlist_rows()
+    _playlists = _find_playlists()
+    if #_playlists == 0 then
         self.list:AddTextItem("(empty - drop a .tsv or .txt in configs\\testzone\\anim)")
         return
     end
-    for i = 1, #_sources do self.list:AddTextItem(_sources[i]) end
+    for i = 1, #_playlists do self.list:AddTextItem(_playlists[i]) end
 end
 
 --- Fill the prop picker: back, a clear entry, then every attachable prop labelled by its group.
@@ -306,7 +305,7 @@ function tz_anim_tool_wnd:add_prop_rows()
     end
 end
 
---- Fill one source's pool, frame-spread by xslice so a large motion list never builds in one frame; on_filled runs once every row is in.
+--- Fill one playlist's pool, frame-spread by xslice so a large motion list never builds in one frame; on_filled runs once every row is in.
 function tz_anim_tool_wnd:add_pool_rows(row, on_filled)
     if not row then return end
     self.list:AddTextItem("..")
@@ -333,7 +332,7 @@ function tz_anim_tool_wnd:render_modes()
     end
 end
 
---- The list's first line: the source folder, the prop picker, or the open source file and its row count.
+--- The list's first line: the playlist folder, the prop picker, or the open playlist and its row count.
 function tz_anim_tool_wnd:render_path()
     if _view == VIEW_ROOT then
         self.lbl_path:SetText("configs\\testzone\\anim")
@@ -396,17 +395,17 @@ function tz_anim_tool_wnd:select_row()
     end
 end
 
---- ROOT click: load the chosen source TSV into a pool and switch to the candidate list.
+--- ROOT click: load the chosen playlist into a pool and switch to the candidate list.
 function tz_anim_tool_wnd:select_root(idx)
-    local file = _sources[idx + 1]
+    local file = _playlists[idx + 1]
     if not file then return end
-    local row = _read_source(file)
+    local row = _read_playlist(file)
     if not (row and #row.pool > 0) then return end
     _row, _view = row, VIEW_POOL
     self:build_list(); self:render()
 end
 
---- POOL click: index 0 returns to the source list, index 1 opens the prop picker, any other index selects that candidate; Play or a double click plays it.
+--- POOL click: index 0 returns to the playlists, index 1 opens the prop picker, any other index selects that candidate; Play or a double click plays it.
 function tz_anim_tool_wnd:select_pool(idx)
     if idx == 0 then
         _view, _cur = VIEW_ROOT, nil
