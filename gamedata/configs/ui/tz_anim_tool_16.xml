@@ -18,8 +18,9 @@
 	<lbl_now x="809.5" y="68" width="186.8" height="21"><text font="letterica16" align="l" vert_align="c" r="120" g="205" b="200"></text></lbl_now>
 	<lbl_mode x="809.5" y="89" width="186.8" height="21"><text font="letterica16" align="l" vert_align="c" r="120" g="205" b="200"></text></lbl_mode>
 
-	<!-- The NPC: select pins the bound NPC across reopens, reset drops it. -->
+	<!-- The NPC: select pins the aimed stalker across reopens and lights its diode, reset drops him. -->
 	<btn_select x="802" y="124" width="101.2" height="30" frame_mode="1"><texture>tz_rkey_start</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">select</text></btn_select>
+	<lit_select x="807.2" y="135" width="6" height="8" stretch="1"><texture>ui_mod_green_diode</texture></lit_select>
 	<btn_reset x="903.2" y="124" width="100.5" height="30" frame_mode="1"><texture>tz_rkey_end</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">reset</text></btn_reset>
 
 	<!-- LIST: the source file on the first line, then the rows. Sized only here: its scrollbar is placed once. -->

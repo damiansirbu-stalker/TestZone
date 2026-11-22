@@ -62,6 +62,9 @@ local _channels, _channel_of, _dread_categories = {}, {}, {}
 local _cache, _cache_count, _is_cache_dirty, _cache_token = {}, 0, false, nil
 local _handles = {}
 local _feed = {}
+-- Where the window stood when it last closed: its view, selected sound, mode, volume and list place, put back on the next open.
+local _kept = nil
+local VIEW_ROOT, VIEW_DRIVES, VIEW_FOLDER, VIEW_POOL = "root", "drives", "folder", "pool"
 
 local function _get_extension(name)
     return (name:match("%.([^%.\\]+)$") or ""):lower()
@@ -598,7 +601,7 @@ end
 
 --- A level change with the window open: stop the fill, the lamp watch, the tool's plays and each audition, and drop the open-window entry.
 local function _on_actor_destroy()
-    xslice.stop_queue(FILL_QUEUE)
+    xslice.stop_queue(FILL_QUEUE, true)
     RemoveTimeEvent(LAMP_EV, "lamps")
     _stop_plays()
     _run_family_hook("stop_audition")
@@ -610,15 +613,16 @@ class "tz_sound_tool_wnd" (CUIScriptWnd)
 function tz_sound_tool_wnd:__init() super()
     self:SetWndRect(Frect():set(0, 0, 1024, 768))
     self:SetAutoDelete(true)
+    local kept = _kept or {}
     self.entries, self.is_built = {}, false
-    self.row, self.items, self.index, self.mode_label, self.dir = nil, nil, nil, nil, nil
-    self.mode_group, self.gain = GROUP_HEARD, GAIN_MAX
+    self.row, self.items, self.index, self.dir, self.view = nil, nil, nil, nil, nil
+    self.mode_group, self.mode_label, self.gain = kept.mode_group or GROUP_HEARD, kept.mode_label, kept.gain or GAIN_MAX
     self:init_controls()
     self:init_callbacks()
     local cleared = _clear_cache()
     _run_family_hook("build_index")
     _run_family_hook("start_audition")
-    self:show_root()
+    self:show_view(kept)
     log.info("[SOUNDTOOL] open: %d ambience channels, %d dread categories, cleared %d cached files", #_channels, #_dread_categories, cleared)
 end
 
@@ -689,7 +693,7 @@ end
 
 --- Replace the list with these entries; each entry is { label, on_select }, and list index i maps to entries[i + 1].
 function tz_sound_tool_wnd:set_entries(entries, title)
-    xslice.stop_queue(FILL_QUEUE)
+    xslice.stop_queue(FILL_QUEUE, true)
     if self.is_built then self.list:RemoveAll() end
     self.is_built = true
     self.entries = entries
@@ -706,12 +710,12 @@ function tz_sound_tool_wnd:select_row()
 end
 
 function tz_sound_tool_wnd:build_dread_entry(category)
-    return { label = "dread  " .. category .. "/", on_select = function() self:show_pool(_build_dread_row(category), nil) end }
+    return { label = "dread  " .. category .. "/", on_select = function() self:show_pool(function() return _build_dread_row(category) end, nil) end }
 end
 
 function tz_sound_tool_wnd:build_channel_entry(channel)
     local label = string_format("%s%s  (%d)  %g-%gm", channel.is_bed and "[bed] " or "", channel.name, #channel.pool, channel.min_dist, channel.max_dist)
-    return { label = label, on_select = function() self:show_pool(_build_channel_row(channel), nil) end }
+    return { label = label, on_select = function() self:show_pool(function() return _build_channel_row(channel) end, nil) end }
 end
 
 function tz_sound_tool_wnd:build_folder_entry(dir)
@@ -726,6 +730,25 @@ function tz_sound_tool_wnd:build_item_entry(index)
     return { on_select = function() self:play_item_at(index) end }
 end
 
+--- Reopen where the window last closed: its view rebuilt from its recipe, then the selected sound and the list's place; root when nothing is kept.
+--- @param kept table What hide saved, or an empty table
+function tz_sound_tool_wnd:show_view(kept)
+    local view = kept.view
+    local on_filled = function()
+        if kept.index and self.items then self:select_item(kept.index) end
+        if kept.place then xcui.set_list_place(self.list, kept.place) end
+    end
+    if view and view.kind == VIEW_POOL and self:show_pool(view.build, view.back_dir, on_filled) then return end
+    if view and view.kind == VIEW_FOLDER then
+        self:show_folder(view.dir)
+    elseif view and view.kind == VIEW_DRIVES then
+        self:show_drives()
+    else
+        self:show_root()
+    end
+    on_filled()
+end
+
 --- Root: browse the disk, then every dread category and ambience channel whose mod is present.
 function tz_sound_tool_wnd:show_root()
     local entries = { { label = "[browse files]", on_select = function() self:show_folder(_get_logs_dir()) end } }
@@ -733,14 +756,14 @@ function tz_sound_tool_wnd:show_root()
     for i = 1, #categories do entries[#entries + 1] = self:build_dread_entry(categories[i]) end
     local channels = _is_ambience_available() and _channels or {}
     for i = 1, #channels do entries[#entries + 1] = self:build_channel_entry(channels[i]) end
-    self.dir, self.row, self.items, self.index = nil, nil, nil, nil
+    self.dir, self.row, self.items, self.index, self.view = nil, nil, nil, nil, { kind = VIEW_ROOT }
     self:set_entries(entries, "root")
     self:render()
 end
 
 --- The drive list, shown above a drive root.
 function tz_sound_tool_wnd:show_drives()
-    self.dir, self.row, self.items, self.index = "", nil, nil, nil
+    self.dir, self.row, self.items, self.index, self.view = "", nil, nil, nil, { kind = VIEW_DRIVES }
     local entries = { { label = "..", on_select = function() self:show_root() end } }
     local drives = xfs.read_drives()
     for i = 1, #drives do entries[#entries + 1] = self:build_folder_entry(drives[i] .. "\\") end
@@ -751,7 +774,7 @@ end
 --- A folder on disk: "..", then [play this folder] when it holds .ogg files, then subfolders and .txt playlists.
 function tz_sound_tool_wnd:show_folder(dir)
     if dir == "" then return self:show_drives() end
-    self.dir, self.row, self.items, self.index = dir, nil, nil, nil
+    self.dir, self.row, self.items, self.index, self.view = dir, nil, nil, nil, { kind = VIEW_FOLDER, dir = dir }
     local entries = { { label = "..", on_select = function() self:show_folder(_get_parent_dir(dir)) end } }
     local folders, files = xfs.read_disk_entries(dir:sub(1, -2))
     table_sort(folders)
@@ -762,7 +785,7 @@ function tz_sound_tool_wnd:show_folder(dir)
         if ext == EXT_OGG then oggs = oggs + 1 elseif ext == EXT_TXT then playlists[#playlists + 1] = dir .. files[i] end
     end
     if oggs > 0 then
-        entries[#entries + 1] = { label = string_format("[play this folder (%d)]", oggs), on_select = function() self:show_pool(_build_folder_row(dir), dir) end }
+        entries[#entries + 1] = { label = string_format("[play this folder (%d)]", oggs), on_select = function() self:show_pool(function() return _build_folder_row(dir) end, dir) end }
     end
     for i = 1, #folders do entries[#entries + 1] = self:build_folder_entry(dir .. folders[i] .. "\\") end
     for i = 1, #playlists do entries[#entries + 1] = self:build_playlist_entry(playlists[i]) end
@@ -771,32 +794,38 @@ function tz_sound_tool_wnd:show_folder(dir)
 end
 
 function tz_sound_tool_wnd:show_playlist(path)
-    local row = _load_playlist(path)
-    if not row then log.warn("[SOUNDTOOL] could not read playlist %s", path); return end
-    self:show_pool(row, self.dir)
+    if not self:show_pool(function() return _load_playlist(path) end, self.dir) then log.warn("[SOUNDTOOL] could not read playlist %s", path) end
 end
 
---- Fill the list with a pool's labels, frame-spread by xslice so xsound.length never builds them all at once.
-function tz_sound_tool_wnd:add_pool_rows(items)
+--- Fill the list with a pool's labels, frame-spread by xslice so xsound.length never builds them all at once; on_filled runs once every row is in.
+function tz_sound_tool_wnd:add_pool_rows(items, on_filled)
     local list = self.list
-    xslice.start(FILL_QUEUE, items, { step = FILL_STEP, func = function(item)
+    xslice.start(FILL_QUEUE, items, { step = FILL_STEP, on_done = on_filled, func = function(item)
         list:AddTextItem(self:format_item(item))
         return true
     end })
 end
 
---- A pool of sounds: copy its outside files first, then list each with its family and length; ".." returns to back_dir or root.
-function tz_sound_tool_wnd:show_pool(row, back_dir)
+--- A pool of sounds from its recipe: copy its outside files first, then list each with its family and length; ".." returns to back_dir or root.
+--- The recipe is kept as the view, so a reopen rebuilds the pool and copies its outside files again.
+--- @param build function Returns the row, or nil when there is nothing to list
+--- @param back_dir string|nil The folder ".." returns to, else root
+--- @param on_filled function|nil Runs once every row is in the list
+--- @return boolean False when build returned nothing
+function tz_sound_tool_wnd:show_pool(build, back_dir, on_filled)
+    local row = build()
+    if not row then return false end
     _load_row_sources(row)
     local items = row.items
-    self.row, self.items, self.index = row, items, nil
+    self.row, self.items, self.index, self.view = row, items, nil, { kind = VIEW_POOL, build = build, back_dir = back_dir }
     local entries = { { label = "..", on_select = function()
         if back_dir then self:show_folder(back_dir) else self:show_root() end
     end } }
     for i = 1, #items do entries[#entries + 1] = self:build_item_entry(i) end
     self:set_entries(entries, string_format("%s    (%d)", row.name, #items))
-    self:add_pool_rows(items)
+    self:add_pool_rows(items, on_filled)
     self:render()
+    return true
 end
 
 function tz_sound_tool_wnd:format_item(item)
@@ -958,7 +987,9 @@ end
 
 --- Close: stop the tool's own plays, empty the cache, end each family's audition.
 function tz_sound_tool_wnd:hide()
-    xslice.stop_queue(FILL_QUEUE)
+    _kept = { view = self.view, index = self.index, mode_group = self.mode_group, mode_label = self.mode_label, gain = self.gain,
+        place = xcui.get_list_place(self.list) }
+    xslice.stop_queue(FILL_QUEUE, true)
     RemoveTimeEvent(LAMP_EV, "lamps")
     _stop_plays()
     log.info("[SOUNDTOOL] close: cleared %d cached files", _clear_cache())

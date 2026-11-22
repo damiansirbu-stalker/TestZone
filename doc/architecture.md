@@ -61,6 +61,7 @@ Layout:
 - A tool builds its controls with `xcui.build()` from one ordered list of layout names and kinds, which is also the draw order.
 - After editing a base layout, rerun `stalker-manager.sh ui-variants TestZone` and commit the variants with it. A variant is never edited by hand.
 - A list box is sized only in XML. Its scrollbar is placed once, when the list is built.
+- A tool reopens where it closed: its view, selected row and scroll, kept in the script until a save loads. SoundTool rebuilds an open pool from its recipe, which copies its outside files again.
 - AnimationTool docks right and GeoTool left, and the world stays visible beside them. SoundTool fills the middle.
 
 Style, an analog Soviet device built from vanilla parts:

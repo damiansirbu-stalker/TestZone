@@ -11,6 +11,10 @@ local ANIM_DIR      = "testzone\\anim\\"
 local CURATION_FILE = "tz_anim_curation.txt"
 local VIEW_ROOT, VIEW_POOL, VIEW_PROP = "root", "pool", "prop"
 local FILL_QUEUE, FILL_STEP = "tz_anim_fill", 20
+-- While the window is open the display refreshes this often, in seconds, so the NPC's states stay current.
+local LIVE_EV, LIVE_PERIOD = "tz_anim_tool", 0.5
+-- The most characters of each state name on the display's second line.
+local STATE_CHARS = 13
 -- Posture key labels: the layout's key color, brighter on the lit toggle.
 local LABEL_RGB, LABEL_LIT_RGB = { 175, 180, 190 }, { 235, 240, 245 }
 
@@ -69,6 +73,8 @@ local _built   = false
 local _feed    = {}
 -- True while a motion is held on the NPC, for the lamps.
 local _is_holding = false
+-- The list's selected row and scroll when the window last closed, put back on the next open.
+local _place = nil
 
 local function _get_mode() return MODES[_mode_i] end
 
@@ -151,14 +157,26 @@ local function _get_selected_npc()
     return nil
 end
 
---- Bind the standing selection when one is live, else the stalker directly under the view-ray; nothing when the ray hits a wall, fence, or no stalker.
+--- The state last asked of the NPC, then after the > the animation playing now; the asked one stays after its motion ends (state_mgr.script:436-438).
+local function _format_states(npc)
+    local st = npc and npc:alive() and db.storage[npc:id()]
+    local mgr = st and st.state_mgr
+    if not mgr then return "?" end
+    local playing = mgr.animation and mgr.animation.states and mgr.animation.states.current_state
+    return string_format("%s > %s", xcui.get_clipped(tostring(state_mgr.get_state(npc)), STATE_CHARS),
+        xcui.get_clipped(tostring(playing or "none"), STATE_CHARS))
+end
+
+--- The stalker directly under the view-ray, else nil when the ray hits a wall, a fence or no stalker.
+local function _get_aimed_stalker()
+    local tgt = level.get_target_obj and level.get_target_obj() or nil
+    return (tgt and IsStalker(tgt)) and tgt or nil
+end
+
+--- Bind the standing selection when one is live, else the aimed stalker.
 local function _try_open()
     if Check_UI() or not db.actor then return end
-    local tgt = _get_selected_npc()
-    if not tgt then
-        tgt = level.get_target_obj and level.get_target_obj() or nil
-        if not (tgt and IsStalker(tgt)) then tgt = nil end
-    end
+    local tgt = _get_selected_npc() or _get_aimed_stalker()
     if tgt then _npc_id, _npc_name = tgt:id(), tgt:character_name()
     else _npc_id, _npc_name = nil, nil end
     local window = tz_anim_tool_wnd()
@@ -172,7 +190,8 @@ end
 
 --- A level change with the window open: drop the fill, the held motion and the open-window entry, so Check_UI never stays blocked.
 local function _on_actor_destroy()
-    xslice.stop_queue(FILL_QUEUE)
+    xslice.stop_queue(FILL_QUEUE, true)
+    RemoveTimeEvent(LIVE_EV, "live")
     tz_anim.stop_review_hold()
     _is_holding = false
     Unregister_UI("tz_anim_tool_wnd")
@@ -186,9 +205,19 @@ function tz_anim_tool_wnd:__init() super()
     self:init_controls()
     self:init_callbacks()
     _built = false
-    _view, _row, _cur = VIEW_ROOT, nil, nil
-    self:build_list()
+    self:build_list(_place)
     self:render()
+    self:start_live_watch()
+end
+
+--- Re-arm a short timer that redraws the display while the window is open, so the NPC's states stay current.
+function tz_anim_tool_wnd:start_live_watch()
+    CreateTimeEvent(LIVE_EV, "live", LIVE_PERIOD, function()
+        if not self:IsShown() then return true end
+        self:render()
+        ResetTimeEvent(LIVE_EV, "live", LIVE_PERIOD)
+        return false
+    end)
 end
 
 --- The window's controls in draw order. Each posture diode comes after its key, so it draws on the key's plate.
@@ -203,6 +232,7 @@ function tz_anim_tool_wnd:get_layout()
         { kind = "edit", names = { "snote" } },
         { kind = "button", names = { "btn_select", "btn_reset", "btn_prior", "btn_play", "btn_stop", "btn_next",
             "btn_good", "btn_bad", "btn_note", "btn_help" } },
+        { kind = "static", names = { "lit_select" } },
     }
     for i = 1, #MODES do
         spec[#spec + 1] = { kind = "button", names = { MODES[i].key } }
@@ -246,17 +276,15 @@ function tz_anim_tool_wnd:show_help()
     tz_help.show_page("tz_anim_tool.xml", "st_tz_anim_tool_help_title", "st_tz_anim_tool_help")
 end
 
-function tz_anim_tool_wnd:build_list()
-    xslice.stop_queue(FILL_QUEUE)
+--- Fill the list for the current view; with a place, put the list back there once the rows are in.
+function tz_anim_tool_wnd:build_list(place)
+    xslice.stop_queue(FILL_QUEUE, true)
     if _built then self.list:RemoveAll() end
     _built = true
-    if _view == VIEW_ROOT then
-        self:add_source_rows()
-    elseif _view == VIEW_PROP then
-        self:add_prop_rows()
-    else
-        self:add_pool_rows(_row)
-    end
+    local on_filled = place and function() xcui.set_list_place(self.list, place) end
+    if _view == VIEW_POOL then return self:add_pool_rows(_row, on_filled) end
+    if _view == VIEW_ROOT then self:add_source_rows() else self:add_prop_rows() end
+    if on_filled then on_filled() end
 end
 
 --- Fill the root list with the source files in the anim folder, or a hint when none are present.
@@ -278,13 +306,13 @@ function tz_anim_tool_wnd:add_prop_rows()
     end
 end
 
---- Fill one source's pool, frame-spread by xslice so a large motion list never builds in one frame.
-function tz_anim_tool_wnd:add_pool_rows(row)
+--- Fill one source's pool, frame-spread by xslice so a large motion list never builds in one frame; on_filled runs once every row is in.
+function tz_anim_tool_wnd:add_pool_rows(row, on_filled)
     if not row then return end
     self.list:AddTextItem("..")
     self.list:AddTextItem(string_format("[ prop:  %s ]", _prop or "none"))
     local list = self.list
-    xslice.start(FILL_QUEUE, row.pool, { step = FILL_STEP, func = function(entry)
+    xslice.start(FILL_QUEUE, row.pool, { step = FILL_STEP, on_done = on_filled, func = function(entry)
         list:AddTextItem(entry.label)
         return true
     end })
@@ -321,22 +349,21 @@ function tz_anim_tool_wnd:render()
     self:render_lamps()
     self:render_modes()
     self:render_path()
+    self.ui.lit_select:Show(_selected_id ~= nil and _npc_id == _selected_id)
     self.sel_line:SetText(_cur and string_format("%s   %s", _cur.name, _cur.is_state and "state" or "motion") or "")
     if _npc_id then
-        local bound = db.storage[_npc_id] and db.storage[_npc_id].object
-        local live = (bound and bound:alive()) and state_mgr.get_state(bound) or "?"
-        local mark = (_selected_id and _npc_id == _selected_id) and "* " or ""
-        self.lbl_now:SetText(mark .. xcui.get_clipped(tostring(_npc_name), 24))
-        self.lbl_mode:SetText(string_format("%s  |  %s  |  %s",
-            xcui.get_clipped(tostring(live), 12), _get_mode().label, _prop or "no prop"))
+        self.lbl_now:SetText(xcui.get_clipped(tostring(_npc_name), 24))
+        self.lbl_mode:SetText(_format_states(db.storage[_npc_id] and db.storage[_npc_id].object))
     else
         self.lbl_now:SetText("** NO NPC **")
         self.lbl_mode:SetText("look at a stalker, reopen the tool")
     end
 end
 
---- Pin the bound NPC as the standing selection, so it survives close and reopen; the band marks it with a leading star.
+--- Pin the aimed stalker, else the bound one, as the standing selection, so he stays bound across close and reopen; the select key's diode lights.
 function tz_anim_tool_wnd:select_npc()
+    local tgt = _get_aimed_stalker()
+    if tgt then _npc_id, _npc_name = tgt:id(), tgt:character_name() end
     if not _npc_id then return end
     _selected_id = _npc_id
     self:render()
@@ -468,7 +495,9 @@ function tz_anim_tool_wnd:OnKeyboard(dik, action)
 end
 
 function tz_anim_tool_wnd:hide()
-    xslice.stop_queue(FILL_QUEUE)
+    _place = xcui.get_list_place(self.list)
+    xslice.stop_queue(FILL_QUEUE, true)
+    RemoveTimeEvent(LIVE_EV, "live")
     tz_anim.stop_review_hold()
     _is_holding = false
     self:HideDialog()
