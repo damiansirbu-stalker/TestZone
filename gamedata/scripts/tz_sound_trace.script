@@ -10,7 +10,7 @@ local log = xlog.get_logger("TestZone.sound_trace", { outfile = "testzone_sound_
 local _levels = xlog.get_levels()
 
 local REPORT_SEC = 60
--- The LOUD line's cadence: one read of the mix meter a second.
+-- The LOUDNESS line's cadence: one read of the mix meter a second.
 local LOUD_SEC = 1
 -- A file heard again inside this window counts as a repeat in the summary.
 local REPEAT_MS = 300000
@@ -131,14 +131,22 @@ local function _format_top(by_channel)
     return table_concat(parts, " ")
 end
 
+--- The effects and music sliders as "vol_eff= vol_music=", "-" on an exe without the readers (level_script.cpp:1082-1101).
+local function _format_volumes()
+    local eff = type(level.get_snd_volume) == "function" and string_format("%.2f", level.get_snd_volume()) or "-"
+    local music = type(level.get_music_volume) == "function" and string_format("%.2f", level.get_music_volume()) or "-"
+    return "vol_eff=" .. eff .. " vol_music=" .. music
+end
+
 --- Write the running summary of one map and weather state.
 local function _log_stats(key, bucket)
     local minutes = bucket.ms / 60000
     local files = 0
     for _ in pairs(bucket.files) do files = files + 1 end
-    log.info("STATS %s minutes=%.1f plays=%d per_min=%.1f files=%d repeats_5min=%d dist_med=%s top=[%s]", key, minutes,
+    log.info("STATS %s minutes=%.1f plays=%d per_min=%.1f files=%d repeats_5min=%d dist_med=%s top=[%s] %s", key, minutes,
         bucket.plays, minutes > 0 and bucket.plays / minutes or 0, files, bucket.repeats,
-        tostring(_get_median(bucket.dists) and string_format("%.0f", _get_median(bucket.dists)) or "-"), _format_top(bucket.by_channel))
+        tostring(_get_median(bucket.dists) and string_format("%.0f", _get_median(bucket.dists)) or "-"), _format_top(bucket.by_channel),
+        _format_volumes())
 end
 
 --- Close the time of the current summary, and start or resume the one for the map and state in play.
@@ -240,7 +248,7 @@ end
 local function _run_loud()
     if not (_enabled and _meter) then return true end
     local ok, momentary, short_term, peak = xsound.get_output_loudness()
-    if ok then log.info("LOUD m=%.1f s=%.1f p=%.1f", momentary, short_term, peak) end
+    if ok then log.info("LOUDNESS m=%.1f s=%.1f p=%.1f", momentary, short_term, peak) end
     ResetTimeEvent("tz_sound_trace", "loud", LOUD_SEC)
     return false
 end
@@ -259,9 +267,10 @@ local function _apply_enabled()
             if xsound.register_ambient_listener(LISTENERS[i][1], LISTENERS[i][2]) then attached = attached + 1 end
         end
         _meter = xsound.get_output_loudness ~= nil and xsound.get_output_loudness() ~= nil
-        log.info("START hooks=%d of %d all_script=%s build=%s ambient_volume=%s meter=%s %s", attached, #LISTENERS, tostring(_config.all),
-            tostring(type(get_modded_exes_version) == "function" and get_modded_exes_version() or "?"),
-            tostring(ui_options and ui_options.get("sound/environment/ambient_volume")), _meter and "on" or "absent", _get_place_tag())
+        log.info("START hooks=%d of %d all_script=%s build=%s ambient_volume=%s %s meter=%s %s", attached, #LISTENERS,
+            tostring(_config.all), tostring(type(get_modded_exes_version) == "function" and get_modded_exes_version() or "?"),
+            tostring(ui_options and ui_options.get("sound/environment/ambient_volume")), _format_volumes(), _meter and "on" or "absent",
+            _get_place_tag())
         log.flush()
         RemoveTimeEvent("tz_sound_trace", "report")
         CreateTimeEvent("tz_sound_trace", "report", REPORT_SEC, _run_report)

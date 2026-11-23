@@ -742,10 +742,10 @@ end
 local function _release_clearable_npc(sim, npc_id, actor_pos, radius_sqr, actor_id)
     if npc_id == actor_id then return 0 end
     local npc = xobject.get_go(npc_id)
-    if not npc or not npc:alive() then return 0 end
-    if npc:position():distance_to_sqr(actor_pos) > radius_sqr then return 0 end
+    if not npc then return 0 end
     local is_stalker = IsStalker(npc)
-    if not (is_stalker or IsMonster(npc)) then return 0 end
+    if not (is_stalker or IsMonster(npc)) or not npc:alive() then return 0 end
+    if npc:position():distance_to_sqr(actor_pos) > radius_sqr then return 0 end
     if is_stalker and xcreature.is_companion(npc) then return 0 end
     local se = xobject.get_se(npc_id)
     if not se then return 0 end
