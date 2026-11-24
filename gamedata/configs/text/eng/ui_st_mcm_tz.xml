@@ -302,7 +302,7 @@ How often the open window reads every check.</text>
         <text>TestZone</text>
     </string>
     <string id="ui_mcm_tz_remote_desc">
-        <text>Runs Lua files dropped into appdata/testzone from outside the game. A file in inbox runs once and is removed, and a file in watch runs on every load and again whenever it changes. Each run writes its result to outbox. Works only when the game starts with -dbg.</text>
+        <text>Runs Lua files dropped into appdata/testzone from outside the game. A file in inbox runs once and is removed, and a file in watch runs on every load and again whenever it changes. Each run writes its result to outbox, and a failed run also leaves its file in error. Works only when the game starts with -dbg.</text>
     </string>
     <string id="ui_mcm_tz_remote_remote_enabled">
         <text>Remote</text>

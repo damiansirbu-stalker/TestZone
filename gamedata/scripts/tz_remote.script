@@ -2,24 +2,35 @@
 --- @novalidate(conventions.unused_export, reason:"console commands, invoked by name via run_string or an inbox file")
 --- @novalidate(xray.cached_timer_global, reason:"TIMER_CREATE_KEY is the global's name as a string, read from the live owner at call time")
 
-local RegisterScriptCallback, rawget, rawset, pairs, type, tostring, select, unpack = RegisterScriptCallback, rawget, rawset, pairs, type, tostring, select, unpack
+local RegisterScriptCallback, rawget, rawset, pairs, type, tostring, tonumber, select, unpack = RegisterScriptCallback, rawget, rawset, pairs, type, tostring, tonumber, select, unpack
 local getfenv, getmetatable, loadstring, xpcall, get_console, ini_file = getfenv, getmetatable, loadstring, xpcall, get_console, ini_file
 local AddUniqueCall, time_global = AddUniqueCall, time_global
 local string_format, table_concat, table_sort, table_remove, os_date, math_max = string.format, table.concat, table.sort, table.remove, os.date, math.max
+local os_time, os_clock, math_abs, level = os.time, os.clock, math.abs, level
 
 local log = xlog.get_logger("TestZone.remote", { outfile = "testzone_remote.log", level = "DEBUG" })
 
 local EV_ID, ACT_POLL, ACT_RELOAD = "tz_remote", "poll", "reload"
-local RELOAD_SAVE, RELOAD_DELAY_SEC = "tz_reload", 1
+local RELOAD_SAVE, RELOAD_WAIT_SEC = "tz_reload", 30
+local SAVE_EXTS = { ".scop", ".scoc", ".dds" }
+local SAVE_DATA_EXT, SAVE_SCRIPT_EXT = ".scop", ".scoc"
 local POLL_SEC = 1
+local ALIVE_TICKS = 5
+local LAUNCH_SLACK = 2
 local ROOT_DIR = "testzone"
 local INBOX_DIR, WATCH_DIR, OUTBOX_DIR, ERROR_DIR = "inbox", "watch", "outbox", "error"
-local APP_MOUNT, SCRIPT_MOUNT, CONFIG_MOUNT = "$app_data_root$", "$game_scripts$", "$game_config$"
+local APP_MOUNT, SCRIPT_MOUNT, CONFIG_MOUNT, SAVE_MOUNT = "$app_data_root$", "$game_scripts$", "$game_config$", "$game_saves$"
 local LUA_EXT, RESULT_EXT, SCRIPT_EXT, LTX_EXT = ".lua", ".txt", ".script", ".ltx"
-local READY_FILE, WATCH_PREFIX, UNLOCALIZER_DIR = "ready.txt", "watch_", "unlocalizers\\"
+local ALIVE_FILE, WATCH_PREFIX, UNLOCALIZER_DIR = "alive.txt", "watch_", "unlocalizers\\"
 local STATUS_STARTED, STATUS_OK, STATUS_ERROR = "started", "ok", "error"
+local STATUS_RELOADED, STATUS_STOPPED = "reloaded", "stopped"
+local END_MARK = "end"
+local RECORD_PATTERN = "^(%a+)\t[^\t]*\t([%d%.%-]+)\t([%d%.]+)\n"
+local FLUSH_CMD, SAVE_CMD, LOAD_CMD = "flush", "save ", "load "
 local UNREAD_COPIED_MSG = "cannot read the file and a copy is in the error folder"
 local UNREAD_LOST_MSG = "cannot read or copy the file"
+local STOPPED_MSG = "the game ended during this run"
+local RELOADED_MSG = "the run loaded a save or changed the level"
 local TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 local FORMAT_DEPTH = 2
 local OWNER_DEPTH = 2
@@ -38,6 +49,10 @@ local _config = { on = false }
 local _is_enabled = false
 local _paths = nil
 local _watch_texts = {}
+local _launch = os_time() - os_clock()
+local _state_text = string_format("%.2f", os_clock())
+local _ticks = 0
+local _reload = nil
 
 --- The folder paths under appdata, each ending in a backslash.
 local function _build_paths()
@@ -54,17 +69,20 @@ local function _init_folders(paths)
     xfs.create_folder(paths.error:sub(1, -2))
 end
 
-local function _format_result(status, body)
-    return string_format("%s\t%s\n%s\n", status, os_date(TIME_FORMAT), body)
+--- A run record: status, time, launch and Lua state on line 1, the body, and an end line naming the run on every finished record.
+local function _format_result(name, status, body)
+    local head = string_format("%s\t%s\t%.0f\t%s\n%s\n", status, os_date(TIME_FORMAT), _launch, _state_text, body)
+    if status == STATUS_STARTED then return head end
+    return head .. END_MARK .. "\t" .. name .. "\n"
 end
 
 local function _write_result(name, status, body)
-    xfs.write_file(_paths.outbox .. name .. RESULT_EXT, _format_result(status, body))
+    xfs.write_file(_paths.outbox .. name .. RESULT_EXT, _format_result(name, status, body))
 end
 
 --- Write a failed run's result to outbox, and keep it with its source in the error folder, which nothing clears.
 local function _write_error(name, text, body)
-    local result = _format_result(STATUS_ERROR, body)
+    local result = _format_result(name, STATUS_ERROR, body)
     xfs.write_file(_paths.outbox .. name .. RESULT_EXT, result)
     xfs.write_file(_paths.error .. name .. RESULT_EXT, result)
     if text then xfs.write_file(_paths.error .. name .. LUA_EXT, text) end
@@ -97,18 +115,19 @@ local function _run_text(name, text)
     local started = time_global()
     local count, values = _collect_values(xpcall(chunk, _debug.traceback))
     local elapsed = time_global() - started
+    get_console():execute(FLUSH_CMD)
     local status = values[1] and STATUS_OK or STATUS_ERROR
     local body = string_format("%d ms\n%s", elapsed, _format_values(count, values))
     if status == STATUS_OK then _write_result(name, status, body) else _write_error(name, text, body) end
     log.info("RUN %s %s %dms", name, status, elapsed)
 end
 
---- The .lua file names in a folder, sorted by name.
-local function _find_lua_files(dir)
+--- The file names in a folder that end in ext, sorted by name.
+local function _find_files(dir, ext)
     local _, files = xfs.read_disk_entries(dir:sub(1, -2))
     local found = {}
     for i = 1, #files do
-        if files[i]:sub(-#LUA_EXT):lower() == LUA_EXT then found[#found + 1] = files[i] end
+        if files[i]:sub(-#ext):lower() == ext then found[#found + 1] = files[i] end
     end
     table_sort(found)
     return found
@@ -116,7 +135,7 @@ end
 
 --- Run the first inbox file once, removed before it runs; false when the removal fails, which stops the poll.
 local function _run_inbox()
-    local file = _find_lua_files(_paths.inbox)[1]
+    local file = _find_files(_paths.inbox, LUA_EXT)[1]
     if not file then return true end
     local path = _paths.inbox .. file
     local name = file:sub(1, -#LUA_EXT - 1)
@@ -144,29 +163,63 @@ local function _run_watch_file(file)
     _run_text(WATCH_PREFIX .. file:sub(1, -#LUA_EXT - 1), text)
 end
 
+--- The heartbeat: time, launch, Lua state, level and game hour, which tz_remote.py reads to tell a running level from a stopped one.
+local function _write_alive()
+    xfs.write_file(_paths.root .. ALIVE_FILE, string_format("%s\t%.0f\t%s\t%s\t%d\n", os_date(TIME_FORMAT), _launch, _state_text,
+        level.name(), level.get_time_hours()))
+end
+
+--- Move a watch file whose run never finished into the error folder, so the next load does not run it again.
+local function _remove_watch_file(name)
+    local file = name:sub(#WATCH_PREFIX + 1) .. LUA_EXT
+    xfs.clone_file(_paths.watch .. file, _paths.error .. name .. LUA_EXT)
+    xfs.remove_file(_paths.watch .. file)
+end
+
+--- Close a started record of an earlier Lua state: reloaded within this launch, else stopped and moved to the error folder.
+local function _write_stale_record(file)
+    local text = xfs.read_file(_paths.outbox .. file)
+    local status, launch, state = (text or ""):match(RECORD_PATTERN)
+    if status ~= STATUS_STARTED or state == _state_text then return end
+    local name = file:sub(1, -#RESULT_EXT - 1)
+    if math_abs(tonumber(launch) - _launch) <= LAUNCH_SLACK then return _write_result(name, STATUS_RELOADED, RELOADED_MSG) end
+    xfs.write_file(_paths.error .. file, _format_result(name, STATUS_STOPPED, STOPPED_MSG))
+    xfs.remove_file(_paths.outbox .. file)
+    if name:sub(1, #WATCH_PREFIX) == WATCH_PREFIX then _remove_watch_file(name) end
+    log.warn("SWEEP %s %s", name, STOPPED_MSG)
+end
+
+local function _iterate_stale_records()
+    local files = _find_files(_paths.outbox, RESULT_EXT)
+    for i = 1, #files do _write_stale_record(files[i]) end
+end
+
 local function _update_remote()
     if not _is_enabled then return true end
     ResetTimeEvent(EV_ID, ACT_POLL, POLL_SEC)
+    _ticks = _ticks + 1
+    if _ticks % ALIVE_TICKS == 0 then _write_alive() end
     if not _run_inbox() then
         _is_enabled = false
         return true
     end
-    local files = _find_lua_files(_paths.watch)
+    local files = _find_files(_paths.watch, LUA_EXT)
     for i = 1, #files do _run_watch_file(files[i]) end
     return false
 end
 
 --- Start or stop the poll as the switch changes; it runs only with -dbg, which also opens the debug library.
 local function _apply_enabled()
-    local is_wanted = _config.on and rawget(_G, "DEV_DEBUG") == true and _debug ~= nil
-    if _config.on and not is_wanted then log.warn("START refused: the remote runs only with -dbg") end
+    local is_wanted = _config.on and rawget(_G, "DEV_DEBUG") == true and _debug ~= nil and level.present()
+    if _config.on and not is_wanted then log.warn("START refused: the remote runs only with -dbg and a level loaded") end
     if is_wanted == _is_enabled then return end
     _is_enabled = is_wanted
     RemoveTimeEvent(EV_ID, ACT_POLL)
     if not _is_enabled then return log.info("STOP") end
     _paths = _paths or _build_paths()
     _init_folders(_paths)
-    xfs.write_file(_paths.root .. READY_FILE, os_date(TIME_FORMAT) .. "\n")
+    _iterate_stale_records()
+    _write_alive()
     CreateTimeEvent(EV_ID, ACT_POLL, POLL_SEC, _update_remote)
     log.info("START %s", _paths.root)
 end
@@ -423,8 +476,28 @@ local function _read_source(name, path)
     return source
 end
 
-local function _load_reload_save()
-    get_console():execute("load " .. RELOAD_SAVE)
+local function _get_save_path(ext)
+    return xfs.resolve_path(SAVE_MOUNT, RELOAD_SAVE .. ext)
+end
+
+local function _is_reload_saved()
+    return xfs.is_file(_get_save_path(SAVE_DATA_EXT)) and xfs.is_file(_get_save_path(SAVE_SCRIPT_EXT))
+end
+
+--- Load the reload save one tick after both its files exist, or give up after RELOAD_WAIT_SEC; the load is the last statement.
+local function _update_reload()
+    _reload.ticks = _reload.ticks + 1
+    if _reload.is_saved then
+        xfs.update_index(SAVE_MOUNT)
+        get_console():execute(LOAD_CMD .. RELOAD_SAVE)
+        return true
+    end
+    _reload.is_saved = _is_reload_saved()
+    if _reload.is_saved or _reload.ticks < RELOAD_WAIT_SEC then
+        ResetTimeEvent(EV_ID, ACT_RELOAD, POLL_SEC)
+        return false
+    end
+    log.error("RELOAD no save %s after %d s, the game keeps the old code", RELOAD_SAVE, RELOAD_WAIT_SEC)
     return true
 end
 
@@ -460,17 +533,19 @@ function load_module(name, path)
         _format_counts(removed), replayed, #holders > 0 and table_concat(holders, " ") or "none"))
 end
 
---- Reload every script of every mod from disk with the game state kept: rescan the scripts folder, save, then load that save.
+--- Reload every script of every mod from disk with the game state kept: rescan the scripts, save, and load the save once it is written.
 --- @return string What it started
 function load_all_scripts()
     local actor = db.actor
     if not (actor and actor:alive()) then return "needs a live player" end
     xfs.update_index(SCRIPT_MOUNT)
-    get_console():execute("save " .. RELOAD_SAVE)
+    for i = 1, #SAVE_EXTS do xfs.remove_file(_get_save_path(SAVE_EXTS[i])) end
+    get_console():execute(SAVE_CMD .. RELOAD_SAVE)
+    _reload = { ticks = 0, is_saved = false }
     RemoveTimeEvent(EV_ID, ACT_RELOAD)
-    CreateTimeEvent(EV_ID, ACT_RELOAD, RELOAD_DELAY_SEC, _load_reload_save)
-    log.info("RELOAD saved as %s, loading in %d s", RELOAD_SAVE, RELOAD_DELAY_SEC)
-    return "saved as " .. RELOAD_SAVE .. " and loading it in " .. RELOAD_DELAY_SEC .. " s"
+    CreateTimeEvent(EV_ID, ACT_RELOAD, POLL_SEC, _update_reload)
+    log.info("RELOAD saving %s, loading it once the save is written", RELOAD_SAVE)
+    return "saving " .. RELOAD_SAVE .. " and loading it once the save is written"
 end
 
 function on_game_start()

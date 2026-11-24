@@ -51,14 +51,19 @@ Saved game state and the target mods stay as the tool found them.
   The weather goes through `level_weathers`' manager, whose check each game hour then keeps the cycle. `weather.pause` freezes it 2 s after the set, once the blend has run.
   The stop hours sit mid-band in the presets TestZone sets (`environment/weathers/w_clear1`, `w_rain1`, `w_storm1`, `w_foggy1`): clear 6, 12, 19 and 1, rain 12 and 0, storm 12 and 1, fog 13 and 1.
 - The remote is a spool, Producer-Consumer over a folder. A 1 s timer takes the first `.lua` in `appdata/testzone/inbox` and removes it.
-  It then runs the text under `xpcall` and writes a started record, then the result, to `outbox`.
+  It then runs the text under `xpcall`, requests a log flush, and writes a started record, then the result, to `outbox`.
+  Each record carries the game's launch and its Lua state.
+  A finished record ends on `end` and the run's name, and a reader waits for that line before it trusts the record.
   A file in `watch` runs when its text differs from its last run in this Lua state: on each load and edit. The writer renames a finished `.part` file to `.lua`, and a half-written file never runs.
   `error` is the dead-letter folder, and nothing clears it. A run that fails to compile or throws leaves its source and its result there, and a file the poll cannot read is copied there whole.
+  When the poll starts, it closes each started record of an earlier Lua state. Within this launch the record becomes `reloaded`.
+  From an earlier launch it becomes `stopped` and moves to `error` with its watch file. A watch file that crashed the game therefore never runs again.
+  `alive.txt` is the heartbeat, written at start and every 5 s with the launch, the Lua state, the level and the game hour.
 - `tz_remote.load_module()` swaps a module for its edited source. It compiles first, then removes what the old module owns from five registries.
   They are the callbacks, the timers, the per-frame calls, the xsound listeners and the xbus subscribers.
   A function belongs to a module when its environment is the module table, or when a function it closes over has it. That covers TestZone's timer watch wrappers.
   It runs the new source under xray's module header, starts it, and lists the modules that still hold the old copy in a local.
-- `tz_remote.load_all_scripts()` reloads every script of every mod: it rescans the scripts folder, saves as `tz_reload`, and loads that save 1 s later.
+- `tz_remote.load_all_scripts()` reloads every script of every mod: it rescans the scripts folder, saves as `tz_reload`, and loads that save once its `.scop` and `.scoc` exist. It gives up after 30 s.
   A load rebuilds the Lua state from the files on disk, with the game state taken from the save. It is complete where `load_module()` is fast.
 
 ## Rules and invariants
@@ -68,7 +73,7 @@ Saved game state and the target mods stay as the tool found them.
 - `on_key_press` fires before the UI takes the key. `Check_UI()` guards every open path, and a key typed into a note box opens no second window.
 - A tool logs to `testzone.log` under its logger. A trace writes a separate file.
 - An MCM key carries its feature's prefix: `geo_`, `soundtool_`, `perception_`, `profiler_`, `remote_`. A key with no prefix sits on the main tab.
-- The remote runs code from a folder. It starts only with `-dbg` and the Remote switch on, and it never moves into xlibs.
+- The remote runs code from a folder. It starts only with `-dbg`, a level loaded and the Remote switch on, and it never moves into xlibs.
 - A reload refuses a module that declares a class, one an unlocalizer rewrites, and any module while `lua_use_functor_cache` is on, since each would keep old code running.
 - The stroll puts back every setting it changed: the key prompt, god mode, the emission and psi storm options and the weather pause.
 
