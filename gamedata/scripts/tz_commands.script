@@ -13,6 +13,8 @@ local RegisterScriptCallback, UnregisterScriptCallback = RegisterScriptCallback,
 local table_remove, rawget, ini_file, str_explode = table.remove, rawget, ini_file, str_explode
 local IsWeapon, character_community = IsWeapon, character_community
 local game_relations, xprofiler, xcombat = game_relations, xprofiler, xcombat
+local game_graph, get_console = game_graph, get_console
+local ChangeLevel, ipairs, math_min = ChangeLevel, ipairs, math.min
 
 -- The arena's record of rounds, spawns and outfits; its own file like tz_perception, since this log is the test's output.
 local log = xlog.get_logger("TestZone.arena", { outfile = "testzone_arena.log", level = "DEBUG" })
@@ -81,6 +83,10 @@ local CATALOG = {
     { "kit",    "add_kit",           "what, amount",         '"silenced", 3' },
     { "world",  "set_weather",       "key",                  '"rain"' },
     { "world",  "add_hours",         "hours",                "6" },
+    { "world",  "start_stroll",      "route",                "build_stroll_route(360, 1000)" },
+    { "world",  "build_stroll_route", "hold, clear",         "360, 1000" },
+    { "world",  "show_stroll",       "",                     "" },
+    { "world",  "stop_stroll",       "",                     "" },
     { "warp",   "teleport_to_smart", "name",                 '"dar_angar"' },
     { "warp",   "teleport_to_stash", "",                     "" },
     { "unlock", "enable_north",      "",                     "" },
@@ -136,6 +142,23 @@ local MARENA_TICK      = 1
 local MARENA_MAX_SPAWN = 6
 local MARENA_WAVE_SEC  = 8
 local MARENA_ROSTER    = { "bloodsucker", "dog", "cat", "chimera", "burer", "controller", "snork", "boar" }
+
+local stroll_log = xlog.get_logger("TestZone.stroll", { outfile = "testzone_stroll.log", level = "DEBUG" })
+local STROLL_EV = "tz_stroll"
+local STROLL_RECLEAR_SEC = 90
+local STROLL_FREEZE_SEC = 2
+local STROLL_DATA_KEY = "tz_stroll"
+local OUTDOOR_WEATHERS = "atmosfear"
+local LEVEL_LIST_SECTION, GAME_INI_FILE = "level_maps_single", "game.ltx"
+local HOURS_PER_DAY = 24
+local CMD_KEYPRESS, CMD_GOD = "keypress_on_start", "g_god"
+local OPT_EMISSION, OPT_PSI_STORM = "alife/event/emission_state", "alife/event/psi_storm_state"
+local STROLL_STATES = {
+    { weather = "clear", hour = 6 }, { weather = "clear", hour = 12 }, { weather = "clear", hour = 19 }, { weather = "clear", hour = 1 },
+    { weather = "rain", hour = 12 },  { weather = "rain", hour = 0 },
+    { weather = "storm", hour = 12 }, { weather = "storm", hour = 1 },
+    { weather = "fog", hour = 13 },   { weather = "fog", hour = 1 },
+}
 
 -- Arena factions by sim_default section word; each section carries its own community (duty -> dolg, military -> army).
 local ARENA_FACTIONS = { "stalker", "bandit", "csky", "duty", "freedom", "ecolog", "killer", "military", "monolith", "greh", "isg", "renegade" }
@@ -193,6 +216,8 @@ local _aim_v = vector()
 local _mutants = {}
 
 local _marena = { on = false, want = 0, center = nil, gvid = nil, pool = {}, stage = 0, wave_sec = 0, wave_at = 0 }
+
+local _stroll = nil
 
 local function _show_tip(msg)
     local actor = db.actor
@@ -753,6 +778,134 @@ local function _release_clearable_npc(sim, npc_id, actor_pos, radius_sqr, actor_
     return 1
 end
 
+local function _log_stroll(tag, stop)
+    stroll_log.info("%s stop=%d/%d lvl=%s weather=%s hour=%s now=%s game_hour=%d", tag, _stroll.index, #_stroll.stops, stop.level,
+        tostring(stop.weather), tostring(stop.hour), tostring(level.name()), level.get_time_hours())
+    stroll_log.flush()
+end
+
+--- The lowest game graph vertex on a level, the same spot every run; nil when the graph holds none.
+local function _find_level_vertex(level_name)
+    local graph, sim = game_graph(), alife()
+    local vertex_id = 0
+    while graph:valid_vertex_id(vertex_id) do
+        local vertex = graph:vertex(vertex_id)
+        if sim:level_name(vertex:level_id()) == level_name then return vertex_id, vertex end
+        vertex_id = vertex_id + 1
+    end
+    return nil
+end
+
+--- Warp to the stop's smart terrain or to its level's lowest vertex, the weather unpaused first so the new level sets its own.
+local function _teleport_level(stop)
+    weather.pause(false)
+    local smart = stop.smart and SIMBOARD and SIMBOARD.smarts_by_names and SIMBOARD.smarts_by_names[stop.smart]
+    if smart then
+        _log_stroll("WARP", stop)
+        ChangeLevel(smart.position, smart.m_level_vertex_id, smart.m_game_vertex_id, VEC_ZERO, false)
+        return true
+    end
+    local vertex_id, vertex = _find_level_vertex(stop.level)
+    if not vertex then return false end
+    _log_stroll("WARP", stop)
+    ChangeLevel(vertex:level_point(), vertex:level_vertex_id(), vertex_id, VEC_ZERO, false)
+    return true
+end
+
+local function _set_stroll_hour(hour)
+    local delta = (hour - level.get_time_hours()) % HOURS_PER_DAY
+    if delta > 0 then level.change_game_time(0, delta, 0) end
+end
+
+--- Set the stop's weather through the weather manager and freeze it once the blend has run a frame.
+local function _apply_stroll_weather(key)
+    local preset = WEATHER_PRESETS[key]
+    if not preset then return stroll_log.warn("no weather preset %s, the stop keeps the live weather", tostring(key)) end
+    local manager = level_weathers.get_weather_manager()
+    weather.pause(false)
+    manager.cycle, manager.preset = preset.cycle, preset.name
+    manager:reset_change_date(true)
+    level.set_weather(preset.name, true)
+    RemoveTimeEvent(STROLL_EV, "freeze")
+    CreateTimeEvent(STROLL_EV, "freeze", STROLL_FREEZE_SEC, function()
+        weather.pause(true)
+        return true
+    end)
+end
+
+local _update_stroll
+
+--- Warp to the stop's level once; a second arrival elsewhere, or a level with no vertex, skips the stop.
+local function _try_stroll_warp(stop)
+    _stroll.warps = (_stroll.warps or 0) + 1
+    if _stroll.warps <= 1 and _teleport_level(stop) then return end
+    _log_stroll("SKIP not reachable", stop)
+    _stroll.warps = 0
+    _update_stroll()
+end
+
+local function _run_stroll_reclear()
+    if _stroll then clear_npcs(_stroll.clear) end
+    return true
+end
+
+--- Begin the current stop: warp when it is on another level, else clear the creatures, set hour and weather, and hold.
+local function _run_stroll_stop()
+    local stop = _stroll.stops[_stroll.index]
+    if level.name() ~= stop.level then return _try_stroll_warp(stop) end
+    _stroll.warps = 0
+    clear_npcs(_stroll.clear)
+    RemoveTimeEvent(STROLL_EV, "reclear")
+    CreateTimeEvent(STROLL_EV, "reclear", STROLL_RECLEAR_SEC, _run_stroll_reclear)
+    if stop.hour then _set_stroll_hour(stop.hour) end
+    if stop.weather then _apply_stroll_weather(stop.weather) end
+    _log_stroll("BEGIN", stop)
+    RemoveTimeEvent(STROLL_EV, "hold")
+    CreateTimeEvent(STROLL_EV, "hold", _stroll.hold, _update_stroll)
+end
+
+--- Close the current stop and begin the next, or end the stroll after the last.
+_update_stroll = function()
+    if not _stroll then return true end
+    _log_stroll("END", _stroll.stops[_stroll.index])
+    _stroll.index = _stroll.index + 1
+    if _stroll.index > #_stroll.stops then
+        stop_stroll()
+        return true
+    end
+    _run_stroll_stop()
+    return true
+end
+
+--- Put back the console and option values the stroll changed, from the values it saved at its start.
+local function _reset_stroll_settings(saved)
+    get_console():execute(CMD_KEYPRESS .. (saved.keypress and " on" or " off"))
+    get_console():execute(CMD_GOD .. (saved.god and " on" or " off"))
+    ui_options.set(OPT_EMISSION, saved.emission)
+    ui_options.set(OPT_PSI_STORM, saved.psi_storm)
+    weather.pause(false)
+end
+
+local function _save_stroll(m_data)
+    m_data[STROLL_DATA_KEY] = _stroll
+end
+
+local function _load_stroll(m_data)
+    _stroll = m_data[STROLL_DATA_KEY]
+end
+
+local function _add_level_states(stops, level_name)
+    for i = 1, #STROLL_STATES do
+        stops[#stops + 1] = { level = level_name, weather = STROLL_STATES[i].weather, hour = STROLL_STATES[i].hour }
+    end
+end
+
+local function _start_saved_stroll()
+    if not _stroll then return end
+    _log_stroll("ARRIVE", _stroll.stops[_stroll.index])
+    _run_stroll_stop()
+end
+
 --- Give the actor a keyed kit; guns include ammo, or use the money and rank keys, or a raw item section.
 function add_kit(what, amount)
     local actor = db.actor
@@ -1042,6 +1195,68 @@ function enable_travel()
     _show_tip("fast travel unlocked")
 end
 
+--- Walk a route with nobody at the keys: per stop, warp, clear creatures, set hour and weather, hold, and log to testzone_stroll.log.
+--- @param route table { hold = seconds, clear = metres, stops = { { level =, weather =, hour =, smart = }, ... } }
+function start_stroll(route)
+    local actor = db.actor
+    if not actor then return _show_tip("Not in game") end
+    if not (route and route.hold and route.clear and route.stops and #route.stops > 0) then
+        return _show_tip("stroll: pass a route table or build one with build_stroll_route")
+    end
+    if _stroll then stop_stroll() end
+    route.index = 1
+    route.saved = {
+        keypress = get_console():get_bool(CMD_KEYPRESS), god = get_console():get_bool(CMD_GOD),
+        emission = ui_options.get(OPT_EMISSION), psi_storm = ui_options.get(OPT_PSI_STORM),
+    }
+    _stroll = route
+    get_console():execute(CMD_KEYPRESS .. " off")
+    get_console():execute(CMD_GOD .. " on")
+    ui_options.set(OPT_EMISSION, false)
+    ui_options.set(OPT_PSI_STORM, false)
+    enable_north()
+    enable_travel()
+    actor:give_money(MONEY)
+    stroll_log.info("START stops=%d hold=%d clear=%d", #route.stops, route.hold, route.clear)
+    _run_stroll_stop()
+end
+
+--- End the stroll and put back the key prompt, god mode, the emission and psi storm options and the weather.
+function stop_stroll()
+    if not _stroll then return _show_tip("no stroll running") end
+    RemoveTimeEvent(STROLL_EV, "hold")
+    RemoveTimeEvent(STROLL_EV, "reclear")
+    RemoveTimeEvent(STROLL_EV, "freeze")
+    _reset_stroll_settings(_stroll.saved)
+    stroll_log.info("STOP at stop %d of %d", math_min(_stroll.index, #_stroll.stops), #_stroll.stops)
+    stroll_log.flush()
+    _stroll = nil
+    _show_tip("stroll stopped and settings restored")
+end
+
+--- Show where the stroll stands: the stop, its level, weather and hour, and the stops left.
+function show_stroll()
+    if not _stroll then return _show_tip("no stroll running") end
+    local stop = _stroll.stops[_stroll.index]
+    _show_tip(string_format("stroll: stop %d of %d, %s %s %s, about %d min left", _stroll.index, #_stroll.stops, stop.level,
+        tostring(stop.weather), tostring(stop.hour), math_floor((#_stroll.stops - _stroll.index + 1) * _stroll.hold / 60)))
+end
+
+--- Build the full route: every outdoor level in each of the 10 weather states, then every underground level.
+--- @param hold number Seconds to hold each stop
+--- @param clear number Metres around the player to clear of creatures at each stop
+--- @return table The route for start_stroll
+function build_stroll_route(hold, clear)
+    local game = ini_file(GAME_INI_FILE)
+    local stops, underground = {}, {}
+    for _, level_name in ipairs(utils_data.collect_section(game, LEVEL_LIST_SECTION)) do
+        if game:r_string_ex(level_name, "weathers") == OUTDOOR_WEATHERS then _add_level_states(stops, level_name)
+        else underground[#underground + 1] = { level = level_name } end
+    end
+    for i = 1, #underground do stops[#stops + 1] = underground[i] end
+    return { hold = hold, clear = clear, stops = stops }
+end
+
 --- Show the command list on screen and write a paste-ready run_string sheet to appdata/logs/testzone_commands.txt.
 function show_commands()
     local actor = db.actor
@@ -1066,4 +1281,10 @@ function show_commands()
     end
     xfs.write_file(getFS():update_path("$logs$", "") .. COMMANDS_FILE, table_concat(sheet_lines, "\n") .. "\n")
     news_manager.send_tip(actor, table_concat(tip_lines, "\n"), nil, nil, 30000)
+end
+
+function on_game_start()
+    RegisterScriptCallback("save_state", _save_stroll)
+    RegisterScriptCallback("load_state", _load_stroll)
+    RegisterScriptCallback("actor_on_first_update", _start_saved_stroll)
 end

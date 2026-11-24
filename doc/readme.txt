@@ -73,8 +73,12 @@ SoundTool:
   A sound trace logs every sound the soundscape plays, with its channel, distance, map and weather
 Development:
   Log level and Immediate flush for every TestZone log, and Reset to defaults
+Remote:
+  With -dbg, a Lua file dropped into appdata/testzone/inbox runs once and one in watch runs on every load and edit, with each run's result written to outbox
+  A reload, tz_remote.load_module, swaps a script for its edited source while the game runs
 Console tools, run through run_string in debug mode:
   tz_commands - a stalker arena and a mutant arena, a life pump that keeps you alive, an actor drive and aim, kits, spawns, weather, time, and teleports to a smart terrain or a stash
+  tz_commands.start_stroll - tours every level in every weather with nobody at the keys
   tz_anim - plays a motion on the HUD, a mutant or an NPC and logs whether it played
   AnimationTool, on PgDn - plays each motion of a playlist from any folder on the stalker you aim at
   tz_fx - cycles post-process effects and ambient sound loops

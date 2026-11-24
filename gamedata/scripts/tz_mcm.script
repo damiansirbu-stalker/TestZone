@@ -46,6 +46,7 @@ defaults = {
     soundtool_key = SOUNDTOOL_KEY_DEFAULT,
     sound_trace_enabled = false,
     sound_trace_all = false,
+    remote_enabled = false,
     anim_key = ANIM_KEY_DEFAULT,
     log_level = "WARN",
     log_flush = false,
@@ -58,6 +59,7 @@ local build_path = function(key)
     elseif key:sub(1, 4) == "geo_" then tab = "geotool"
     elseif key:sub(1, 10) == "soundtool_" then tab = "soundtool"
     elseif key:sub(1, 12) == "sound_trace_" then tab = "sound_trace"
+    elseif key:sub(1, 7) == "remote_" then tab = "remote"
     elseif key == KEY_LOG_LEVEL or key == KEY_LOG_FLUSH then tab = "development" end
     return "tz/" .. tab .. "/" .. key
 end
@@ -218,6 +220,20 @@ function on_mcm_load()
 
                     { id = "div_info", type = "line" },
                     { id = "info", type = "desc", text = "ui_mcm_tz_sound_trace_info", clr = {200, 200, 200, 100} },
+                },
+            },
+            {
+                id = "remote",
+                text = "ui_mcm_menu_tz_remote",
+                sh = true,
+                gr = {
+                    { id = "title", type = "slide", link = "tz_mcm_banner",
+                        text = "ui_mcm_tz_remote_title", size = {512, 50}, spacing = 20 },
+                    { id = "desc", type = "desc", text = "ui_mcm_tz_remote_desc" },
+                    { id = "remote_enabled", type = "check", val = 1, def = false },
+
+                    { id = "div_info", type = "line" },
+                    { id = "info", type = "desc", text = "ui_mcm_tz_remote_info", clr = {200, 200, 200, 100} },
                 },
             },
             {

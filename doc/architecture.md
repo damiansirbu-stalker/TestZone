@@ -37,6 +37,7 @@ Saved game state and the target mods stay as the tool found them.
 - The scans are `tz_scanner.script` and `tz_geometry.script`.
 - `tz_profiler.script`, `tz_loadgen.script` and `tz_loadgen_victim.script` are the profiler wraps and their test fixture.
 - `tz_commands.script` and `tz_fx.script` are console benches run through `run_string`.
+- `tz_remote.script` is the outside channel: the folder spool and the module reload.
 
 ## Runtime
 
@@ -44,6 +45,18 @@ Saved game state and the target mods stay as the tool found them.
 - In a tool window the user picks an item, then plays, steps or tags it. Each tag, call or note appends one line to the tool's file, and the bottom screen shows the last two.
 - Esc with no edit box focused closes the window. `hide()` stops what the tool started and calls `Unregister_UI()`.
 - `actor_on_net_destroy` cleans up what a window or trace holds.
+- The stroll is a state machine whose state lives in the save. `start_stroll()` stores the route under `m_data.tz_stroll`, and each stop runs warp, clear, hour, weather, hold.
+  A level change rebuilds the Lua state between `save_state` and `load_state`. `actor_on_first_update` then resumes the stored stop.
+  A warp is `ChangeLevel` with no fade, to the stop's smart or the level's lowest game graph vertex.
+  The weather goes through `level_weathers`' manager, whose check each game hour then keeps the cycle. `weather.pause` freezes it 2 s after the set, once the blend has run.
+  The stop hours sit mid-band in the presets TestZone sets (`environment/weathers/w_clear1`, `w_rain1`, `w_storm1`, `w_foggy1`): clear 6, 12, 19 and 1, rain 12 and 0, storm 12 and 1, fog 13 and 1.
+- The remote is a spool, Producer-Consumer over a folder. A 1 s timer takes the first `.lua` in `appdata/testzone/inbox` and removes it.
+  It then runs the text under `xpcall` and writes a started record, then the result, to `outbox`.
+  A file in `watch` runs when its text differs from its last run in this Lua state: on each load and edit. The writer renames a finished `.part` file to `.lua`, and a half-written file never runs.
+- `tz_remote.load_module()` swaps a module for its edited source. It compiles first, then removes what the old module owns from five registries.
+  They are the callbacks, the timers, the per-frame calls, the xsound listeners and the xbus subscribers.
+  A function belongs to a module when its environment is the module table, or when a function it closes over has it. That covers TestZone's timer watch wrappers.
+  It runs the new source under xray's module header, starts it, and lists the modules that still hold the old copy in a local.
 
 ## Rules and invariants
 
@@ -51,7 +64,10 @@ Saved game state and the target mods stay as the tool found them.
 - A tool stops only the plays it started. SoundTool stops its handles and leaves every other sound playing.
 - `on_key_press` fires before the UI takes the key. `Check_UI()` guards every open path, and a key typed into a note box opens no second window.
 - A tool logs to `testzone.log` under its logger. A trace writes a separate file.
-- An MCM key carries its feature's prefix: `geo_`, `soundtool_`, `perception_`, `profiler_`. A key with no prefix sits on the main tab.
+- An MCM key carries its feature's prefix: `geo_`, `soundtool_`, `perception_`, `profiler_`, `remote_`. A key with no prefix sits on the main tab.
+- The remote runs code from a folder. It starts only with `-dbg` and the Remote switch on, and it never moves into xlibs.
+- A reload refuses a module that declares a class, one an unlocalizer rewrites, and any module while `lua_use_functor_cache` is on, since each would keep old code running.
+- The stroll puts back every setting it changed: the key prompt, god mode, the emission and psi storm options and the weather pause.
 
 ## UI rules
 
@@ -97,4 +113,5 @@ Each MCM tab is one component, in tab order.
   A note saves the spot with every reading to the GeoTool file of the run.
 - SoundTool holds its key. The window plays ambience channels, dread categories, voice and any `.ogg` on disk, and writes tags and notes to the SoundTool file of the run.
   A file from outside the game is copied into `sounds/sound_tool_cache`, and the index rescans once per batch. The game plays only indexed names.
+- Remote holds the switch for the folder spool, written to `testzone_remote.log`. `stalker-manager.sh testzone-send` is its outside half.
 - Development sets the log level and flush for every logger in `TZ_LOGGERS` and resets every option.

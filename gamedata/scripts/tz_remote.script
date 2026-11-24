@@ -1,0 +1,438 @@
+--- tz_remote: the game driven from outside - runs the Lua files dropped in appdata/testzone, and loads a module's edited source into the running game
+--- @novalidate(conventions.unused_export, reason:"console commands, invoked by name via run_string or an inbox file")
+--- @novalidate(xray.cached_timer_global, reason:"TIMER_CREATE_KEY is the global's name as a string, read from the live owner at call time")
+
+local RegisterScriptCallback, rawget, rawset, pairs, type, tostring, select, unpack = RegisterScriptCallback, rawget, rawset, pairs, type, tostring, select, unpack
+local getfenv, getmetatable, loadstring, xpcall, get_console, ini_file = getfenv, getmetatable, loadstring, xpcall, get_console, ini_file
+local AddUniqueCall, time_global = AddUniqueCall, time_global
+local string_format, table_concat, table_sort, table_remove, os_date, math_max = string.format, table.concat, table.sort, table.remove, os.date, math.max
+
+local log = xlog.get_logger("TestZone.remote", { outfile = "testzone_remote.log", level = "DEBUG" })
+
+local EV_ID, ACT_POLL = "tz_remote", "poll"
+local POLL_SEC = 1
+local ROOT_DIR = "testzone"
+local INBOX_DIR, WATCH_DIR, OUTBOX_DIR = "inbox", "watch", "outbox"
+local APP_MOUNT, SCRIPT_MOUNT, CONFIG_MOUNT = "$app_data_root$", "$game_scripts$", "$game_config$"
+local LUA_EXT, RESULT_EXT, SCRIPT_EXT, LTX_EXT = ".lua", ".txt", ".script", ".ltx"
+local READY_FILE, WATCH_PREFIX, UNLOCALIZER_DIR = "ready.txt", "watch_", "unlocalizers\\"
+local STATUS_STARTED, STATUS_OK, STATUS_ERROR = "started", "ok", "error"
+local TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+local FORMAT_DEPTH = 2
+local OWNER_DEPTH = 2
+local UPVALUE_DEPTH = 4
+local MS_PER_SEC = 1000
+local FUNCTOR_CACHE_CMD = "lua_use_functor_cache"
+local TIMER_CREATE_KEY, TIMER_QUEUE_KEY = "CreateTimeEvent", "ev_queue"
+local CLASS_PATTERN = "class%s*[\"']"
+local REPLAY_CALLBACKS = { "on_game_load", "actor_on_first_update" }
+local HEADER_OLD = "local function script_name() return %q end local this = {} rawset(_G, %q, this) "
+    .. "setmetatable(this, {__index = _G}) setfenv(1, this) "
+local HEADER_NEW = "local function script_name() return %q end local this = {} this._G = _G rawset(_G, %q, this) setfenv(1, this) "
+
+local _debug = rawget(_G, "debug")
+local _config = { on = false }
+local _is_enabled = false
+local _paths = nil
+local _watch_texts = {}
+
+--- The folder paths under appdata, each ending in a backslash.
+local function _build_paths()
+    local root = xfs.format_dir(xfs.resolve_path(APP_MOUNT, ROOT_DIR))
+    return { root = root, inbox = root .. INBOX_DIR .. "\\", watch = root .. WATCH_DIR .. "\\", outbox = root .. OUTBOX_DIR .. "\\" }
+end
+
+local function _init_folders(paths)
+    xfs.create_folder(paths.root:sub(1, -2))
+    xfs.create_folder(paths.inbox:sub(1, -2))
+    xfs.create_folder(paths.watch:sub(1, -2))
+    xfs.create_folder(paths.outbox:sub(1, -2))
+end
+
+local function _write_result(name, status, body)
+    xfs.write_file(_paths.outbox .. name .. RESULT_EXT, string_format("%s\t%s\n%s\n", status, os_date(TIME_FORMAT), body))
+end
+
+--- The count of its arguments and the arguments in a table, nils included.
+local function _collect_values(...)
+    return select("#", ...), { ... }
+end
+
+--- Every value after the status flag of an xpcall, one per line, tables written out two levels deep.
+local function _format_values(count, values)
+    local lines = {}
+    for i = 2, count do
+        local value = values[i]
+        lines[#lines + 1] = type(value) == "table" and xinspect.format_table(value, FORMAT_DEPTH) or tostring(value)
+    end
+    return table_concat(lines, "\n")
+end
+
+--- Compile and run one dropped file under xpcall, with a started record first and the result after.
+--- @novalidate(security.dynamic_code, reason:"the dev inbox runs files the user drops in appdata, gated on -dbg and the Remote switch")
+local function _run_text(name, text)
+    _write_result(name, STATUS_STARTED, "")
+    local chunk, compile_error = loadstring(text, "@" .. name .. LUA_EXT)
+    if not chunk then
+        log.warn("RUN %s compile error", name)
+        return _write_result(name, STATUS_ERROR, tostring(compile_error))
+    end
+    local started = time_global()
+    local count, values = _collect_values(xpcall(chunk, _debug.traceback))
+    local elapsed = time_global() - started
+    local status = values[1] and STATUS_OK or STATUS_ERROR
+    _write_result(name, status, string_format("%d ms\n%s", elapsed, _format_values(count, values)))
+    log.info("RUN %s %s %dms", name, status, elapsed)
+end
+
+--- The .lua file names in a folder, sorted by name.
+local function _find_lua_files(dir)
+    local _, files = xfs.read_disk_entries(dir:sub(1, -2))
+    local found = {}
+    for i = 1, #files do
+        if files[i]:sub(-#LUA_EXT):lower() == LUA_EXT then found[#found + 1] = files[i] end
+    end
+    table_sort(found)
+    return found
+end
+
+--- Run the first inbox file once, removed before it runs; false when the removal fails, which stops the poll.
+local function _run_inbox()
+    local file = _find_lua_files(_paths.inbox)[1]
+    if not file then return true end
+    local path = _paths.inbox .. file
+    local name = file:sub(1, -#LUA_EXT - 1)
+    local text = xfs.read_file(path)
+    if not xfs.remove_file(path) then
+        log.error("RUN %s cannot remove the file so the poll stops until the next load", name)
+        _write_result(name, STATUS_ERROR, "cannot remove the file so the poll stops until the next load")
+        return false
+    end
+    if text then _run_text(name, text) end
+    return true
+end
+
+--- Run one watch file when its text differs from the text of its last run in this Lua state.
+local function _run_watch_file(file)
+    local text = xfs.read_file(_paths.watch .. file)
+    if not text or text == _watch_texts[file] then return end
+    _watch_texts[file] = text
+    _run_text(WATCH_PREFIX .. file:sub(1, -#LUA_EXT - 1), text)
+end
+
+local function _update_remote()
+    if not _is_enabled then return true end
+    ResetTimeEvent(EV_ID, ACT_POLL, POLL_SEC)
+    if not _run_inbox() then
+        _is_enabled = false
+        return true
+    end
+    local files = _find_lua_files(_paths.watch)
+    for i = 1, #files do _run_watch_file(files[i]) end
+    return false
+end
+
+--- Start or stop the poll as the switch changes; it runs only with -dbg, which also opens the debug library.
+local function _apply_enabled()
+    local is_wanted = _config.on and rawget(_G, "DEV_DEBUG") == true and _debug ~= nil
+    if _config.on and not is_wanted then log.warn("START refused: the remote runs only with -dbg") end
+    if is_wanted == _is_enabled then return end
+    _is_enabled = is_wanted
+    RemoveTimeEvent(EV_ID, ACT_POLL)
+    if not _is_enabled then return log.info("STOP") end
+    _paths = _paths or _build_paths()
+    _init_folders(_paths)
+    xfs.write_file(_paths.root .. READY_FILE, os_date(TIME_FORMAT) .. "\n")
+    CreateTimeEvent(EV_ID, ACT_POLL, POLL_SEC, _update_remote)
+    log.info("START %s", _paths.root)
+end
+
+local function _load_config()
+    local cfg = tz_mcm and tz_mcm.cfg
+    if not cfg then return end
+    _config.on = cfg.remote_enabled == true
+    _apply_enabled()
+end
+
+--- The value of the upvalue named wanted, searched through the function and the functions it closes over.
+local function _find_upvalue(fn, wanted, depth)
+    local index = 1
+    local name, value = _debug.getupvalue(fn, index)
+    while name do
+        if name == wanted then return value end
+        local found = type(value) == "function" and depth > 0 and _find_upvalue(value, wanted, depth - 1)
+        if found then return found end
+        index = index + 1
+        name, value = _debug.getupvalue(fn, index)
+    end
+    return nil
+end
+
+--- Whether the module owns the function: its environment, or that of a function it closes over, which covers a wrapper.
+local function _is_owned(fn, module, depth)
+    if type(fn) ~= "function" then return false end
+    if getfenv(fn) == module then return true end
+    if depth == 0 then return false end
+    local index = 1
+    local name, value = _debug.getupvalue(fn, index)
+    while name do
+        if _is_owned(value, module, depth - 1) then return true end
+        index = index + 1
+        name, value = _debug.getupvalue(fn, index)
+    end
+    return false
+end
+
+local function _get_intercepts()
+    return axr_main and _find_upvalue(axr_main.callback_set, "intercepts", UPVALUE_DEPTH)
+end
+
+local function _collect_handlers(callback_name, handlers, module, removed)
+    for fn in pairs(handlers) do
+        if _is_owned(fn, module, OWNER_DEPTH) then removed[#removed + 1] = { kind = "callback", key = callback_name, fn = fn } end
+    end
+end
+
+local function _collect_callbacks(module, removed)
+    local intercepts = _get_intercepts()
+    if type(intercepts) ~= "table" then return end
+    for callback_name, handlers in pairs(intercepts) do _collect_handlers(callback_name, handlers, module, removed) end
+end
+
+--- Add one queued timer to the removed list when the module owns its function.
+local function _collect_action(item, module, removed)
+    if type(item.node) ~= "table" or not _is_owned(item.node.f, module, OWNER_DEPTH) then return end
+    item.kind, item.fn = "timer", item.node.f
+    removed[#removed + 1] = item
+end
+
+local function _collect_actions(owner, ev_id, actions, module, removed)
+    for act_id, node in pairs(actions) do _collect_action({ owner = owner, key = ev_id, sub = act_id, node = node }, module, removed) end
+end
+
+--- The timers of one timer owner, _G or demonized_time_events, read from the queue its CreateTimeEvent closes over.
+local function _collect_timers(owner, module, removed)
+    local timer_create = type(owner) == "table" and rawget(owner, TIMER_CREATE_KEY)
+    local queue = type(timer_create) == "function" and _find_upvalue(timer_create, TIMER_QUEUE_KEY, UPVALUE_DEPTH)
+    if type(queue) ~= "table" then return end
+    for ev_id, actions in pairs(queue) do
+        if type(actions) == "table" then _collect_actions(owner, ev_id, actions, module, removed) end
+    end
+end
+
+local function _collect_unique_calls(module, removed)
+    local calls = _find_upvalue(AddUniqueCall, "level_add_call_unique", UPVALUE_DEPTH)
+    if type(calls) ~= "table" then return end
+    for fn in pairs(calls) do
+        if _is_owned(fn, module, OWNER_DEPTH) then removed[#removed + 1] = { kind = "unique_call", fn = fn, calls = calls } end
+    end
+end
+
+local function _collect_seam_list(seam, list, module, removed)
+    for i = 1, #list do
+        if _is_owned(list[i], module, OWNER_DEPTH) then removed[#removed + 1] = { kind = "seam", key = seam, fn = list[i] } end
+    end
+end
+
+local function _collect_seams(module, removed)
+    local listeners = xsound and _find_upvalue(xsound.register_ambient_listener, "_sound_listeners", UPVALUE_DEPTH)
+    if type(listeners) ~= "table" then return end
+    for seam, list in pairs(listeners) do _collect_seam_list(seam, list, module, removed) end
+end
+
+local function _collect_subscriber(event, list, entry, module, removed)
+    if not _is_owned(entry.callback, module, OWNER_DEPTH) then return end
+    removed[#removed + 1] = { kind = "subscriber", key = event, fn = entry.callback, list = list, entry = entry }
+end
+
+local function _collect_subscribers(module, removed)
+    local subscribers = xbus and _find_upvalue(xbus.subscribe, "subscribers", UPVALUE_DEPTH)
+    if type(subscribers) ~= "table" then return end
+    for event, list in pairs(subscribers) do
+        for i = 1, #list do _collect_subscriber(event, list, list[i], module, removed) end
+    end
+end
+
+--- Every callback, timer, per-frame call, sound seam listener and bus subscriber the module owns.
+local function _collect_owned(module)
+    local removed = {}
+    _collect_callbacks(module, removed)
+    _collect_timers(_G, module, removed)
+    _collect_timers(rawget(_G, "demonized_time_events"), module, removed)
+    _collect_unique_calls(module, removed)
+    _collect_seams(module, removed)
+    _collect_subscribers(module, removed)
+    return removed
+end
+
+local function _remove_subscriber(item)
+    for i = #item.list, 1, -1 do
+        if item.list[i] == item.entry then table_remove(item.list, i) end
+    end
+end
+
+local REMOVERS = {
+    callback = function(item) axr_main.callback_unset(item.key, item.fn) end,
+    timer = function(item) item.owner.RemoveTimeEvent(item.key, item.sub) end,
+    unique_call = function(item) item.calls[item.fn] = nil end,
+    seam = function(item) xsound.unregister_ambient_listener(item.key, item.fn) end,
+    subscriber = _remove_subscriber,
+}
+
+local RESTORERS = {
+    callback = function(item) RegisterScriptCallback(item.key, item.fn) end,
+    timer = function(item)
+        local delay = math_max(0, (item.node.timer - time_global()) / MS_PER_SEC)
+        item.owner[TIMER_CREATE_KEY](item.key, item.sub, delay, item.fn, unpack(item.node.p or {}))
+    end,
+    unique_call = function(item) item.calls[item.fn] = true end,
+    seam = function(item) xsound.register_ambient_listener(item.key, item.fn) end,
+    subscriber = function(item) xbus.subscribe(item.key, item.entry.callback, item.entry.name) end,
+}
+
+--- Count the removed items by kind for the report, "callback=3 timer=1".
+local function _format_counts(removed)
+    local counts, parts = {}, {}
+    for i = 1, #removed do counts[removed[i].kind] = (counts[removed[i].kind] or 0) + 1 end
+    for kind, count in pairs(counts) do parts[#parts + 1] = kind .. "=" .. count end
+    table_sort(parts)
+    return #parts > 0 and table_concat(parts, " ") or "none"
+end
+
+--- Whether a file in configs/unlocalizers rewrites the module's locals on load, a pass this loader cannot repeat.
+local function _is_unlocalized(name)
+    local files = xfs.read_files(CONFIG_MOUNT, UNLOCALIZER_DIR, LTX_EXT)
+    for i = 1, #files do
+        local ini = ini_file(UNLOCALIZER_DIR .. files[i] .. LTX_EXT)
+        if ini and ini:section_exist(name) then return true end
+    end
+    return false
+end
+
+--- The refusal reason for a reload, or nil when the module can be swapped.
+local function _check_reload(name, module)
+    if not _debug then return "the debug library is missing so run the game with -dbg" end
+    if type(module) ~= "table" then return "no loaded module of that name" end
+    if get_console():get_integer(FUNCTOR_CACHE_CMD) ~= 0 then return FUNCTOR_CACHE_CMD .. " is on and xray would keep calling the old code" end
+    if _is_unlocalized(name) then return "an unlocalizer rewrites this module on load" end
+    return nil
+end
+
+--- The header xray prepends to a module, in the form the old module shows, kept on line 1 so error lines match the file.
+local function _build_header(name, module)
+    local meta = getmetatable(module)
+    local is_old_form = meta ~= nil and meta.__index == _G
+    return string_format(is_old_form and HEADER_OLD or HEADER_NEW, name, name)
+end
+
+--- Put the old module and everything it had registered back after a failed load.
+local function _reset_module(name, module, removed)
+    rawset(_G, name, module)
+    for i = 1, #removed do RESTORERS[removed[i].kind](removed[i]) end
+end
+
+local function _run_safely(fn)
+    local ok, run_error = xpcall(fn, _debug.traceback)
+    if not ok then log.error("LOAD handler error: %s", tostring(run_error)) end
+    return ok
+end
+
+--- Run once each handler the module registered for one callback that already fired this session; returns the count run.
+local function _run_handlers(handlers, module)
+    local count = 0
+    for fn in pairs(handlers) do
+        if _is_owned(fn, module, 0) and _run_safely(fn) then count = count + 1 end
+    end
+    return count
+end
+
+--- Start the new module: on_reload, else on_game_start, then the handlers of the load callbacks that already fired.
+local function _start_module(module)
+    local start = rawget(module, "on_reload") or rawget(module, "on_game_start")
+    if type(start) == "function" then _run_safely(start) end
+    local intercepts = _get_intercepts() or {}
+    local replayed = 0
+    for i = 1, #REPLAY_CALLBACKS do replayed = replayed + _run_handlers(intercepts[REPLAY_CALLBACKS[i]] or {}, module) end
+    return replayed
+end
+
+local function _is_module(value)
+    if type(value) ~= "table" then return false end
+    local meta = getmetatable(value)
+    return (meta ~= nil and meta.__index == _G) or rawget(value, "_G") == _G
+end
+
+--- Whether a function still closes over the old module or one of its functions.
+local function _is_stale(fn, old)
+    local index = 1
+    local name, value = _debug.getupvalue(fn, index)
+    while name do
+        if value == old or (type(value) == "function" and getfenv(value) == old) then return true end
+        index = index + 1
+        name, value = _debug.getupvalue(fn, index)
+    end
+    return false
+end
+
+local function _is_stale_module(module, old)
+    for _, value in pairs(module) do
+        if type(value) == "function" and _is_stale(value, old) then return true end
+    end
+    return false
+end
+
+--- The other modules whose functions still hold the old module in a local; they need a reload too.
+local function _find_stale_holders(name, old)
+    local holders = {}
+    for module_name, module in pairs(_G) do
+        if module_name ~= name and _is_module(module) and _is_stale_module(module, old) then holders[#holders + 1] = module_name end
+    end
+    table_sort(holders)
+    return holders
+end
+
+--- The source a reload compiles, or nil and the refusal reason.
+local function _read_source(name, path)
+    local source = xfs.read_file(path or xfs.resolve_path(SCRIPT_MOUNT, name .. SCRIPT_EXT))
+    if not source then return nil, "cannot read the source" end
+    if source:find(CLASS_PATTERN) then return nil, "it declares a class whose objects keep the old code" end
+    return source
+end
+
+local function _log_report(name, report)
+    log.info("LOAD %s: %s", name, report)
+    return name .. ": " .. report
+end
+
+--- Swap a loaded module for its edited source: compile, unhook the old module, run, start, and report.
+--- @novalidate(security.dynamic_code, reason:"the dev reload compiles a module's own source, gated on -dbg")
+--- @param name string The module name, the script file name without .script
+--- @param path string|nil An absolute path to read instead of the file the game loads, such as the repo copy
+--- @return string The report line
+function load_module(name, path)
+    local old = rawget(_G, name)
+    local refusal = _check_reload(name, old)
+    if refusal then return _log_report(name, "refused: " .. refusal) end
+    local source, read_error = _read_source(name, path)
+    if not source then return _log_report(name, "refused: " .. read_error) end
+    local chunk, compile_error = loadstring(_build_header(name, old) .. source, "@" .. name .. SCRIPT_EXT)
+    if not chunk then return _log_report(name, "refused: " .. tostring(compile_error)) end
+    local started = time_global()
+    local removed = _collect_owned(old)
+    for i = 1, #removed do REMOVERS[removed[i].kind](removed[i]) end
+    local ok, run_error = xpcall(chunk, _debug.traceback)
+    if not ok then
+        _reset_module(name, old, removed)
+        return _log_report(name, "failed and the old module is back: " .. tostring(run_error))
+    end
+    local replayed = _start_module(rawget(_G, name))
+    local holders = _find_stale_holders(name, old)
+    return _log_report(name, string_format("loaded in %d ms; removed %s; replayed %d; stale holders: %s", time_global() - started,
+        _format_counts(removed), replayed, #holders > 0 and table_concat(holders, " ") or "none"))
+end
+
+function on_game_start()
+    RegisterScriptCallback("actor_on_first_update", _load_config)
+    RegisterScriptCallback("on_option_change", _load_config)
+    RegisterScriptCallback("mcm_option_restore_default", _load_config)
+end

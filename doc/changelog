@@ -48,12 +48,21 @@
   Development
     - Added the Development tab with Log level, Immediate flush for every TestZone log, and Reset to defaults.
 
+  Remote
+    - Added the Remote tab. With it on and the game started with -dbg, a Lua file dropped into appdata/testzone/inbox runs within a second and is removed.
+      A file in watch runs on every load and again whenever you edit it. Each run writes its result to outbox, and stalker-manager testzone-send drops a file and prints the result.
+    - Added tz_remote.load_module, which swaps a loaded script for its edited source in the running game, with no restart and no reload of the save.
+      It removes the old script's callbacks and timers first, so nothing runs twice, and it names the other scripts that still hold the old copy.
+
   Console commands
     - Added tz_commands for testing and filming, run through run_string in debug mode.
       The stalker arena keeps NPCs of 2 factions fighting on a ring. The mutant arena sends waves of mutants at you. Both arenas write testzone_arena.log.
       If you need to stay alive, the life pump holds your health, stamina and psy health up and damps every hit.
       The actor drive holds you in place or circles you, while the actor aim turns you to a mutant.
       You also get kits, spawns, weather, time, teleports to a smart terrain or a stash, and the unlocks for the north and fast travel in the same set.
+    - Added the stroll, which tours a route with nobody at the keys: every outdoor level in each of its 10 weathers, then every underground level.
+      At each stop it clears the creatures, sets the hour and weather, holds them for the time you give, and logs each stop to testzone_stroll.log.
+      It turns on god mode and turns off the key press after a load, emissions and psi storms, and stop_stroll puts every one of them back.
     - Added tz_anim, an animation bench that plays a motion on the HUD, a mutant or an NPC, then logs whether it played.
     - Added AnimationTool on PgDn, a key MCM can change. This tool forces each candidate motion on the stalker you aim at, offers a prop picker, and logs your call on each motion.
     - Added tz_fx, console cyclers for post-process effects and ambient sound loops.

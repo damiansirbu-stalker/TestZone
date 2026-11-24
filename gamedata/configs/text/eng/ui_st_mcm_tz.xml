@@ -288,6 +288,26 @@ How often the open window reads every check.</text>
         <text>A run on plain Anomaly, GAMMA or the Diegetic mods compares line for line. Log output: logs/testzone_sound_trace.log</text>
     </string>
 
+    <!-- ==================== REMOTE TAB ==================== -->
+    <string id="ui_mcm_menu_tz_remote">
+        <text>Remote</text>
+    </string>
+    <string id="ui_mcm_tz_remote_title">
+        <text>TestZone</text>
+    </string>
+    <string id="ui_mcm_tz_remote_desc">
+        <text>Runs Lua files dropped into appdata/testzone from outside the game. A file in inbox runs once and is removed, and a file in watch runs on every load and again whenever it changes. Each run writes its result to outbox. Works only when the game starts with -dbg.</text>
+    </string>
+    <string id="ui_mcm_tz_remote_remote_enabled">
+        <text>Remote</text>
+    </string>
+    <string id="ui_mcm_tz_remote_remote_enabled_desc">
+        <text>Checks the inbox and watch folders once a second while a level runs. Any program on this computer can then run code in the game, so leave it off when you are not testing.</text>
+    </string>
+    <string id="ui_mcm_tz_remote_info">
+        <text>stalker-manager testzone-send drops a file and prints its result. Log output: logs/testzone_remote.log</text>
+    </string>
+
     <!-- ==================== DEVELOPMENT TAB ==================== -->
     <string id="ui_mcm_menu_tz_development">
         <text>Development</text>
