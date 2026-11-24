@@ -20,6 +20,8 @@ local ChangeLevel, ipairs, math_min = ChangeLevel, ipairs, math.min
 local log = xlog.get_logger("TestZone.arena", { outfile = "testzone_arena.log", level = "DEBUG" })
 
 local INVALID_VERTEX = 4294967295
+-- How long a command's tip stays on the HUD.
+local TIP_MS = 5000
 
 local AMMO_BOXES   = 6
 local MONEY        = 100000
@@ -220,8 +222,7 @@ local _marena = { on = false, want = 0, center = nil, gvid = nil, pool = {}, sta
 local _stroll = nil
 
 local function _show_tip(msg)
-    local actor = db.actor
-    if actor then news_manager.send_tip(actor, msg, nil, nil, 5000) end
+    xpda.show_tip(msg, TIP_MS)
 end
 
 -- One row of a weighted table, rolled against the summed weights.

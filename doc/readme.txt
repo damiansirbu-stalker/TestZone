@@ -67,9 +67,10 @@ GeoTool:
   The checks: nearest smart terrain and base owner, the indoor, roof and underground tests, emission and shelter cover, rain and sky light
   A note saves the spot and every reading to the GeoTool file of this game run
 SoundTool:
-  A window on End that plays ambience channels, dread categories, NPC voice and any .ogg on disk
-  It plays a sound as its mod does in game, or at the ear or a set distance, with its loudness
-  It browses any folder and opens playlists, and every tag or note goes to the SoundTool file of this game run
+  A window on End that plays channels, dread categories, NPC voice and any .ogg on disk
+  It plays a sound the way the game code that owns it does, or at the ear or a set distance, with its loudness and falloff
+  An MCM Mute option silences the soundscape, weapons and music while you listen; save and load with it on to silence what was already playing
+  It browses any folder and opens playlists, and every note goes to the SoundTool file of this game run
   A sound trace logs every sound the soundscape plays, with its channel, distance, map and weather
 Development:
   Log level and Immediate flush for every TestZone log, and Reset to defaults

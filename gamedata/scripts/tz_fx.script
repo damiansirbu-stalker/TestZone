@@ -5,6 +5,8 @@ local UnregisterScriptCallback, RegisterScriptCallback = UnregisterScriptCallbac
 local time_global, string_format = time_global, string.format
 
 local CALLBACK_ACTOR_ON_UPDATE = "actor_on_update"
+-- How long a tip stays on the HUD when the caller names no time.
+local TIP_MS = 5000
 
 local log = xlog.get_logger("TestZone.fx", { outfile = "testzone.log" })
 
@@ -34,8 +36,7 @@ local _pp_state = nil
 local _snd_state = nil
 
 local function _show_tip(msg, ms)
-    local actor = db.actor
-    if actor then news_manager.send_tip(actor, msg, nil, nil, ms or 5000) end
+    xpda.show_tip(msg, ms or TIP_MS)
 end
 
 --- Toggle the xpp cycler. 5s per entry, factor 0.7, smoothed.

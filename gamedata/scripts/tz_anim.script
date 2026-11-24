@@ -5,10 +5,12 @@
 local tostring, string_format, pairs = tostring, string.format, pairs
 local level, game = level, game
 local alife, ini_sys = alife, ini_sys
-local news_manager, state_mgr, state_lib, xobject = news_manager, state_mgr, state_lib, xobject
+local state_mgr, state_lib, xobject = state_mgr, state_lib, xobject
 local IsStalker, IsMonster = IsStalker, IsMonster
 
 local INVALID_VERTEX = 4294967295
+-- How long a bench tip stays on the HUD.
+local TIP_MS = 4000
 
 local log = xlog.get_logger("TestZone.anim", { outfile = "testzone.log" })
 
@@ -27,7 +29,7 @@ local _review_states = {}
 local _review_n = 0
 
 local function _show_tip(msg)
-    if db.actor then news_manager.send_tip(db.actor, "tz_anim: " .. msg, nil, nil, 4000) end
+    xpda.show_tip("tz_anim: " .. msg, TIP_MS)
     log.info("%s", msg)
 end
 

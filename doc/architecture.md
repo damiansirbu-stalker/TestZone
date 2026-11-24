@@ -113,7 +113,13 @@ Each MCM tab is one component, in tab order.
 - Perception traces what the stalkers and mutants near the actor hear, see, remember and fear, and whom they pick as enemy.
 - GeoTool holds its key and the refresh period. The window shows the position and every place check, refreshed while it is open.
   A note saves the spot with every reading to the GeoTool file of the run.
-- SoundTool holds its key. The window plays ambience channels, dread categories, voice and any `.ogg` on disk, and writes tags and notes to the SoundTool file of the run.
+- SoundTool holds its key. The window plays channels, dread categories, voice and any `.ogg` on disk, and writes notes to the SoundTool file of the run.
+  It names each file's producer, the X-Ray or vanilla code that plays it: a channel, the dread director, a script theme, a thunder strike, an NPC voice or a creature.
+  `game` replays a game file the way its producer does, each click its own roll: a channel through xsound's copy of vanilla's channel play, dread through `dd_director.play_sound()`, an actor theme 2D at 0.8.
+  An outside file gets no `game`, and shows where it would play. 2D plays at the ear, and 3D camera-forward at a preset or typed distance, with a height, and a falloff the two boxes override when both are filled.
+  The MCM option `soundtool_mute` vetoes every play the seven engine sound seams reach, and the tool's own plays pass under a flag. It holds xray's level music factor at 0, which is never saved, and stops the actor's looped wind and rain.
+  `on_game_start` applies it before any bed, wind or music starts, so a save and load with it on silences what was already playing, and an option change applies it at once. A level change or a load lifts it at `actor_on_net_destroy`, so the main menu keeps its music, and the next load applies it again.
+  The channel index is xsound's one walk of the channel root. The theme and thunder indexes walk `script_sound.ltx` and `thunderbolts.ltx` once per open, and the open line logs their cost.
   A file from outside the game is copied into `sounds/sound_tool_cache`, and the index rescans once per batch. The game plays only indexed names.
 - Remote holds the switch for the folder spool, written to `testzone_remote.log`. `stalker-manager.sh testzone-send` is its outside half.
 - Development sets the log level and flush for every logger in `TZ_LOGGERS` and resets every option.

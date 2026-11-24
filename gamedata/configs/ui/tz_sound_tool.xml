@@ -27,41 +27,53 @@
 	<lbl_place x="492" y="158" width="374" height="21"><text font="letterica16" align="l" vert_align="c" r="210" g="140" b="80"></text></lbl_place>
 	<lbl_loud x="492" y="179" width="374" height="21"><text font="letterica16" align="l" vert_align="c" r="210" g="140" b="80"></text></lbl_loud>
 
-	<!-- MODE: three toggles, one lit; a click on the lit one steps its choices. VOLUME: the playback volume of the next play. TRANSPORT: prev, play, next, stop. -->
-	<btn_mode_heard x="482" y="235" width="70" height="30" frame_mode="1"><texture>tz_rkey_start</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">as heard</text></btn_mode_heard>
-	<lit_mode_heard x="482" y="235" width="70" height="30"><texture>tz_rkey_start_lit</texture></lit_mode_heard>
-	<btn_mode_2d x="552" y="235" width="70" height="30" frame_mode="1"><texture>tz_rkey</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">2D</text></btn_mode_2d>
+	<!-- MODE: game plays the file as its producer does, 2D at the ear, 3D in front at the distance below; one lit. The game label is a string id, since X-Ray translates a key's text. -->
+	<lit_mode_game x="482" y="235" width="70" height="30"><texture>tz_rkey_start_lit</texture></lit_mode_game>
+	<btn_mode_game x="482" y="235" width="70" height="30" frame_mode="1"><texture>tz_rkey_start</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">st_tz_sound_tool_key_game</text></btn_mode_game>
 	<lit_mode_2d x="552" y="235" width="70" height="30"><texture>tz_rkey_lit</texture></lit_mode_2d>
-	<btn_mode_3d x="622" y="235" width="70" height="30" frame_mode="1"><texture>tz_rkey_end</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">3D</text></btn_mode_3d>
+	<btn_mode_2d x="552" y="235" width="70" height="30" frame_mode="1"><texture>tz_rkey</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">2D</text></btn_mode_2d>
 	<lit_mode_3d x="622" y="235" width="70" height="30"><texture>tz_rkey_end_lit</texture></lit_mode_3d>
+	<btn_mode_3d x="622" y="235" width="70" height="30" frame_mode="1"><texture>tz_rkey_end</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">3D</text></btn_mode_3d>
 	<btn_vol_down x="696" y="235" width="60" height="30"><texture>ui_inGame2_pda_Filtr_radio_btn_v_down</texture></btn_vol_down>
 	<btn_vol_up x="756" y="235" width="60" height="30"><texture>ui_inGame2_pda_Filtr_radio_btn_v_up</texture></btn_vol_up>
+	<!-- TRANSPORT: prev, play, next, stop. -->
 	<btn_prior x="482" y="273" width="60" height="30"><texture>ui_inGame2_pda_Filtr_radio_btn_prev</texture></btn_prior>
 	<btn_play x="543" y="273" width="60" height="30"><texture>ui_inGame2_pda_Filtr_radio_btn_start2</texture></btn_play>
 	<btn_next x="604" y="273" width="60" height="30"><texture>ui_inGame2_pda_Filtr_radio_btn_next</texture></btn_next>
 	<btn_stop x="665" y="273" width="60" height="30"><texture>ui_inGame2_pda_Filtr_radio_btn_stop2</texture></btn_stop>
 
-	<!-- VERDICT: one box around the tags, the selected sound and the note. A tag writes one line for the selected sound. -->
-	<verdict_box_t x="482" y="315" width="394" height="1" stretch="1"><texture r="255" g="255" b="255" a="25">ui_inGame2_white_rect</texture></verdict_box_t>
+	<!-- DISTANCE: a preset plays the sound in 3D there, the box takes any other distance in metres. -->
+	<btn_dist_3 x="490" y="325" width="50" height="30" frame_mode="1"><texture>tz_rkey_start</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">3 m</text></btn_dist_3>
+	<btn_dist_15 x="540" y="325" width="50" height="30" frame_mode="1"><texture>tz_rkey</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">15 m</text></btn_dist_15>
+	<btn_dist_40 x="590" y="325" width="50" height="30" frame_mode="1"><texture>tz_rkey</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">40 m</text></btn_dist_40>
+	<btn_dist_60 x="640" y="325" width="50" height="30" frame_mode="1"><texture>tz_rkey</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">60 m</text></btn_dist_60>
+	<btn_dist_100 x="690" y="325" width="50" height="30" frame_mode="1"><texture>tz_rkey</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">100 m</text></btn_dist_100>
+	<btn_dist_200 x="740" y="325" width="50" height="30" frame_mode="1"><texture>tz_rkey_end</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">200 m</text></btn_dist_200>
+	<scr_dist_rim x="796" y="325" width="72" height="29" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_dist_rim>
+	<scr_dist_glass x="797.5" y="326.5" width="69" height="26" stretch="1"><texture r="20" g="23" b="27" a="255">ui_inGame2_white_rect</texture></scr_dist_glass>
+	<box_dist x="796" y="325" width="72" height="29"><text x="8" font="letterica16" vert_align="c" align="l" r="190" g="190" b="186"/></box_dist>
+	<!-- SETTINGS: the 3D height in metres, and the falloff min and max in metres; both filled override the file's own falloff, empty keeps it. Words are string ids, since X-Ray translates a label's text. -->
+	<lbl_height x="490" y="363" width="50" height="29"><text font="letterica16" align="l" vert_align="c" r="175" g="180" b="190">st_tz_sound_tool_lbl_height</text></lbl_height>
+	<scr_height_rim x="542" y="363" width="52" height="29" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_height_rim>
+	<scr_height_glass x="543.5" y="364.5" width="49" height="26" stretch="1"><texture r="20" g="23" b="27" a="255">ui_inGame2_white_rect</texture></scr_height_glass>
+	<box_height x="542" y="363" width="52" height="29"><text x="8" font="letterica16" vert_align="c" align="l" r="190" g="190" b="186"/></box_height>
+	<lbl_height_unit x="598" y="363" width="14" height="29"><text font="letterica16" align="l" vert_align="c" r="175" g="180" b="190">m</text></lbl_height_unit>
+	<lbl_falloff x="634" y="363" width="56" height="29"><text font="letterica16" align="l" vert_align="c" r="175" g="180" b="190">st_tz_sound_tool_lbl_falloff</text></lbl_falloff>
+	<scr_min_dist_rim x="692" y="363" width="60" height="29" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_min_dist_rim>
+	<scr_min_dist_glass x="693.5" y="364.5" width="57" height="26" stretch="1"><texture r="20" g="23" b="27" a="255">ui_inGame2_white_rect</texture></scr_min_dist_glass>
+	<box_min_dist x="692" y="363" width="60" height="29"><text x="8" font="letterica16" vert_align="c" align="l" r="190" g="190" b="186"/></box_min_dist>
+	<lbl_falloff_dash x="756" y="363" width="12" height="29"><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">-</text></lbl_falloff_dash>
+	<scr_max_dist_rim x="772" y="363" width="60" height="29" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_max_dist_rim>
+	<scr_max_dist_glass x="773.5" y="364.5" width="57" height="26" stretch="1"><texture r="20" g="23" b="27" a="255">ui_inGame2_white_rect</texture></scr_max_dist_glass>
+	<box_max_dist x="772" y="363" width="60" height="29"><text x="8" font="letterica16" vert_align="c" align="l" r="190" g="190" b="186"/></box_max_dist>
+	<lbl_falloff_unit x="836" y="363" width="14" height="29"><text font="letterica16" align="l" vert_align="c" r="175" g="180" b="190">m</text></lbl_falloff_unit>
+	<lbl_falloff_hint x="692" y="395" width="176" height="20"><text font="letterica16" align="l" vert_align="c" r="120" g="122" b="128">st_tz_sound_tool_lbl_falloff_hint</text></lbl_falloff_hint>
+
+	<!-- VERDICT: the selected sound and the note; the plus key writes the note for the selected sound. -->
+	<verdict_box_t x="482" y="489" width="394" height="1" stretch="1"><texture r="255" g="255" b="255" a="25">ui_inGame2_white_rect</texture></verdict_box_t>
 	<verdict_box_b x="482" y="571" width="394" height="1" stretch="1"><texture r="255" g="255" b="255" a="25">ui_inGame2_white_rect</texture></verdict_box_b>
-	<verdict_box_l x="482" y="315" width="1" height="257" stretch="1"><texture r="255" g="255" b="255" a="25">ui_inGame2_white_rect</texture></verdict_box_l>
-	<verdict_box_r x="875" y="315" width="1" height="257" stretch="1"><texture r="255" g="255" b="255" a="25">ui_inGame2_white_rect</texture></verdict_box_r>
-	<tag_outside x="490" y="325" width="75" height="30" frame_mode="1"><texture>tz_rkey_start</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">outside</text></tag_outside>
-	<tag_inside x="565" y="325" width="75" height="30" frame_mode="1"><texture>tz_rkey_end</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">inside</text></tag_inside>
-	<tag_low x="490" y="359" width="75" height="30" frame_mode="1"><texture>tz_rkey_start</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">low</text></tag_low>
-	<tag_med x="565" y="359" width="75" height="30" frame_mode="1"><texture>tz_rkey</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">med</text></tag_med>
-	<tag_high x="640" y="359" width="75" height="30" frame_mode="1"><texture>tz_rkey_end</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">high</text></tag_high>
-	<tag_inaudible x="490" y="393" width="75" height="30" frame_mode="1"><texture>tz_rkey_start</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">inaudible</text></tag_inaudible>
-	<tag_faint x="565" y="393" width="75" height="30" frame_mode="1"><texture>tz_rkey</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">faint</text></tag_faint>
-	<tag_loud x="640" y="393" width="75" height="30" frame_mode="1"><texture>tz_rkey</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">loud</text></tag_loud>
-	<tag_painful x="715" y="393" width="75" height="30" frame_mode="1"><texture>tz_rkey_end</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">painful</text></tag_painful>
-	<tag_close x="490" y="427" width="75" height="30" frame_mode="1"><texture>tz_rkey_start</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">close</text></tag_close>
-	<tag_far x="565" y="427" width="75" height="30" frame_mode="1"><texture>tz_rkey_end</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">far</text></tag_far>
-	<tag_keep x="490" y="461" width="75" height="30" frame_mode="1"><texture>tz_rkey_start</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">keep</text></tag_keep>
-	<tag_cut x="565" y="461" width="75" height="30" frame_mode="1"><texture>tz_rkey</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">cut</text></tag_cut>
-	<tag_unfit x="640" y="461" width="75" height="30" frame_mode="1"><texture>tz_rkey</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">unfit</text></tag_unfit>
-	<tag_release x="715" y="461" width="75" height="30" frame_mode="1"><texture>tz_rkey</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">release</text></tag_release>
-	<tag_dupe x="790" y="461" width="75" height="30" frame_mode="1"><texture>tz_rkey_end</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">dupe</text></tag_dupe>
+	<verdict_box_l x="482" y="489" width="1" height="83" stretch="1"><texture r="255" g="255" b="255" a="25">ui_inGame2_white_rect</texture></verdict_box_l>
+	<verdict_box_r x="875" y="489" width="1" height="83" stretch="1"><texture r="255" g="255" b="255" a="25">ui_inGame2_white_rect</texture></verdict_box_r>
 	<scr_sel_rim x="490" y="499" width="378" height="29" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_sel_rim>
 	<scr_sel_glass x="491.5" y="500.5" width="375" height="26" stretch="1"><texture r="20" g="23" b="27" a="255">ui_inGame2_white_rect</texture></scr_sel_glass>
 	<sel_line x="498" y="499" width="362" height="29"><text font="letterica16" align="l" vert_align="c" r="235" g="238" b="245"></text></sel_line>
@@ -78,9 +90,9 @@
 	<feed_row_1 x="492" y="592" width="374" height="19"><text font="letterica16" align="l" vert_align="c" r="210" g="140" b="80"></text></feed_row_1>
 	<feed_row_2 x="492" y="611" width="374" height="19"><text font="letterica16" align="l" vert_align="c" r="210" g="140" b="80"></text></feed_row_2>
 
-	<!-- HELP: the manual page the info key opens; tz_help sets the box height and moves Close under the text. -->
-	<help_background x="148" y="133" width="728" height="300" stretch="1"><texture r="20" g="23" b="27">ui_inGame2_white_rect</texture></help_background>
-	<help_title x="168" y="145" width="688" height="22"><text font="letterica18" align="l" r="200" g="170" b="120"/></help_title>
-	<help_text x="168" y="177" width="688" height="40"><text font="letterica16" align="l" complex_mode="1" r="190" g="190" b="186"/></help_text>
+	<!-- HELP: the manual page the info key opens, from the screen top so the longest manual fits; tz_help sets the box height and moves Close under the text. -->
+	<help_background x="148" y="12" width="728" height="300" stretch="1"><texture r="20" g="23" b="27">ui_inGame2_white_rect</texture></help_background>
+	<help_title x="168" y="24" width="688" height="22"><text font="letterica18" align="l" r="200" g="170" b="120"/></help_title>
+	<help_text x="168" y="54" width="688" height="40"><text font="letterica16" align="l" complex_mode="1" r="190" g="190" b="186"/></help_text>
 	<help_close x="790" y="0" width="70" height="30" frame_mode="1"><texture>tz_rkey</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">Close</text></help_close>
 </w>

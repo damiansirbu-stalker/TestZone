@@ -470,8 +470,7 @@ end
 local function show_result(text)
     log.info(text)
     log.flush()
-    local actor = db.actor
-    if actor then news_manager.send_tip(actor, text, nil, nil, TIP_MS) end
+    xpda.show_tip(text, TIP_MS)
 end
 
 -- The on-screen summary: "check cpu: 28/30 caught, 1 missed (hide_coroutine), 1 inconclusive".

@@ -28,8 +28,10 @@
       A note saves the spot with every reading to the GeoTool file of the game run, and the text says when a check reads the spot wrong.
 
   SoundTool
-    - Added SoundTool on End. It plays DiegeticAmbience channels, DiegeticDread categories, NPC voice and any .ogg on disk, and writes your tags and notes to the SoundTool file of the game run.
-      An ambience channel plays near, middle or far where the game places it, and a dread sound at the live or a preset dread. Every sound also plays at the ear or at a fixed distance.
+    - Added SoundTool on End. It plays the game's channels, DiegeticDread categories, NPC voice and any .ogg on disk, and writes your notes to the SoundTool file of the game run.
+      It names the game code that plays each file. Game replays a channel, a dread sound or an actor theme the way that code does, a new random roll each click, with or without the Diegetic mods.
+      Every sound also plays at the ear or in front of you at a preset or typed distance, with a height and a falloff override, and shows its measured loudness and its own falloff.
+      An MCM Mute option that holds through loads silences the soundscape, weapons and music while you listen. A playlist note above an entry shows beside it on the screen.
       It browses any folder and opens playlists of game paths, absolute paths or paths next to the playlist. Files from outside the game are copied into the sounds folder for the session.
     - Replaced the review players of DiegeticAmbience and DiegeticDread, and logged to testzone.log.
     - Added the sound trace. It logs every sound the soundscape plays, with its channel, its distance from you, the map and the weather, to testzone_sound_trace.log.
@@ -40,7 +42,6 @@
     - Changed AnimationTool, GeoTool and SoundTool into devices built from the game's textures, each with a screen color and keys that set it apart.
       Every tool has the same title row, a green lamp while it runs something, a red lamp when it stops, and an info key that opens its manual.
     - Changed the 3 windows to keep their shape on 4:3, 16:9 and 21:9 screens. AnimationTool docks right, GeoTool docks left and SoundTool sits in the middle.
-    - Changed SoundTool's modes to 3 keys, as heard, 2D and 3D. A click on the lit key steps its distance or dread level, and the volume keys set how loud the next play is.
     - Changed AnimationTool's posture to the pose and moving keys, and the selected motion now shows above the note.
     - Changed AnimationTool to browse any folder for a playlist, as SoundTool does. Its shipped playlists stay at the root.
     - Rewrote the manual of each tool.

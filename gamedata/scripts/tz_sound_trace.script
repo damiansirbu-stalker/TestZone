@@ -2,7 +2,7 @@
 
 local RegisterScriptCallback, ResetTimeEvent, CreateTimeEvent, RemoveTimeEvent =
     RegisterScriptCallback, ResetTimeEvent, CreateTimeEvent, RemoveTimeEvent
-local ini_file, level, db, pairs, tostring, type, GetEvent = ini_file, level, db, pairs, tostring, type, GetEvent
+local level, db, pairs, tostring, type, GetEvent = level, db, pairs, tostring, type, GetEvent
 local string_format, table_concat, table_sort, time_global = string.format, table.concat, table.sort, time_global
 local math_ceil, math_min = math.ceil, math.min
 
@@ -16,9 +16,6 @@ local LOUD_SEC = 1
 local REPEAT_MS = 300000
 local TOP_N = 5
 local NO_SOUND = "ambient\\no_sound"
--- The channel files the base ambient layer reads (vanilla configs/environment); the same set SoundTool indexes.
-local CHANNEL_FILES = { "environment\\sound_channels.ltx", "environment\\ambient_channels\\backgrounds.ltx",
-    "environment\\ambient_channels\\blowout_channels.ltx" }
 local HOOK_BED, HOOK_SCRIPT, HOOK_OTHER = "bed", "script", "other"
 local HOOK_EFFECT, HOOK_THUNDER, HOOK_RAIN, HOOK_MUSIC = "effect", "thunder", "rain", "music"
 
@@ -27,7 +24,6 @@ local _enabled = false
 -- True when the exe carries xray's mix meter, found by the read at START.
 local _meter = false
 local _channels_of = nil
-local _walk_ini
 local _counts = {}
 local _plays_n = 0
 -- The running summary of the channel plays per map and weather state, and the last channel play for the veto check.
@@ -36,47 +32,16 @@ local _stats_key, _stats_since = nil, 0
 local _last_heard = {}
 local _last_play = nil
 
---- Canonical sound-path key: lowercase, backslashes, no extension.
-local function _get_key(path)
-    if type(path) ~= "string" then return nil end
-    return (path:lower():gsub("/", "\\"):gsub("%.ogg$", ""))
-end
-
---- Section-walk handler: add the section to the owner list of each file its sounds line names.
-local function _collect(section)
-    if not _walk_ini:line_exist(section, "sounds") then return end
-    for token in (_walk_ini:r_string_ex(section, "sounds") or ""):gmatch("[^,]+") do
-        local key = _get_key(token:match("^%s*(.-)%s*$"))
-        if not (key and key ~= "" and key ~= NO_SOUND) then goto continue end
-        local owners = _channels_of[key] or {}
-        _channels_of[key] = owners
-        local seen = false
-        for i = 1, #owners do
-            if owners[i] == section then seen = true end
-        end
-        if not seen then owners[#owners + 1] = section end
-        ::continue::
-    end
-end
-
---- Map every channel file to the channels that list it, joined with "+" when several share it.
+--- Join the xsound channel index into a file -> channel map, the channels that list a file joined with "+".
 local function _build_index()
     _channels_of = {}
-    for i = 1, #CHANNEL_FILES do
-        local ini = ini_file(CHANNEL_FILES[i])
-        if not (ini and ini.section_for_each) then goto continue end
-        _walk_ini = ini
-        ini:section_for_each(_collect)
-        ::continue::
-    end
-    for key, owners in pairs(_channels_of) do _channels_of[key] = table_concat(owners, "+") end
+    for key, owners in pairs(xsound.get_channel_index().owners) do _channels_of[key] = table_concat(owners, "+") end
 end
 
 --- The level, weather state, hour and shelter every line carries; the shelter sets the base layer's volume (sound_ambient.script:147-163).
 --- It reads the shelter as da_diag does (da_diag.script:140): 0 for an indoor channel in the open, 0.3 for an outdoor one under cover.
 local function _get_place_tag()
-    local manager = level_weathers and level_weathers.get_weather_manager and level_weathers.get_weather_manager()
-    local state = manager and manager.get_curr_ambient and manager:get_curr_ambient()
+    local state = xsound.get_ambient_state()
     local env = GetEvent("underground") and "ug" or GetEvent("current_safe_cover") and "cover" or "open"
     return string_format("lvl=%s state=%s hour=%d env=%s", tostring(level.name()), tostring(state), level.get_time_hours(), env)
 end
@@ -107,8 +72,7 @@ end
 
 --- The map and weather state a summary is kept for.
 local function _get_stats_key()
-    local manager = level_weathers and level_weathers.get_weather_manager and level_weathers.get_weather_manager()
-    local state = manager and manager.get_curr_ambient and manager:get_curr_ambient()
+    local state = xsound.get_ambient_state()
     return string_format("lvl=%s state=%s", tostring(level.name()), tostring(state))
 end
 
@@ -191,7 +155,7 @@ local function _log_bed(section, file, pos)
 end
 
 local function _log_script(file, pos)
-    local key = _get_key(file)
+    local key = xsound.format_key(file)
     if key == NO_SOUND then return end
     local channel = key and _channels_of[key]
     if channel then
@@ -290,7 +254,7 @@ local function _load_config()
     if not cfg then return end
     _config.on = cfg.sound_trace_enabled == true
     _config.all = cfg.sound_trace_all == true
-    log._logger.flush_on_level = cfg.log_flush and _levels.TRACE or _levels.ERROR
+    log.set_flush_level(cfg.log_flush and _levels.TRACE or _levels.ERROR)
     _apply_enabled()
 end
 
@@ -298,7 +262,7 @@ local function _on_actor_net_destroy()
     if _enabled then log.flush() end
 end
 
---- Build the channel index here at load (a 5 ms walk, measured 2026-11-20), never in a gameplay frame.
+--- Join the channel index here at load, xsound walking the root once per Lua state, never in a gameplay frame.
 function on_game_start()
     _build_index()
     RegisterScriptCallback("actor_on_first_update", _load_config)
