@@ -53,6 +53,7 @@ Saved game state and the target mods stay as the tool found them.
 - The remote is a spool, Producer-Consumer over a folder. A 1 s timer takes the first `.lua` in `appdata/testzone/inbox` and removes it.
   It then runs the text under `xpcall` and writes a started record, then the result, to `outbox`.
   A file in `watch` runs when its text differs from its last run in this Lua state: on each load and edit. The writer renames a finished `.part` file to `.lua`, and a half-written file never runs.
+  `error` is the dead-letter folder, and nothing clears it. A run that fails to compile or throws leaves its source and its result there, and a file the poll cannot read is copied there whole.
 - `tz_remote.load_module()` swaps a module for its edited source. It compiles first, then removes what the old module owns from five registries.
   They are the callbacks, the timers, the per-frame calls, the xsound listeners and the xbus subscribers.
   A function belongs to a module when its environment is the module table, or when a function it closes over has it. That covers TestZone's timer watch wrappers.

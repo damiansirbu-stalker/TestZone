@@ -13,11 +13,13 @@ local EV_ID, ACT_POLL, ACT_RELOAD = "tz_remote", "poll", "reload"
 local RELOAD_SAVE, RELOAD_DELAY_SEC = "tz_reload", 1
 local POLL_SEC = 1
 local ROOT_DIR = "testzone"
-local INBOX_DIR, WATCH_DIR, OUTBOX_DIR = "inbox", "watch", "outbox"
+local INBOX_DIR, WATCH_DIR, OUTBOX_DIR, ERROR_DIR = "inbox", "watch", "outbox", "error"
 local APP_MOUNT, SCRIPT_MOUNT, CONFIG_MOUNT = "$app_data_root$", "$game_scripts$", "$game_config$"
 local LUA_EXT, RESULT_EXT, SCRIPT_EXT, LTX_EXT = ".lua", ".txt", ".script", ".ltx"
 local READY_FILE, WATCH_PREFIX, UNLOCALIZER_DIR = "ready.txt", "watch_", "unlocalizers\\"
 local STATUS_STARTED, STATUS_OK, STATUS_ERROR = "started", "ok", "error"
+local UNREAD_COPIED_MSG = "cannot read the file and a copy is in the error folder"
+local UNREAD_LOST_MSG = "cannot read or copy the file"
 local TIME_FORMAT = "%Y-%m-%d %H:%M:%S"
 local FORMAT_DEPTH = 2
 local OWNER_DEPTH = 2
@@ -40,7 +42,8 @@ local _watch_texts = {}
 --- The folder paths under appdata, each ending in a backslash.
 local function _build_paths()
     local root = xfs.format_dir(xfs.resolve_path(APP_MOUNT, ROOT_DIR))
-    return { root = root, inbox = root .. INBOX_DIR .. "\\", watch = root .. WATCH_DIR .. "\\", outbox = root .. OUTBOX_DIR .. "\\" }
+    return { root = root, inbox = root .. INBOX_DIR .. "\\", watch = root .. WATCH_DIR .. "\\", outbox = root .. OUTBOX_DIR .. "\\",
+        error = root .. ERROR_DIR .. "\\" }
 end
 
 local function _init_folders(paths)
@@ -48,10 +51,23 @@ local function _init_folders(paths)
     xfs.create_folder(paths.inbox:sub(1, -2))
     xfs.create_folder(paths.watch:sub(1, -2))
     xfs.create_folder(paths.outbox:sub(1, -2))
+    xfs.create_folder(paths.error:sub(1, -2))
+end
+
+local function _format_result(status, body)
+    return string_format("%s\t%s\n%s\n", status, os_date(TIME_FORMAT), body)
 end
 
 local function _write_result(name, status, body)
-    xfs.write_file(_paths.outbox .. name .. RESULT_EXT, string_format("%s\t%s\n%s\n", status, os_date(TIME_FORMAT), body))
+    xfs.write_file(_paths.outbox .. name .. RESULT_EXT, _format_result(status, body))
+end
+
+--- Write a failed run's result to outbox, and keep it with its source in the error folder, which nothing clears.
+local function _write_error(name, text, body)
+    local result = _format_result(STATUS_ERROR, body)
+    xfs.write_file(_paths.outbox .. name .. RESULT_EXT, result)
+    xfs.write_file(_paths.error .. name .. RESULT_EXT, result)
+    if text then xfs.write_file(_paths.error .. name .. LUA_EXT, text) end
 end
 
 --- The count of its arguments and the arguments in a table, nils included.
@@ -76,13 +92,14 @@ local function _run_text(name, text)
     local chunk, compile_error = loadstring(text, "@" .. name .. LUA_EXT)
     if not chunk then
         log.warn("RUN %s compile error", name)
-        return _write_result(name, STATUS_ERROR, tostring(compile_error))
+        return _write_error(name, text, tostring(compile_error))
     end
     local started = time_global()
     local count, values = _collect_values(xpcall(chunk, _debug.traceback))
     local elapsed = time_global() - started
     local status = values[1] and STATUS_OK or STATUS_ERROR
-    _write_result(name, status, string_format("%d ms\n%s", elapsed, _format_values(count, values)))
+    local body = string_format("%d ms\n%s", elapsed, _format_values(count, values))
+    if status == STATUS_OK then _write_result(name, status, body) else _write_error(name, text, body) end
     log.info("RUN %s %s %dms", name, status, elapsed)
 end
 
@@ -104,12 +121,18 @@ local function _run_inbox()
     local path = _paths.inbox .. file
     local name = file:sub(1, -#LUA_EXT - 1)
     local text = xfs.read_file(path)
+    local is_copied = not text and xfs.clone_file(path, _paths.error .. file)
     if not xfs.remove_file(path) then
         log.error("RUN %s cannot remove the file so the poll stops until the next load", name)
         _write_result(name, STATUS_ERROR, "cannot remove the file so the poll stops until the next load")
         return false
     end
-    if text then _run_text(name, text) end
+    if text then
+        _run_text(name, text)
+        return true
+    end
+    log.warn("RUN %s cannot read the file", name)
+    _write_error(name, nil, is_copied and UNREAD_COPIED_MSG or UNREAD_LOST_MSG)
     return true
 end
 
