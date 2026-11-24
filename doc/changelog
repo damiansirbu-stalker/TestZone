@@ -53,6 +53,7 @@
       A file in watch runs on every load and again whenever you edit it. Each run writes its result to outbox, and stalker-manager testzone-send drops a file and prints the result.
     - Added tz_remote.load_module, which swaps a loaded script for its edited source in the running game, with no restart and no reload of the save.
       It removes the old script's callbacks and timers first, so nothing runs twice, and it names the other scripts that still hold the old copy.
+    - Added tz_remote.load_all_scripts, which reloads every script of every mod from disk by saving the game and loading that save a second later.
 
   Console commands
     - Added tz_commands for testing and filming, run through run_string in debug mode.

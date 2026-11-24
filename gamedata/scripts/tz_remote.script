@@ -9,7 +9,8 @@ local string_format, table_concat, table_sort, table_remove, os_date, math_max =
 
 local log = xlog.get_logger("TestZone.remote", { outfile = "testzone_remote.log", level = "DEBUG" })
 
-local EV_ID, ACT_POLL = "tz_remote", "poll"
+local EV_ID, ACT_POLL, ACT_RELOAD = "tz_remote", "poll", "reload"
+local RELOAD_SAVE, RELOAD_DELAY_SEC = "tz_reload", 1
 local POLL_SEC = 1
 local ROOT_DIR = "testzone"
 local INBOX_DIR, WATCH_DIR, OUTBOX_DIR = "inbox", "watch", "outbox"
@@ -399,6 +400,11 @@ local function _read_source(name, path)
     return source
 end
 
+local function _load_reload_save()
+    get_console():execute("load " .. RELOAD_SAVE)
+    return true
+end
+
 local function _log_report(name, report)
     log.info("LOAD %s: %s", name, report)
     return name .. ": " .. report
@@ -429,6 +435,19 @@ function load_module(name, path)
     local holders = _find_stale_holders(name, old)
     return _log_report(name, string_format("loaded in %d ms; removed %s; replayed %d; stale holders: %s", time_global() - started,
         _format_counts(removed), replayed, #holders > 0 and table_concat(holders, " ") or "none"))
+end
+
+--- Reload every script of every mod from disk with the game state kept: rescan the scripts folder, save, then load that save.
+--- @return string What it started
+function load_all_scripts()
+    local actor = db.actor
+    if not (actor and actor:alive()) then return "needs a live player" end
+    xfs.update_index(SCRIPT_MOUNT)
+    get_console():execute("save " .. RELOAD_SAVE)
+    RemoveTimeEvent(EV_ID, ACT_RELOAD)
+    CreateTimeEvent(EV_ID, ACT_RELOAD, RELOAD_DELAY_SEC, _load_reload_save)
+    log.info("RELOAD saved as %s, loading in %d s", RELOAD_SAVE, RELOAD_DELAY_SEC)
+    return "saved as " .. RELOAD_SAVE .. " and loading it in " .. RELOAD_DELAY_SEC .. " s"
 end
 
 function on_game_start()

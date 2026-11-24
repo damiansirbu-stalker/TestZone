@@ -57,6 +57,8 @@ Saved game state and the target mods stay as the tool found them.
   They are the callbacks, the timers, the per-frame calls, the xsound listeners and the xbus subscribers.
   A function belongs to a module when its environment is the module table, or when a function it closes over has it. That covers TestZone's timer watch wrappers.
   It runs the new source under xray's module header, starts it, and lists the modules that still hold the old copy in a local.
+- `tz_remote.load_all_scripts()` reloads every script of every mod: it rescans the scripts folder, saves as `tz_reload`, and loads that save 1 s later.
+  A load rebuilds the Lua state from the files on disk, with the game state taken from the save. It is complete where `load_module()` is fast.
 
 ## Rules and invariants
 

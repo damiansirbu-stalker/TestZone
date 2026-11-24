@@ -76,6 +76,7 @@ Development:
 Remote:
   With -dbg, a Lua file dropped into appdata/testzone/inbox runs once and one in watch runs on every load and edit, with each run's result written to outbox
   A reload, tz_remote.load_module, swaps a script for its edited source while the game runs
+  tz_remote.load_all_scripts reloads every script of every mod through a save and a load
 Console tools, run through run_string in debug mode:
   tz_commands - a stalker arena and a mutant arena, a life pump that keeps you alive, an actor drive and aim, kits, spawns, weather, time, and teleports to a smart terrain or a stash
   tz_commands.start_stroll - tours every level in every weather with nobody at the keys
