@@ -198,7 +198,7 @@ local function _update_remote()
     if not _is_enabled then return true end
     ResetTimeEvent(EV_ID, ACT_POLL, POLL_SEC)
     _ticks = _ticks + 1
-    if _ticks % ALIVE_TICKS == 0 then _write_alive() end
+    if _ticks % ALIVE_TICKS == 1 then _write_alive() end
     if not _run_inbox() then
         _is_enabled = false
         return true
@@ -219,7 +219,7 @@ local function _apply_enabled()
     _paths = _paths or _build_paths()
     _init_folders(_paths)
     _iterate_stale_records()
-    _write_alive()
+    _ticks = 0
     CreateTimeEvent(EV_ID, ACT_POLL, POLL_SEC, _update_remote)
     log.info("START %s", _paths.root)
 end
