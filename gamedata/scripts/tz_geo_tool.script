@@ -303,6 +303,7 @@ function add_note(text)
 end
 
 function on_game_start()
+    xcreature.start_trader_hook()
     RegisterScriptCallback("on_key_press", _on_key_press)
     RegisterScriptCallback("actor_on_net_destroy", _on_actor_destroy)
 end
