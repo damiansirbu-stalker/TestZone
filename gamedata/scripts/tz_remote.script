@@ -21,7 +21,7 @@ local ROOT_DIR = "testzone"
 local INBOX_DIR, WATCH_DIR, OUTBOX_DIR, ERROR_DIR = "inbox", "watch", "outbox", "error"
 local APP_MOUNT, SCRIPT_MOUNT, CONFIG_MOUNT, SAVE_MOUNT = "$app_data_root$", "$game_scripts$", "$game_config$", "$game_saves$"
 local LUA_EXT, RESULT_EXT, SCRIPT_EXT, LTX_EXT = ".lua", ".txt", ".script", ".ltx"
-local ALIVE_FILE, WATCH_PREFIX, UNLOCALIZER_DIR = "alive.txt", "watch_", "unlocalizers\\"
+local STATUS_FILE, WATCH_PREFIX, UNLOCALIZER_DIR = "testzone_remote_status.txt", "watch_", "unlocalizers\\"
 local STATUS_STARTED, STATUS_OK, STATUS_ERROR = "started", "ok", "error"
 local STATUS_RELOADED, STATUS_STOPPED = "reloaded", "stopped"
 local END_MARK = "end"
@@ -165,7 +165,7 @@ end
 
 --- The heartbeat: time, launch, Lua state, level and game hour, which tz_remote.py reads to tell a running level from a stopped one.
 local function _write_alive()
-    xfs.write_file(_paths.root .. ALIVE_FILE, string_format("%s\t%.0f\t%s\t%s\t%d\n", os_date(TIME_FORMAT), _launch, _state_text,
+    xfs.write_file(_paths.root .. STATUS_FILE, string_format("%s\t%.0f\t%s\t%s\t%d\n", os_date(TIME_FORMAT), _launch, _state_text,
         level.name(), level.get_time_hours()))
 end
 
