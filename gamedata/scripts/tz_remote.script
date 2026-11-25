@@ -112,14 +112,14 @@ local function _run_text(name, text)
         log.warn("RUN %s compile error", name)
         return _write_error(name, text, tostring(compile_error))
     end
-    local started = time_global()
+    local timer = xprofiler.new():start()
     local count, values = _collect_values(xpcall(chunk, _debug.traceback))
-    local elapsed = time_global() - started
+    local elapsed = timer:stop():get_ms()
     get_console():execute(FLUSH_CMD)
     local status = values[1] and STATUS_OK or STATUS_ERROR
-    local body = string_format("%d ms\n%s", elapsed, _format_values(count, values))
+    local body = string_format("%.1f ms\n%s", elapsed, _format_values(count, values))
     if status == STATUS_OK then _write_result(name, status, body) else _write_error(name, text, body) end
-    log.info("RUN %s %s %dms", name, status, elapsed)
+    log.info("RUN %s %s %.1fms", name, status, elapsed)
 end
 
 --- The file names in a folder that end in ext, sorted by name.
@@ -519,7 +519,7 @@ function load_module(name, path)
     if not source then return _log_report(name, "refused: " .. read_error) end
     local chunk, compile_error = loadstring(_build_header(name, old) .. source, "@" .. name .. SCRIPT_EXT)
     if not chunk then return _log_report(name, "refused: " .. tostring(compile_error)) end
-    local started = time_global()
+    local timer = xprofiler.new():start()
     local removed = _collect_owned(old)
     for i = 1, #removed do REMOVERS[removed[i].kind](removed[i]) end
     local ok, run_error = xpcall(chunk, _debug.traceback)
@@ -529,7 +529,7 @@ function load_module(name, path)
     end
     local replayed = _start_module(rawget(_G, name))
     local holders = _find_stale_holders(name, old)
-    return _log_report(name, string_format("loaded in %d ms; removed %s; replayed %d; stale holders: %s", time_global() - started,
+    return _log_report(name, string_format("loaded in %.1f ms; removed %s; replayed %d; stale holders: %s", timer:stop():get_ms(),
         _format_counts(removed), replayed, #holders > 0 and table_concat(holders, " ") or "none"))
 end
 
