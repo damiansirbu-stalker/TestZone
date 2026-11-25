@@ -845,6 +845,7 @@ local function _try_stroll_warp(stop)
     _update_stroll()
 end
 
+-- @novalidate(xray.timer_no_reset, reason:"one-shot, returns true; the return false the 30-line window finds is _update_stroll's")
 local function _run_stroll_reclear()
     if _stroll then clear_npcs(_stroll.clear) end
     return true
@@ -853,7 +854,10 @@ end
 --- Begin the current stop: warp when it is on another level, else clear the creatures, set hour and weather, and hold.
 local function _run_stroll_stop()
     local stop = _stroll.stops[_stroll.index]
-    if level.name() ~= stop.level then return _try_stroll_warp(stop) end
+    if level.name() ~= stop.level then
+        RemoveTimeEvent(STROLL_EV, "hold")
+        return _try_stroll_warp(stop)
+    end
     _stroll.warps = 0
     clear_npcs(_stroll.clear)
     RemoveTimeEvent(STROLL_EV, "reclear")
@@ -865,17 +869,17 @@ local function _run_stroll_stop()
     CreateTimeEvent(STROLL_EV, "hold", _stroll.hold, _update_stroll)
 end
 
---- Close the current stop and begin the next, or end the stroll after the last.
+--- Close the current stop and begin the next, or end the stroll; false keeps the hold timer the next stop armed (_g.script:374-376).
 _update_stroll = function()
     if not _stroll then return true end
     _log_stroll("END", _stroll.stops[_stroll.index])
     _stroll.index = _stroll.index + 1
     if _stroll.index > #_stroll.stops then
         stop_stroll()
-        return true
+        return false
     end
     _run_stroll_stop()
-    return true
+    return false
 end
 
 --- Put back the console and option values the stroll changed, from the values it saved at its start.
