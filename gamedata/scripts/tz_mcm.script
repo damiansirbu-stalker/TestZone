@@ -4,7 +4,7 @@ local RegisterScriptCallback, xlog, game = RegisterScriptCallback, xlog, game
 
 -- Every TestZone logger, so the development tab's level and flush apply across all subsystems.
 local TZ_LOGGERS = {
-    "TestZone.watcher", "TestZone.scanner", "TestZone.profiler",
+    "TestZone", "TestZone.watcher", "TestZone.scanner", "TestZone.profiler",
     "TestZone.geometry", "TestZone.fx", "TestZone.anim", "TestZone.soundtool",
 }
 local KEY_LOG_LEVEL, KEY_LOG_FLUSH = "log_level", "log_flush"
