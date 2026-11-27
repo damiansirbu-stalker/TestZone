@@ -72,7 +72,6 @@
 
   General
     - Added the modded exes check. The game stops at load with a message when it finds neither demonized 20250908 or newer nor AOEngine.
-    - Changed the xlibs requirement to 1.5.1.
     - Added a banner and the mod version to the MCM. The log names the mod, xlibs and exe versions at startup.
     - Fixed the TestZone timers in modpacks that replace the vanilla timer queue, such as demonized time events.
 
