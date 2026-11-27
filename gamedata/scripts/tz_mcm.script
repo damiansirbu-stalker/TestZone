@@ -13,6 +13,7 @@ local GEO_KEY_DEFAULT, SOUNDTOOL_KEY_DEFAULT, ANIM_KEY_DEFAULT = 211, 207, 209
 
 defaults = {
     watcher_enabled = false,
+    watcher_high_rate_enabled = false,
     periodic_stats_enabled = false,
     periodic_stats_interval = 300,
     log_payload_enabled = false,
@@ -82,6 +83,7 @@ function on_mcm_load()
                         text = "ui_mcm_tz_title", size = {512, 50}, spacing = 20 },
                     { id = "desc", type = "desc", text = "ui_mcm_tz_main_desc" },
                     { id = "watcher_enabled", type = "check", val = 1, def = false },
+                    { id = "watcher_high_rate_enabled", type = "check", val = 1, def = false },
 
                     { id = "div_periodic", type = "line" },
                     { id = "periodic_stats_enabled", type = "check", val = 1, def = false },

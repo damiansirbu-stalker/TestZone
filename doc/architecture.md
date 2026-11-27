@@ -116,6 +116,8 @@ Style, an analog Soviet device built from vanilla parts:
 Each MCM tab is one component, in tab order.
 
 - Main holds the callback watcher, the periodic stats, the deep introspection, the scans, the timer queue watch, the rate limit and the AnimationTool key.
+  The watcher lists the 227 callbacks of vanilla, the overlay and our local build, and registers only those in axr_main's intercepts (`tz_remote.get_intercepts`).
+  Its handlers only count and log. The per-frame and per-shot ones in `HIGH_RATE` wait for High-rate callbacks.
 - Profiler wraps suspect functions with `xprofiler` and reports slow calls.
 - Perception traces what the stalkers and mutants near the actor hear, see, remember and fear, and whom they pick as enemy.
 - GeoTool holds its key and the refresh period. The window shows the position and every place check, refreshed while it is open.

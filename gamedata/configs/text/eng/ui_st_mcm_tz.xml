@@ -16,7 +16,13 @@
         <text>Enable watcher</text>
     </string>
     <string id="ui_mcm_tz_main_watcher_enabled_desc">
-        <text>Enable all callback logging (162 callbacks).</text>
+        <text>Count and log every callback this game version defines.</text>
+    </string>
+    <string id="ui_mcm_tz_main_watcher_high_rate_enabled">
+        <text>High-rate callbacks</text>
+    </string>
+    <string id="ui_mcm_tz_main_watcher_high_rate_enabled_desc">
+        <text>Also watch the callbacks that fire every frame or every shot, such as NPC shots, bullet hits and combat distance checks. They flood the log in a firefight.</text>
     </string>
     <string id="ui_mcm_tz_main_periodic_stats_enabled">
         <text>Periodic statistics</text>

@@ -44,7 +44,8 @@ You can help with a review, a rating, a proper bug report, or a coffee on Ko-fi:
 Features:
 
 Main:
-  Watcher - logs all 162 engine callbacks with fire counts, and the payload of each on request
+  Watcher - logs every callback your game version defines with fire counts, and the payload of each on request
+  High-rate callbacks - adds the callbacks that fire every frame or every shot to the watcher
   Deep introspection - reads type, name, section and community out of tables and engine objects
   Rate limiting - holds back a callback that fires faster than you can read it
   Periodic statistics - logs the top-firing callbacks at a set interval
@@ -103,7 +104,7 @@ Coexists with everything. A callback tracer with no gameplay of its own, observa
 How It's Built:
 
 Although it started from work by Demonized, Alundaio, and Tronex, the current code and patterns are original, learned by reverse-engineering X-Ray's callback registry.
-It taps all 162 engine callbacks through one interception seam, counting fires and logging payloads with deep table and userdata introspection.
+It taps every callback the game version defines through one interception seam, counting fires and logging payloads with deep table and userdata introspection.
 Rate limiters keep a high-frequency callback from flooding the log.
 The design favors the engine's own mechanisms and minimal intervention. It reads the callback bus and never drives it.
 Profiled continuously with JitProfiler, an engine-native profiler. Manual tests run on unoptimized, single-threaded exes.

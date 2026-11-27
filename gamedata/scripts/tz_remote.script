@@ -506,6 +506,13 @@ local function _log_report(name, report)
     return name .. ": " .. report
 end
 
+--- axr_main's intercepts table, the callbacks this exe and its overlay define, read by upvalue.
+--- @return table|nil the live table by reference, nil when no upvalue holds it
+function get_intercepts()
+    local intercepts = _get_intercepts()
+    return type(intercepts) == "table" and intercepts or nil
+end
+
 --- Swap a loaded module for its edited source: compile, unhook the old module, run, start, and report.
 --- @novalidate(security.dynamic_code, reason:"the dev reload compiles a module's own source, gated on -dbg")
 --- @param name string The module name, the script file name without .script

@@ -12,6 +12,8 @@
     - Added Timer queue watch, for the freeze where every timer in the game stops at once. This watch records the timer that broke the queue.
       If the game freezes, run_string tz_watcher.log_queue_state() names that timer.
     - Added the online or offline state to every squad callback line.
+    - Changed the watcher to cover all 227 callbacks of vanilla and the 2026 modded exes, and to skip any your game version lacks.
+      Added High-rate callbacks, a separate switch for the ones that fire every frame or every shot.
     - Fixed payload logging crashing on a server object, whose id is a field where the watcher expected a method.
 
   Perception

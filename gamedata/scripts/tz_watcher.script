@@ -19,7 +19,7 @@ local _queue_running = nil
 local format_table = xinspect.format_table
 local format_userdata_deep = xinspect.format_userdata
 
--- All 162 callbacks, in groups
+-- Every callback vanilla, the overlay and our local build define, in groups; registration skips any this exe lacks
 local ALL_CALLBACKS = {
     -- Player - Core (16)
     "actor_on_first_update", "actor_on_update", "actor_on_net_destroy",
@@ -183,6 +183,69 @@ local ALL_CALLBACKS = {
 
     -- DXML (3)
     "on_specific_character_dialog_list", "on_specific_character_init", "on_xml_read",
+
+    -- Player - Throwables (2)
+    "actor_on_missile_throw_force", "actor_on_before_throwable_select",
+
+    -- Player - Trade and Item State (3)
+    "actor_on_item_buy", "actor_on_item_sell", "actor_on_item_state_switch",
+
+    -- Player - Devices and HUD Models (4)
+    "actor_on_device_attach", "actor_on_device_detach",
+    "actor_on_create_hud_motion_item", "actor_on_create_legs",
+
+    -- NPCs - Combat Planner (14)
+    "npc_on_best_cover_changed", "npc_on_best_cover_repick", "npc_on_take_cover_destination",
+    "npc_on_get_min_combat_dist", "npc_on_get_max_combat_dist",
+    "npc_on_combat_action_changed", "npc_on_combat_action_switch",
+    "npc_on_enemy_selected", "npc_on_enemy_wounded_or_killed", "npc_on_member_death_reaction",
+    "npc_on_critically_wounded", "npc_on_danger_location_add",
+    "npc_on_missile_throw_force", "npc_on_should_throw",
+
+    -- NPCs - Weapon (6)
+    "npc_on_weapon_shot_start", "npc_on_weapon_shot_stop",
+    "npc_on_weapon_reload_start", "npc_on_weapon_reload_stop",
+    "npc_get_misfire_probability", "npc_shot_dispersion",
+
+    -- Monsters - Combat (5)
+    "monster_on_combat_action", "monster_on_run_attack_end", "monster_on_melee_jump_end",
+    "burer_on_gravi", "bloodsucker_on_vampire",
+
+    -- Technical - Input Vetoes (2)
+    "on_before_key_hold", "on_before_key_release",
+
+    -- Sound Seams (6)
+    "on_before_play_ambient_bed", "on_before_play_ambient_effect", "on_before_play_script_sound",
+    "on_before_play_level_music", "on_before_play_rain", "on_before_play_thunderbolt",
+
+    -- Map Spots (3)
+    "on_map_location_added", "on_map_location_removed", "on_map_spot_selected",
+
+    -- Bullet Hits (1)
+    "bullet_on_hit",
+
+    -- Vehicles and Rockets (3)
+    "car_on_hit", "car_on_weapon_fired", "rocket_on_update",
+
+    -- Server Objects - All Classes (2)
+    "server_object_on_register", "server_object_on_unregister",
+
+    -- Forester Trader (2)
+    "sid_forester_on_item_take", "sid_forester_on_item_drop",
+
+    -- ImGui Layer (2)
+    "imgui_on_show", "imgui_on_hide",
+
+    -- Technical - Errors (1)
+    "on_luabind_fatal_error",
+}
+
+-- Per-frame, per-shot or per-tick hooks: counted only while High-rate callbacks is on, so the watcher stays cheap in a firefight.
+local HIGH_RATE = {
+    npc_shot_dispersion = true, npc_on_weapon_shot_start = true, npc_on_weapon_shot_stop = true,
+    bullet_on_hit = true, rocket_on_update = true, on_before_key_hold = true,
+    npc_on_get_min_combat_dist = true, npc_on_get_max_combat_dist = true,
+    monster_on_combat_action = true, on_before_play_script_sound = true,
 }
 
 -- Event counters (fire counts)
@@ -194,6 +257,7 @@ end
 -- Config state
 local _config = {
     enabled = false,
+    high_rate_enabled = false,
     periodic_stats_enabled = false,
     periodic_stats_interval_sec = 300,
     log_payload_enabled = false,
@@ -291,8 +355,10 @@ local SQUAD_CALLBACKS = {
 
 local function create_handler(callback_name)
     local is_squad_cb = SQUAD_CALLBACKS[callback_name]
+    local is_high_rate = HIGH_RATE[callback_name]
     return function(...)
         if not _config.enabled then return end
+        if is_high_rate and not _config.high_rate_enabled then return end
         stats[callback_name] = stats[callback_name] + 1
         if not _config.log_payload_enabled or not check_log_allowed(callback_name) then return end
         local deep = _config.deep_introspect_enabled
@@ -328,18 +394,24 @@ end
 
 local _callbacks_registered = false
 
---- Register every callback once per session.
+--- Register once per session every callback this exe defines, skipping a name callback_set would reject with an error.
+--- Without a readable intercepts table every name registers.
 --- @src anomaly/axr_main.script callback_set
 local function _register_callbacks()
     if _callbacks_registered then return end
     _callbacks_registered = true
-    local registered = 0
+    local intercepts = tz_remote.get_intercepts()
+    local registered, skipped = 0, 0
     for _, callback_name in pairs(ALL_CALLBACKS) do
-        local handler = create_handler(callback_name)
-        RegisterScriptCallback(callback_name, handler)
-        registered = registered + 1
+        if intercepts and not intercepts[callback_name] then
+            stats[callback_name] = nil
+            skipped = skipped + 1
+        else
+            RegisterScriptCallback(callback_name, create_handler(callback_name))
+            registered = registered + 1
+        end
     end
-    log.info("Registered %d callbacks", registered)
+    log.info("Registered %d callbacks, skipped %d this exe lacks", registered, skipped)
 end
 
 --- Start periodic timers (stats, mutant scan, level scan, world scan).
@@ -421,6 +493,7 @@ local _cfg = tz_mcm and tz_mcm.cfg
 local function _load_config()
     if not _cfg then return end
     _config.enabled = _cfg.watcher_enabled
+    _config.high_rate_enabled = _cfg.watcher_high_rate_enabled
     if _config.enabled then _register_callbacks() end
     _config.periodic_stats_enabled = _cfg.periodic_stats_enabled
     _config.periodic_stats_interval_sec = _cfg.periodic_stats_interval
@@ -473,7 +546,7 @@ end
 function log_never_fired()
     local never = {}
     for _, cb in pairs(ALL_CALLBACKS) do
-        if stats[cb] == 0 then
+        if stats[cb] == 0 and (_config.high_rate_enabled or not HIGH_RATE[cb]) then
             never[#never + 1] = cb
         end
     end
