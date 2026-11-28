@@ -69,7 +69,7 @@
 	<lbl_falloff_unit x="697.1" y="363" width="8" height="29"><text font="letterica16" align="l" vert_align="c" r="175" g="180" b="190">m</text></lbl_falloff_unit>
 	<lbl_falloff_hint x="614.9" y="395" width="100.6" height="20"><text font="letterica16" align="l" vert_align="c" r="120" g="122" b="128">st_tz_sound_tool_lbl_falloff_hint</text></lbl_falloff_hint>
 
-	<!-- VERDICT: the selected sound and the note; the plus key writes the note for the selected sound. -->
+	<!-- VERDICT: one box around the selected sound, good, bad and the note; each key writes a line for the selected sound with the note. -->
 	<verdict_box_t x="494.9" y="489" width="225.1" height="1" stretch="1"><texture r="255" g="255" b="255" a="25">ui_inGame2_white_rect</texture></verdict_box_t>
 	<verdict_box_b x="494.9" y="571" width="225.1" height="1" stretch="1"><texture r="255" g="255" b="255" a="25">ui_inGame2_white_rect</texture></verdict_box_b>
 	<verdict_box_l x="494.9" y="489" width="0.6" height="83" stretch="1"><texture r="255" g="255" b="255" a="25">ui_inGame2_white_rect</texture></verdict_box_l>
@@ -77,9 +77,11 @@
 	<scr_sel_rim x="499.4" y="499" width="216" height="29" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_sel_rim>
 	<scr_sel_glass x="500.3" y="500.5" width="214.3" height="26" stretch="1"><texture r="20" g="23" b="27" a="255">ui_inGame2_white_rect</texture></scr_sel_glass>
 	<sel_line x="504" y="499" width="206.9" height="29"><text font="letterica16" align="l" vert_align="c" r="235" g="238" b="245"></text></sel_line>
-	<scr_note_rim x="499.4" y="533" width="195.4" height="29" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_note_rim>
-	<scr_note_glass x="500.3" y="534.5" width="193.7" height="26" stretch="1"><texture r="20" g="23" b="27" a="255">ui_inGame2_white_rect</texture></scr_note_glass>
-	<note x="499.4" y="533" width="195.4" height="29"><text x="8" font="letterica16" vert_align="c" align="l" r="190" g="190" b="186"/></note>
+	<btn_good x="499.4" y="533" width="34.3" height="30" frame_mode="1"><texture>tz_rkey_start</texture><text font="letterica16" align="c" vert_align="c" r="150" g="205" b="140">good</text></btn_good>
+	<btn_bad x="533.7" y="533" width="34.3" height="30" frame_mode="1"><texture>tz_rkey_end</texture><text font="letterica16" align="c" vert_align="c" r="215" g="125" b="115">bad</text></btn_bad>
+	<scr_note_rim x="571.4" y="533" width="123.4" height="29" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_note_rim>
+	<scr_note_glass x="572.3" y="534.5" width="121.7" height="26" stretch="1"><texture r="20" g="23" b="27" a="255">ui_inGame2_white_rect</texture></scr_note_glass>
+	<note x="571.4" y="533" width="123.4" height="29"><text x="8" font="letterica16" vert_align="c" align="l" r="190" g="190" b="186"/></note>
 	<note_plus_h x="703.1" y="547" width="6.9" height="2" stretch="1"><texture r="175" g="180" b="190" a="255">ui_inGame2_white_rect</texture></note_plus_h>
 	<note_plus_v x="706" y="542" width="1.1" height="12" stretch="1"><texture r="175" g="180" b="190" a="255">ui_inGame2_white_rect</texture></note_plus_v>
 	<btn_note x="697.7" y="533" width="17.7" height="30" frame_mode="1"><texture>tz_rkey</texture></btn_note>

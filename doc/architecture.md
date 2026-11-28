@@ -122,7 +122,7 @@ Each MCM tab is one component, in tab order.
 - Perception traces what the stalkers and mutants near the actor hear, see, remember and fear, and whom they pick as enemy.
 - GeoTool holds its key and the refresh period. The window shows the position and every place check, refreshed while it is open.
   A note saves the spot with every reading to the GeoTool file of the run.
-- SoundTool holds its key. The window plays channels, dread categories, voice and any `.ogg` on disk, and writes notes to the SoundTool file of the run.
+- SoundTool holds its key. The window plays channels, dread categories, voice and any `.ogg` on disk, and writes good, bad or a note for the selected sound to the SoundTool file of the run (`add_verdict`), as AnimationTool does for a motion.
   It names each file's producer, the X-Ray or vanilla code that plays it: a channel, the dread director, a script theme, a thunder strike, an NPC voice or a creature.
   `game` replays a game file the way its producer does, each click its own roll: a channel through xsound's copy of vanilla's channel play, dread through `dd_director.play_sound()`, an actor theme 2D at 0.8.
   An outside file gets no `game`, and shows where it would play. 2D plays at the ear, and 3D camera-forward at a preset or typed distance, with a height, and a falloff the two boxes override when both are filled.

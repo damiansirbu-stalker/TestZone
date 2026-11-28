@@ -30,7 +30,7 @@
       A note saves the spot with every reading to the GeoTool file of the game run, and the text says when a check reads the spot wrong.
 
   SoundTool
-    - Added SoundTool on End. It plays the game's channels, DiegeticDread categories, NPC voice and any .ogg on disk, and writes your notes to the SoundTool file of the game run.
+    - Added SoundTool on End. It plays the game's channels, DiegeticDread categories, NPC voice and any .ogg on disk, and writes good, bad and your notes on the selected sound to the SoundTool file of the game run.
       It names the game code that plays each file. Game replays a channel, a dread sound or an actor theme the way that code does, a new random roll each click, with or without the Diegetic mods.
       Every sound also plays at the ear or in front of you at a preset or typed distance, with a height and a falloff override, and shows its measured loudness and its own falloff.
       An MCM Mute option that holds through loads silences the soundscape, weapons and music while you listen. A playlist note above an entry shows beside it on the screen.

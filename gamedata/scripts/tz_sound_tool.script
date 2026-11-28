@@ -7,6 +7,7 @@ local os_date, os_time, os_clock, ini_file, RegisterScriptCallback = os.date, os
 
 -- The prefix of this tool's file per game run in the logs folder (tz_ui.write_line).
 local OUTPUT_TOOL  = "sound_tool"
+local VERDICT_NOTE = "note"
 local SOUNDS_MOUNT = "$game_sounds$"
 local CACHE_DIR    = "sound_tool_cache"
 local FILL_QUEUE   = "tz_sound_fill"
@@ -598,11 +599,11 @@ local function _stop_plays()
     _handles = {}
 end
 
---- One line in this game run's file: the source, note, the sound, its producer kind and producer, where it belongs, the play, the typed note.
+--- One line in this game run's file: the source, the verdict, the sound, its producer kind and producer, where it belongs, the play, the typed note.
 --- @return boolean True when the line was written
-local function _write_note(source, item, play_text, typed)
+local function _write_verdict(source, item, verdict, play_text, typed)
     local producer = item.producer
-    return tz_ui.write_line(OUTPUT_TOOL, source, "note", item.source or item.path, producer.kind, producer.label, producer.where,
+    return tz_ui.write_line(OUTPUT_TOOL, source, verdict, item.source or item.path, producer.kind, producer.label, producer.where,
         play_text, typed)
 end
 
@@ -678,7 +679,7 @@ function tz_sound_tool_wnd:get_layout()
             "lbl_falloff", "lbl_falloff_dash", "lbl_falloff_unit", "lbl_falloff_hint" } },
         { kind = "static", names = { "lamp_green", "lamp_red" } },
         { kind = "edit", names = { "note", "box_dist", "box_height", "box_min_dist", "box_max_dist" } },
-        { kind = "button", names = { "btn_help", "btn_vol_down", "btn_vol_up", "btn_prior", "btn_play", "btn_next", "btn_stop", "btn_note", "btn_rescan" } },
+        { kind = "button", names = { "btn_help", "btn_vol_down", "btn_vol_up", "btn_prior", "btn_play", "btn_next", "btn_stop", "btn_good", "btn_bad", "btn_note", "btn_rescan" } },
         { kind = "button", names = presets },
     }
     for _, group in ipairs(GROUP_ORDER) do
@@ -724,7 +725,9 @@ function tz_sound_tool_wnd:init_callbacks()
     self:AddCallback("btn_next", ui_events.BUTTON_CLICKED, function() self:select_neighbor(1) end, self)
     self:AddCallback("btn_play", ui_events.BUTTON_CLICKED, self.play_current, self)
     self:AddCallback("btn_stop", ui_events.BUTTON_CLICKED, self.stop_current, self)
-    self:AddCallback("btn_note", ui_events.BUTTON_CLICKED, self.add_note, self)
+    self:AddCallback("btn_good", ui_events.BUTTON_CLICKED, function() self:add_verdict("good") end, self)
+    self:AddCallback("btn_bad", ui_events.BUTTON_CLICKED, function() self:add_verdict("bad") end, self)
+    self:AddCallback("btn_note", ui_events.BUTTON_CLICKED, function() self:add_verdict(VERDICT_NOTE) end, self)
     self:AddCallback("btn_rescan", ui_events.BUTTON_CLICKED, self.update_indexes, self)
 end
 
@@ -981,15 +984,16 @@ function tz_sound_tool_wnd:stop_current()
     self:render_lamps()
 end
 
---- Write the typed note for the current item with the last play it had. It never plays or advances.
-function tz_sound_tool_wnd:add_note()
+--- Write good, bad or note for the current item with the last play it had and the typed note; note needs typed text. It never plays or advances.
+function tz_sound_tool_wnd:add_verdict(verdict)
     local item = self:get_current()
     local typed = self.note:GetText()
-    if not (_is_playable(item) and typed ~= "") then return end
+    if not _is_playable(item) or (verdict == VERDICT_NOTE and typed == "") then return end
     local play_text = self.last_play and self.last_play.text or "not played"
-    local is_written = _write_note(self.row and self.row.name or "", item, play_text, typed)
+    local is_written = _write_verdict(self.row and self.row.name or "", item, verdict, play_text, typed)
     self.note:SetText("")
-    if is_written then _add_feed_line(item, typed) else log.warn("[SOUNDTOOL] could not write %s", tz_ui.get_session_path(OUTPUT_TOOL)) end
+    local feed_text = typed ~= "" and (verdict == VERDICT_NOTE and typed or verdict .. ": " .. typed) or verdict
+    if is_written then _add_feed_line(item, feed_text) else log.warn("[SOUNDTOOL] could not write %s", tz_ui.get_session_path(OUTPUT_TOOL)) end
     self:render()
 end
 
