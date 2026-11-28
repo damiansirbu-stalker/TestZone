@@ -103,7 +103,7 @@ Style, an analog Soviet device built from vanilla parts:
 - A key wider than its texture draws in frame-line mode, its ends at native size and its middle repeated.
   `configs/ui/textures_descr/tz_ui.xml` names those parts as cut-outs of vanilla textures, and X-Ray stretches a plain button's texture to the button (`UI3tButton.cpp`, `CUI3tButton::DrawTexture`).
 - A screen is a gray rim, (50,50,50), with its glass 1.5 units inside, both the vanilla white rectangle tinted in the layout.
-  SoundTool's glass is dark with car-stereo orange text, AnimationTool's dark with soft cyan, MovieTool's dark with soft red, and GeoTool's olive with dark text, the live readings on a lighter olive.
+  SoundTool's glass is dark with car-stereo orange text, AnimationTool's dark with soft cyan, MovieTool's grey-green with near-black text like a camera LCD, and GeoTool's olive with dark text, the live readings on a lighter olive.
 - Every window sits on the same opaque bevelled body, tinted rectangles named in `tz_ui.PANEL`. The note and the selected line sit on the screens' dark glass.
 - A button acts on a click. A toggle holds a state and shows it lit. A texture is never stretched: frames and screens repeat their middle.
 - Output shows on screens, lamps and lit keys. Input is the game's normal edit box.
@@ -131,9 +131,13 @@ Each MCM tab is one component, in tab order.
   The channel index is xsound's one walk of the channel root. The theme and thunder indexes walk `script_sound.ltx` and `thunderbolts.ltx` once per open, and the open line logs their cost.
   A file from outside the game is copied into `sounds/sound_tool_cache`, and the index rescans once per batch. The game plays only indexed names.
 - MovieTool holds its key. Film hides the HUD with `hud_draw 0` and `show_all_ui`, turns on god mode, and answers no to every `on_enemy_eval` on the player.
-  POV puts the actor's first-person camera on the target's head bone each frame through `level.set_cam_custom_position_direction`, smoothed with a short lead, the head hidden.
-  It keeps the player 10 m above the target, so the target stays online. The per-frame update runs only while POV runs.
-  On death the camera holds 5 s on the body, then moves to the killer or the nearest of the same kind. A save, a level change or the main menu stops every mode and restores what it changed.
+  Time steps `time_factor` down to 0.1 and `freeze_time` stops it; camera moves run on `time_continual`, so they keep moving in a frozen world.
+  The camera modes POV, Chase, Orbit and Path drive the custom camera through `level.set_cam_custom_position_direction` each frame while one runs, smoothed by the engine's own camera filter (xray `EffectorBobbing.cpp:131-168`).
+  POV looks along the head bone axis that points where the creature faces, picked once per target from `matrix():setHPB(bone_direction)`, with the horizon level, so every skeleton works without a table.
+  Path flies a Catmull-Rom curve through keys taken from the current view (`device().cam_pos`, `cam_dir`), eased over the whole path; Free is the engine's `demo_record`.
+  The player stays put until the target walks past two thirds of the online radius, then rides 10 m above it to keep it online.
+  On death the camera holds 5 s on the body, then moves to the killer or the nearest of the same kind. Depth of field, a `.ppe` filter, a cyclic camera shake and a letterbox drawn as a render dialog make the look.
+  Stop, a save, a level change, the main menu or the player's death ends every mode and puts back the camera, film, time scale, lens and look.
   `hud_draw 0` leaves a mod's custom statics and render dialogs drawn, since `CUIGameCustom::Render` draws them unconditionally (xray `UIGameCustom.cpp:90-119`).
 - Remote holds the switch for the folder spool, written to `testzone_remote.log`. `stalker-manager.sh testzone-send` is its outside half.
 - Development sets the log level and flush for every logger in `TZ_LOGGERS` and resets every option.
