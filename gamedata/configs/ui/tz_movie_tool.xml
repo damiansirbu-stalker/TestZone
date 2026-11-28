@@ -1,0 +1,72 @@
+<!-- MovieTool, drawn in true 4:3 units and docked to the right edge. The _16 and _21 files are generated from this one; edit only this file. -->
+<w anchor="right">
+	<main x="0" y="0" width="1024" height="768"/>
+	<panel_outer x="712" y="16" width="301" height="448" stretch="1"><texture r="12" g="12" b="12" a="255">ui_inGame2_white_rect</texture></panel_outer>
+	<panel_body x="713" y="17" width="299" height="446" stretch="1"><texture r="40" g="41" b="40" a="255">ui_inGame2_white_rect</texture></panel_body>
+	<panel_light_t x="713" y="17" width="299" height="1" stretch="1"><texture r="92" g="93" b="90" a="255">ui_inGame2_white_rect</texture></panel_light_t>
+	<panel_light_l x="713" y="17" width="1" height="446" stretch="1"><texture r="92" g="93" b="90" a="255">ui_inGame2_white_rect</texture></panel_light_l>
+	<panel_shade_b x="713" y="461" width="299" height="2" stretch="1"><texture r="20" g="20" b="20" a="255">ui_inGame2_white_rect</texture></panel_shade_b>
+	<panel_shade_r x="1010" y="17" width="2" height="446" stretch="1"><texture r="20" g="20" b="20" a="255">ui_inGame2_white_rect</texture></panel_shade_r>
+	<hdr_tool x="728" y="28" width="200" height="20"><text font="letterica18" align="l" vert_align="c" r="200" g="170" b="120">MovieTool</text></hdr_tool>
+	<lamp_green x="908" y="30" width="18" height="18" stretch="1"><texture>tz_lamp_green</texture></lamp_green>
+	<lamp_red x="932" y="30" width="18" height="18" stretch="1"><texture>tz_lamp_red</texture></lamp_red>
+	<btn_help x="974" y="28" width="19" height="19"><texture_e>ui_pda2_info2</texture_e><texture_d>ui_pda2_info2</texture_d><texture_t>ui_pda2_info2</texture_t><texture_h>ui_pda2_info2</texture_h></btn_help>
+
+	<!-- DISPLAY: the target, the running modes, then the lens. -->
+	<scr_display_rim x="728" y="64" width="269" height="70" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_display_rim>
+	<scr_display_glass x="729.5" y="65.5" width="266" height="67" stretch="1"><texture r="22" g="18" b="18" a="255">ui_inGame2_white_rect</texture></scr_display_glass>
+	<lbl_target x="738" y="68" width="249" height="21"><text font="letterica16" align="l" vert_align="c" r="225" g="130" b="115"></text></lbl_target>
+	<lbl_mode x="738" y="89" width="249" height="21"><text font="letterica16" align="l" vert_align="c" r="225" g="130" b="115"></text></lbl_mode>
+	<lbl_lens x="738" y="110" width="249" height="21"><text font="letterica16" align="l" vert_align="c" r="225" g="130" b="115"></text></lbl_lens>
+
+	<!-- FILM and FREE CAM: two toggles, the lit one shows its diode. -->
+	<btn_film x="728" y="144" width="135" height="30" frame_mode="1"><texture>tz_rkey_start</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">film</text></btn_film>
+	<lit_film x="735" y="155" width="8" height="8" stretch="1"><texture>ui_mod_green_diode</texture></lit_film>
+	<btn_freecam x="863" y="144" width="134" height="30" frame_mode="1"><texture>tz_rkey_end</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">free cam</text></btn_freecam>
+	<lit_freecam x="870" y="155" width="8" height="8" stretch="1"><texture>ui_mod_green_diode</texture></lit_freecam>
+
+	<!-- POV: start on the aimed target, stop every camera; then the member and squad steps. -->
+	<btn_pov x="728" y="179" width="135" height="30" frame_mode="1"><texture>tz_rkey_start</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">pov</text></btn_pov>
+	<lit_pov x="735" y="190" width="8" height="8" stretch="1"><texture>ui_mod_green_diode</texture></lit_pov>
+	<btn_stop x="863" y="179" width="134" height="30" frame_mode="1"><texture>tz_rkey_end</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">stop</text></btn_stop>
+	<btn_prev x="728" y="214" width="67" height="30" frame_mode="1"><texture>tz_rkey_start</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">prev</text></btn_prev>
+	<btn_next x="795" y="214" width="67" height="30" frame_mode="1"><texture>tz_rkey</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">next</text></btn_next>
+	<btn_squad_prev x="862" y="214" width="67" height="30" frame_mode="1"><texture>tz_rkey</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">sq prev</text></btn_squad_prev>
+	<btn_squad_next x="929" y="214" width="68" height="30" frame_mode="1"><texture>tz_rkey_end</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">sq next</text></btn_squad_next>
+
+	<!-- YOUR CAMERA: first person, third person, free look; the mode in use shows its diode. -->
+	<btn_cam_1 x="728" y="249" width="90" height="30" frame_mode="1"><texture>tz_rkey_start</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">1st</text></btn_cam_1>
+	<lit_cam_1 x="735" y="260" width="8" height="8" stretch="1"><texture>ui_mod_green_diode</texture></lit_cam_1>
+	<btn_cam_2 x="818" y="249" width="89" height="30" frame_mode="1"><texture>tz_rkey</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">3rd</text></btn_cam_2>
+	<lit_cam_2 x="825" y="260" width="8" height="8" stretch="1"><texture>ui_mod_green_diode</texture></lit_cam_2>
+	<btn_cam_3 x="907" y="249" width="90" height="30" frame_mode="1"><texture>tz_rkey_end</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">free look</text></btn_cam_3>
+	<lit_cam_3 x="914" y="260" width="8" height="8" stretch="1"><texture>ui_mod_green_diode</texture></lit_cam_3>
+
+	<!-- LENS: the death cam toggle, then the field of view and the smoothing steps. -->
+	<btn_death x="728" y="284" width="135" height="30" frame_mode="1"><texture>tz_rkey_start</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">death cam</text></btn_death>
+	<lit_death x="735" y="295" width="8" height="8" stretch="1"><texture>ui_mod_green_diode</texture></lit_death>
+	<btn_fov_down x="863" y="284" width="67" height="30" frame_mode="1"><texture>tz_rkey</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">fov -</text></btn_fov_down>
+	<btn_fov_up x="930" y="284" width="67" height="30" frame_mode="1"><texture>tz_rkey_end</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">fov +</text></btn_fov_up>
+	<btn_smooth_down x="728" y="319" width="135" height="30" frame_mode="1"><texture>tz_rkey_start</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">smooth -</text></btn_smooth_down>
+	<btn_smooth_up x="863" y="319" width="134" height="30" frame_mode="1"><texture>tz_rkey_end</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">smooth +</text></btn_smooth_up>
+
+	<!-- NOTE: the typed text and the plus key that writes the shot. -->
+	<scr_note_rim x="728" y="361" width="225" height="29" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_note_rim>
+	<scr_note_glass x="729.5" y="362.5" width="222" height="26" stretch="1"><texture r="22" g="18" b="18" a="255">ui_inGame2_white_rect</texture></scr_note_glass>
+	<note x="728" y="361" width="225" height="29"><text x="8" font="letterica16" vert_align="c" align="l" r="190" g="190" b="186"/></note>
+	<note_plus_h x="967" y="375" width="12" height="2" stretch="1"><texture r="175" g="180" b="190" a="255">ui_inGame2_white_rect</texture></note_plus_h>
+	<note_plus_v x="972" y="370" width="2" height="12" stretch="1"><texture r="175" g="180" b="190" a="255">ui_inGame2_white_rect</texture></note_plus_v>
+	<btn_note x="957" y="361" width="40" height="30" frame_mode="1"><texture>tz_rkey</texture></btn_note>
+
+	<!-- LAST LINES: the newest shots written to this game run's MovieTool file. -->
+	<scr_feed_rim x="728" y="400" width="269" height="46" stretch="1"><texture r="50" g="50" b="50" a="255">ui_inGame2_white_rect</texture></scr_feed_rim>
+	<scr_feed_glass x="729.5" y="401.5" width="266" height="43" stretch="1"><texture r="22" g="18" b="18" a="255">ui_inGame2_white_rect</texture></scr_feed_glass>
+	<feed_row_1 x="738" y="404" width="249" height="19"><text font="letterica16" align="l" vert_align="c" r="225" g="130" b="115"></text></feed_row_1>
+	<feed_row_2 x="738" y="423" width="249" height="19"><text font="letterica16" align="l" vert_align="c" r="225" g="130" b="115"></text></feed_row_2>
+
+	<!-- HELP: the manual page the info key opens; tz_help sets the box height and moves Close under the text. -->
+	<help_background anchor="center" x="232" y="134" width="560" height="300" stretch="1"><texture r="20" g="23" b="27">ui_inGame2_white_rect</texture></help_background>
+	<help_title anchor="center" x="252" y="146" width="520" height="22"><text font="letterica18" align="l" r="200" g="170" b="120"/></help_title>
+	<help_text anchor="center" x="252" y="178" width="520" height="40"><text font="letterica16" align="l" complex_mode="1" r="190" g="190" b="186"/></help_text>
+	<help_close anchor="center" x="706" y="0" width="70" height="30" frame_mode="1"><texture>tz_rkey</texture><text font="letterica16" align="c" vert_align="c" r="175" g="180" b="190">Close</text></help_close>
+</w>

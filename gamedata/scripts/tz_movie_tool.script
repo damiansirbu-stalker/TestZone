@@ -1,0 +1,563 @@
+--- tz_movie_tool: MovieTool - film mode, a POV camera in a stalker's or a mutant's eyes, your camera mode and the free camera. Opens on the MCM movie_key.
+
+local string_format, math_pi, math_exp, math_sqrt, math_max, math_min = string.format, math.pi, math.exp, math.sqrt, math.max, math.min
+local table_sort, tostring, pairs, os_date = table.sort, tostring, pairs, os.date
+local time_global, IsStalker, IsMonster = time_global, IsStalker, IsMonster
+local RegisterScriptCallback, UnregisterScriptCallback = RegisterScriptCallback, UnregisterScriptCallback
+
+local log = xlog.get_logger("TestZone.movie", { outfile = "testzone_movie.log", level = "INFO" })
+
+-- The prefix of this tool's file per game run in the logs folder (tz_ui.write_line).
+local OUTPUT_TOOL = "movie_tool"
+local CMD_GOD, CMD_HUD, CMD_FOV, CMD_NEAR = "g_god", "hud_draw", "fov", "viewport_near"
+local CMD_DEMO_START, CMD_DEMO_STOP = "demo_record 1", "demo_record_stop"
+-- The actor camera modes set_active_cam takes (xray actor_defs.h:20-22): first eye, look-at, free look.
+local CAM_MODES = { 0, 1, 2 }
+-- The camera bone first, then the fallbacks a model without it may carry (GoPro_MOD, gopro_mod.script:88-100).
+local CAMERA_BONES = { "bip01_head", "eye_left", "eye_right", "bip01_neck", "bip01_spine2", "bip01_spine1", "bip01_spine",
+    "bip01_pelvis", "pelvis", "head", "head_boss" }
+-- The head bones hidden while the camera sits in the head, so the target's own face never fills the shot.
+local HEAD_BONES = { "bip01_head", "head", "head_boss" }
+local IS_HEAD_CAMERA = { bip01_head = true, eye_left = true, eye_right = true, head = true, head_boss = true }
+-- The engine's invalid id, for a bone the model lacks and for a squadless object's group.
+local INVALID_ID = 65535
+-- set_cam_custom_position_direction smoothing; the bone's direction carries the head's roll a quarter turn off the view.
+local CAM_SMOOTHING, ROLL_OFFSET, FORWARD_OFFSET = 2, math_pi / 2, 0.03
+-- The near clip in POV, so the head's own geometry is not drawn into the lens.
+local POV_NEAR = 0.02
+-- The player rides this far above the target, which keeps the target inside the online radius.
+local FOLLOW_HEIGHT, FOLLOW_SLACK_SQR = 10, 0.04
+-- After the target dies the camera holds on the body this long, then moves on.
+local DEATH_HOLD_MS = 5000
+-- Field of view and smoothing: the start value, the step of one key press and the bounds.
+local FOV_START, FOV_STEP, FOV_MIN, FOV_MAX = 55, 5, 20, 120
+local SMOOTH_START, SMOOTH_STEP = 0.35, 0.1
+-- The smoothing's time constant in seconds at strength 0 and its growth per unit of strength (gopro_mod.script:1648-1654).
+local TAU_BASE, TAU_PER_SMOOTH = 0.005, 0.2
+-- The lead that offsets the smoothing lag: velocity filter, the farthest lead, the longest frame gap a velocity is read across.
+local VELOCITY_ALPHA, LEAD_MAX, GAP_MAX_S = 0.35, 0.75, 0.25
+-- The last-lines screen: the newest shots written, clipped to the row width.
+local FEED_MAX, FEED_CHARS = 2, 30
+-- Decor the window draws and never touches again.
+local DECOR = { statics = { "hdr_tool", "scr_display_rim", "scr_display_glass", "scr_note_rim", "scr_note_glass",
+    "note_plus_h", "note_plus_v", "scr_feed_rim", "scr_feed_glass" } }
+-- Toggle key labels: the layout's key color, brighter on the lit toggle.
+local LABEL_RGB, LABEL_LIT_RGB = { 175, 180, 190 }, { 235, 240, 245 }
+-- The arrows while POV runs with the window closed: the step and whether it moves through squads.
+local NAV_STEPS = { left = { -1, false }, right = { 1, false }, up = { 1, true }, down = { -1, true } }
+
+local _film = nil
+local _pov = nil
+local _is_freecam = false
+local _cam_mode = nil
+local _is_death_cam = true
+local _fov, _smooth = FOV_START, SMOOTH_START
+local _feed = {}
+local _box = nil
+
+local function _show_tip(text)
+    xpda.show_tip(text, 4000)
+end
+
+local function _is_window_open()
+    return _box ~= nil and _box:IsShown()
+end
+
+local function _render_window()
+    if _is_window_open() then _box:render() end
+end
+
+-- A living stalker or mutant other than the player.
+local function _is_filmable(obj)
+    if not (obj and db.actor) or obj:id() == db.actor:id() then return false end
+    return (IsStalker(obj) or IsMonster(obj)) and obj:alive()
+end
+
+local function _get_name(obj)
+    if IsStalker(obj) then return obj:character_name() end
+    return obj:section()
+end
+
+-- The first bone of the list the model carries.
+local function _find_bone(obj)
+    for i = 1, #CAMERA_BONES do
+        local id = obj:get_bone_id(CAMERA_BONES[i])
+        if id ~= INVALID_ID then return CAMERA_BONES[i], id end
+    end
+    return nil, INVALID_ID
+end
+
+local function _find_head_bone(obj)
+    for i = 1, #HEAD_BONES do
+        if obj:get_bone_id(HEAD_BONES[i]) ~= INVALID_ID then return HEAD_BONES[i] end
+    end
+    return nil
+end
+
+--- While filming, every NPC that asks whether the player is an enemy gets no (xr_combat_ignore.script:84-87).
+local function _apply_actor_veto(_, enemy, flags)
+    if enemy and db.actor and enemy:id() == db.actor:id() then
+        flags.override = true
+        flags.result = false
+    end
+end
+
+--- Film: the HUD and weapon hidden, god mode on, and no NPC takes the player as an enemy.
+local function _start_film()
+    if _film or not db.actor then return end
+    local console = get_console()
+    _film = { god = console:get_bool(CMD_GOD), hud = console:get_bool(CMD_HUD) }
+    console:execute(CMD_GOD .. " on")
+    console:execute(CMD_HUD .. " 0")
+    show_all_ui(false)
+    db.actor:hide_weapon()
+    RegisterScriptCallback("on_enemy_eval", _apply_actor_veto)
+    log.info("[FILM] on")
+end
+
+local function _stop_film()
+    if not _film then return end
+    UnregisterScriptCallback("on_enemy_eval", _apply_actor_veto)
+    local console = get_console()
+    console:execute(CMD_GOD .. (_film.god and " on" or " off"))
+    console:execute(CMD_HUD .. (_film.hud and " 1" or " 0"))
+    if db.actor then
+        show_all_ui(true)
+        db.actor:restore_weapon()
+    end
+    _film = nil
+    log.info("[FILM] off")
+end
+
+local function _hide_head(obj)
+    local bone = _find_head_bone(obj)
+    if not bone then return end
+    _pov.head = bone
+    _pov.head_was = obj:bone_visible(bone)
+    if _pov.head_was then obj:set_bone_visible(bone, false, true) end
+end
+
+local function _show_head()
+    if not (_pov and _pov.head) then return end
+    local obj = xobject.get_go(_pov.id)
+    if obj then obj:set_bone_visible(_pov.head, _pov.head_was ~= false, true) end
+    _pov.head = nil
+end
+
+-- The bone pose the camera rides: its position, and its direction turned by the roll offset.
+local function _get_bone_pose(obj)
+    local hpb = obj:bone_direction(_pov.bone_id)
+    hpb.z = hpb.z + ROLL_OFFSET
+    return vector():set(obj:bone_position(_pov.bone_id)), hpb
+end
+
+local function _get_tau()
+    return TAU_BASE + _smooth * TAU_PER_SMOOTH
+end
+
+-- How much of the gap the smoothing closes this frame; 1 at zero smoothing.
+local function _get_alpha(dt_s)
+    if _smooth <= 0 or dt_s <= 0 then return 1 end
+    return 1 - math_exp(-dt_s / _get_tau())
+end
+
+local function _compute_wrapped(angle)
+    while angle > math_pi do angle = angle - 2 * math_pi end
+    while angle < -math_pi do angle = angle + 2 * math_pi end
+    return angle
+end
+
+-- Lead the raw position by the smoothed velocity over the smoothing's own lag, at most LEAD_MAX metres.
+local function _get_lead_pos(raw, now)
+    local pos = vector():set(raw)
+    local dt_s = (now - _pov.raw_t) / 1000
+    if _pov.raw and dt_s > 0 and dt_s <= GAP_MAX_S and _smooth > 0 then
+        local vel = vector():set(raw):sub(_pov.raw):mul(1 / dt_s)
+        _pov.vel = _pov.vel and _pov.vel:add(vector():set(vel):sub(_pov.vel):mul(VELOCITY_ALPHA)) or vel
+        local lead = vector():set(_pov.vel):mul(_get_tau())
+        local len = math_sqrt(lead.x * lead.x + lead.y * lead.y + lead.z * lead.z)
+        if len > LEAD_MAX then lead:mul(LEAD_MAX / len) end
+        pos:add(lead)
+    else
+        _pov.vel = nil
+    end
+    _pov.raw, _pov.raw_t = vector():set(raw), now
+    return pos
+end
+
+local function _apply_camera(pos, hpb)
+    local dir = vector()
+    dir:setHP(hpb.x, hpb.y)
+    level.set_cam_custom_position_direction(vector():set(pos):mad(dir, FORWARD_OFFSET), hpb, CAM_SMOOTHING, false, false)
+end
+
+-- One camera step: the bone pose, led and smoothed, then the player kept above the target.
+local function _update_pose(obj, now)
+    local raw, hpb = _get_bone_pose(obj)
+    local target = _get_lead_pos(raw, now)
+    local alpha = _get_alpha((now - _pov.cam_t) / 1000)
+    _pov.cam_t = now
+    if not _pov.pos then
+        _pov.pos, _pov.hpb = target, hpb
+    else
+        _pov.pos:add(vector():set(target):sub(_pov.pos):mul(alpha))
+        _pov.hpb.x = _compute_wrapped(_pov.hpb.x + _compute_wrapped(hpb.x - _pov.hpb.x) * alpha)
+        _pov.hpb.y = _compute_wrapped(_pov.hpb.y + _compute_wrapped(hpb.y - _pov.hpb.y) * alpha)
+        _pov.hpb.z = _compute_wrapped(_pov.hpb.z + _compute_wrapped(hpb.z - _pov.hpb.z) * alpha)
+    end
+    _apply_camera(_pov.pos, _pov.hpb)
+    local above = vector():set(obj:position())
+    above.y = above.y + FOLLOW_HEIGHT
+    if db.actor:position():distance_to_sqr(above) > FOLLOW_SLACK_SQR then db.actor:set_actor_position(above) end
+end
+
+-- The online, living members of obj's squad of its kind, by id.
+local function _get_squad_members(obj)
+    local list = {}
+    local squad = xsquad.get_member_squad(obj:id())
+    if not (squad and squad:npc_count() > 0) then return list end
+    for member in squad:squad_members() do
+        local member_obj = xobject.get_go(member.id)
+        if _is_filmable(member_obj) and IsStalker(member_obj) == IsStalker(obj) then list[#list + 1] = member_obj end
+    end
+    table_sort(list, function(a, b) return a:id() < b:id() end)
+    return list
+end
+
+-- One filmable object per squad on the level, the lowest id of each, by squad id.
+local function _get_squad_leads()
+    local by_squad, list = {}, {}
+    for id, st in pairs(db.storage) do
+        local obj = st.object
+        if _is_filmable(obj) then
+            local se = xobject.get_se(id)
+            local gid = se and se.group_id
+            if gid and gid ~= INVALID_ID and (not by_squad[gid] or id < by_squad[gid]:id()) then by_squad[gid] = obj end
+        end
+    end
+    for gid, obj in pairs(by_squad) do list[#list + 1] = { gid = gid, obj = obj } end
+    table_sort(list, function(a, b) return a.gid < b.gid end)
+    return list
+end
+
+local function _find_index(list, match)
+    for i = 1, #list do
+        if match(list[i]) then return i end
+    end
+    return nil
+end
+
+-- The entry delta places from index i, wrapping at both ends.
+local function _get_neighbor(list, i, delta)
+    return list[((i - 1 + delta) % #list) + 1]
+end
+
+-- The nearest filmable object to pos, of one kind when is_stalker is given, skipping one id.
+local function _find_nearest(pos, skip_id, is_stalker)
+    local best, best_dist_sqr
+    for id, st in pairs(db.storage) do
+        local obj = st.object
+        if id ~= skip_id and _is_filmable(obj) and (is_stalker == nil or IsStalker(obj) == is_stalker) then
+            local dist_sqr = obj:position():distance_to_sqr(pos)
+            if not best_dist_sqr or dist_sqr < best_dist_sqr then best, best_dist_sqr = obj, dist_sqr end
+        end
+    end
+    return best
+end
+
+local _update_pov, _stop_freecam
+
+--- Ride the camera in obj's eyes; a running POV switches target and keeps the lens it saved at its start.
+local function _start_pov(obj)
+    if not _is_filmable(obj) then return _show_tip("MovieTool: aim at a living stalker or mutant") end
+    local bone, bone_id = _find_bone(obj)
+    if not bone then return _show_tip("MovieTool: no camera bone on " .. _get_name(obj)) end
+    if _pov then
+        _show_head()
+    else
+        _stop_freecam()
+        _start_film()
+        _pov = { fov_was = get_console():get_float(CMD_FOV), near_was = get_console():get_float(CMD_NEAR) }
+        RegisterScriptCallback("actor_on_update", _update_pov)
+    end
+    _pov.id, _pov.name, _pov.is_stalker, _pov.bone_id = obj:id(), _get_name(obj), IsStalker(obj), bone_id
+    _pov.pos, _pov.hpb, _pov.raw, _pov.vel, _pov.raw_t, _pov.cam_t = nil, nil, nil, nil, 0, time_global()
+    _pov.death_until, _pov.killer_id = nil, nil
+    if IS_HEAD_CAMERA[bone] then _hide_head(obj) end
+    get_console():execute(string_format("%s %.1f", CMD_FOV, _fov))
+    get_console():execute(string_format("%s %.3f", CMD_NEAR, POV_NEAR))
+    _update_pose(obj, time_global())
+    log.info("[POV] target=%s id=%s bone=%s", _pov.name, _pov.id, bone)
+    _render_window()
+end
+
+--- End POV; the camera release waits for a live level and actor, since the engine reads Actor() unchecked (xray level_script.cpp:1031-1032).
+local function _stop_pov()
+    if not _pov then return end
+    UnregisterScriptCallback("actor_on_update", _update_pov)
+    _show_head()
+    if level.present() and db.actor then level.remove_cam_custom_position_direction() end
+    get_console():execute(string_format("%s %.1f", CMD_FOV, _pov.fov_was))
+    get_console():execute(string_format("%s %.3f", CMD_NEAR, _pov.near_was))
+    local obj = xobject.get_go(_pov.id)
+    if obj and db.actor then db.actor:set_actor_position(obj:position()) end
+    log.info("[POV] stop target=%s", _pov.name)
+    _pov = nil
+    _render_window()
+end
+
+-- After a death: the killer when he is filmable, else the nearest of the same kind, else the nearest of any.
+local function _find_next_after_death(body_pos)
+    local killer = _pov.killer_id and xobject.get_go(_pov.killer_id)
+    if _is_filmable(killer) then return killer end
+    return _find_nearest(body_pos, _pov.id, _pov.is_stalker) or _find_nearest(body_pos, _pov.id, nil)
+end
+
+--- One frame of POV: the pose, the death hold and the hand-off, or the stop when the target is gone.
+_update_pov = function()
+    if not (_pov and db.actor) then return end
+    local now = time_global()
+    local obj = xobject.get_go(_pov.id)
+    if not obj then return _stop_pov() end
+    if not obj:alive() then
+        if _is_death_cam and not _pov.death_until then _pov.death_until = now + DEATH_HOLD_MS end
+        if not _is_death_cam or now >= _pov.death_until then
+            local next_obj = _find_next_after_death(obj:position())
+            if next_obj then return _start_pov(next_obj) end
+            return _stop_pov()
+        end
+    end
+    _update_pose(obj, now)
+end
+
+--- Move the POV to a neighbor: delta places through the squad, or through the level's squads when is_squad.
+local function _select_pov_neighbor(delta, is_squad)
+    local obj = _pov and xobject.get_go(_pov.id)
+    if not obj then return end
+    if is_squad then
+        local leads = _get_squad_leads()
+        if #leads == 0 then return end
+        local se = xobject.get_se(obj:id())
+        local i = _find_index(leads, function(entry) return se and entry.gid == se.group_id end)
+        local pick = i and _get_neighbor(leads, i, delta) or leads[1]
+        return _start_pov(pick.obj)
+    end
+    local members = _get_squad_members(obj)
+    if #members < 2 then return end
+    local i = _find_index(members, function(member) return member:id() == obj:id() end)
+    if i then _start_pov(_get_neighbor(members, i, delta)) end
+end
+
+local function _set_killer(victim, who)
+    if _pov and victim and victim:id() == _pov.id then _pov.killer_id = who and who:id() end
+end
+
+local function _start_freecam()
+    _stop_pov()
+    _start_film()
+    get_console():execute(CMD_DEMO_START)
+    _is_freecam = true
+    log.info("[FREECAM] on")
+end
+
+_stop_freecam = function()
+    if not _is_freecam then return end
+    get_console():execute(CMD_DEMO_STOP)
+    _is_freecam = false
+    log.info("[FREECAM] off")
+end
+
+local function _set_cam_mode(index)
+    if not level.set_active_cam then return _show_tip("MovieTool: this exe has no camera mode switch") end
+    level.set_active_cam(CAM_MODES[index])
+    _cam_mode = index
+    _render_window()
+end
+
+--- Stop every mode and put back what it changed.
+local function _stop_all()
+    _stop_freecam()
+    _stop_pov()
+    _stop_film()
+    _render_window()
+end
+
+local function _get_aimed()
+    local obj = level.get_target_obj and level.get_target_obj()
+    if _is_filmable(obj) then return obj end
+    return db.actor and _find_nearest(db.actor:position(), nil, nil)
+end
+
+-- The arrows step the POV while the window is closed; the press goes no further, so the arrows' own binds stay idle.
+local function _on_before_key_press(dik, _, _, flags)
+    if not _pov or _is_window_open() then return end
+    local name = (dik == DIK_keys.DIK_LEFT and "left") or (dik == DIK_keys.DIK_RIGHT and "right")
+        or (dik == DIK_keys.DIK_UP and "up") or (dik == DIK_keys.DIK_DOWN and "down")
+    if not name then return end
+    flags.ret_value = false
+    _select_pov_neighbor(NAV_STEPS[name][1], NAV_STEPS[name][2])
+end
+
+local function _write_shot(text)
+    local actor = db.actor
+    if not actor then return end
+    local pos = actor:position()
+    local target = _pov and _pov.name or "-"
+    local lens = string_format("fov=%d smooth=%.2f death_cam=%s", _fov, _smooth, tostring(_is_death_cam))
+    if not tz_ui.write_line(OUTPUT_TOOL, level.name(), "NOTE", string_format("%.2f %.2f %.2f", pos.x, pos.y, pos.z), target, lens, text) then return end
+    xcui.push_line(_feed, string_format("%s %s %s", os_date("%H:%M:%S"), target, text or ""), FEED_MAX, FEED_CHARS)
+    _render_window()
+end
+
+local function _try_open()
+    if Check_UI() or not db.actor then return end
+    _box = tz_movie_tool_wnd()
+    _box:ShowDialog(true)
+    Register_UI("tz_movie_tool_wnd", "tz_movie_tool", _box)
+end
+
+local function _on_key_press(key)
+    if key == tz_mcm.get_config("movie_key") then _try_open() end
+end
+
+--- A save, a level change or the main menu: every mode stops, so no hidden HUD, god mode or held camera outlives the shot.
+local function _on_leave()
+    _stop_all()
+    Unregister_UI("tz_movie_tool_wnd")
+end
+
+class "tz_movie_tool_wnd" (CUIScriptWnd)
+
+function tz_movie_tool_wnd:__init() super()
+    self:SetWndRect(Frect():set(0, 0, 1024, 768))
+    self:SetAutoDelete(true)
+    self:init_controls()
+    self:init_callbacks()
+    self:render()
+end
+
+--- The window's controls in draw order.
+function tz_movie_tool_wnd:get_layout()
+    return {
+        { kind = "static", names = tz_ui.PANEL },
+        { kind = "static", names = DECOR.statics },
+        { kind = "text", names = { "lbl_target", "lbl_mode", "lbl_lens" } },
+        { kind = "static", names = { "lamp_green", "lamp_red" } },
+        { kind = "button", names = { "btn_film", "btn_freecam", "btn_pov", "btn_stop", "btn_prev", "btn_next", "btn_squad_prev", "btn_squad_next",
+            "btn_cam_1", "btn_cam_2", "btn_cam_3", "btn_death", "btn_fov_down", "btn_fov_up", "btn_smooth_down", "btn_smooth_up", "btn_note", "btn_help" } },
+        { kind = "static", names = { "lit_film", "lit_freecam", "lit_pov", "lit_cam_1", "lit_cam_2", "lit_cam_3", "lit_death" } },
+        { kind = "edit", names = { "note" } },
+        { kind = "text", names = xcui.get_names("feed_row_", FEED_MAX) },
+    }
+end
+
+function tz_movie_tool_wnd:init_controls()
+    local xml = CScriptXmlInit()
+    xml:ParseFile("tz_movie_tool.xml")
+    self.ui = xcui.build(xml, self, self:get_layout())
+    self.feed_rows = xcui.get_controls(self.ui, xcui.get_names("feed_row_", FEED_MAX))
+end
+
+function tz_movie_tool_wnd:bind_click(name, fn)
+    self:AddCallback(name, ui_events.BUTTON_CLICKED, fn, self)
+end
+
+function tz_movie_tool_wnd:init_callbacks()
+    self:bind_click("btn_film", function() self:select_film() end)
+    self:bind_click("btn_freecam", function() self:select_freecam() end)
+    self:bind_click("btn_pov", function()
+        local obj = _get_aimed()
+        self:hide()
+        _start_pov(obj)
+    end)
+    self:bind_click("btn_stop", function() _stop_all() end)
+    self:bind_click("btn_prev", function() _select_pov_neighbor(-1, false) end)
+    self:bind_click("btn_next", function() _select_pov_neighbor(1, false) end)
+    self:bind_click("btn_squad_prev", function() _select_pov_neighbor(-1, true) end)
+    self:bind_click("btn_squad_next", function() _select_pov_neighbor(1, true) end)
+    self:bind_click("btn_cam_1", function() _set_cam_mode(1) end)
+    self:bind_click("btn_cam_2", function() _set_cam_mode(2) end)
+    self:bind_click("btn_cam_3", function() _set_cam_mode(3) end)
+    self:bind_click("btn_death", function() _is_death_cam = not _is_death_cam; self:render() end)
+    self:bind_click("btn_fov_down", function() self:update_fov(-FOV_STEP) end)
+    self:bind_click("btn_fov_up", function() self:update_fov(FOV_STEP) end)
+    self:bind_click("btn_smooth_down", function() self:update_smooth(-SMOOTH_STEP) end)
+    self:bind_click("btn_smooth_up", function() self:update_smooth(SMOOTH_STEP) end)
+    self:bind_click("btn_note", function()
+        _write_shot(self.ui.note:GetText())
+        self.ui.note:SetText("")
+    end)
+    self:bind_click("btn_help", function() tz_help.show_page("tz_movie_tool.xml", "st_tz_movie_tool_help_title", "st_tz_movie_tool_help") end)
+end
+
+--- Film on or off; while POV or the free camera runs, film stays on, since both need it.
+function tz_movie_tool_wnd:select_film()
+    if _film and not _pov and not _is_freecam then _stop_film() else _start_film() end
+    self:render()
+end
+
+--- The free camera takes the screen, so the window closes before it starts.
+function tz_movie_tool_wnd:select_freecam()
+    if _is_freecam then
+        _stop_freecam()
+        return self:render()
+    end
+    self:hide()
+    _start_freecam()
+end
+
+function tz_movie_tool_wnd:update_fov(delta)
+    _fov = math_max(FOV_MIN, math_min(FOV_MAX, _fov + delta))
+    if _pov then get_console():execute(string_format("%s %.1f", CMD_FOV, _fov)) end
+    self:render()
+end
+
+function tz_movie_tool_wnd:update_smooth(delta)
+    _smooth = math_max(0, math_min(1, _smooth + delta))
+    self:render()
+end
+
+-- Light a toggle: its diode on and its label bright.
+function tz_movie_tool_wnd:render_toggle(key, lit, is_on)
+    self.ui[lit]:Show(is_on)
+    local rgb = is_on and LABEL_LIT_RGB or LABEL_RGB
+    self.ui[key]:TextControl():SetTextColor(xcui.get_color(rgb[1], rgb[2], rgb[3], 255))
+end
+
+function tz_movie_tool_wnd:render()
+    local ui = self.ui
+    ui.lbl_target:SetText(xcui.get_clipped(_pov and _pov.name or "** NO TARGET **", 26))
+    local modes = (_film and "film" or "") .. (_pov and "  pov" or "") .. (_is_freecam and "  free cam" or "")
+    ui.lbl_mode:SetText(modes ~= "" and modes or "idle")
+    ui.lbl_lens:SetText(string_format("fov %d   smooth %.1f", _fov, _smooth))
+    self:render_toggle("btn_film", "lit_film", _film ~= nil)
+    self:render_toggle("btn_freecam", "lit_freecam", _is_freecam)
+    self:render_toggle("btn_pov", "lit_pov", _pov ~= nil)
+    self:render_toggle("btn_death", "lit_death", _is_death_cam)
+    for i = 1, #CAM_MODES do self:render_toggle("btn_cam_" .. i, "lit_cam_" .. i, _cam_mode == i) end
+    xcui.set_lines(self.feed_rows, _feed)
+    tz_ui.render_lamps(ui, _film ~= nil or _pov ~= nil or _is_freecam)
+end
+
+--- Esc closes the window when no edit box has focus; a running shot keeps running.
+function tz_movie_tool_wnd:OnKeyboard(dik, action)
+    local res = CUIScriptWnd.OnKeyboard(self, dik, action)
+    if not xcui.is_close_key(res, dik, action) then return res end
+    self:hide()
+    return true
+end
+
+function tz_movie_tool_wnd:hide()
+    self:HideDialog()
+    Unregister_UI("tz_movie_tool_wnd")
+end
+
+function on_game_start()
+    RegisterScriptCallback("on_key_press", _on_key_press)
+    RegisterScriptCallback("on_before_key_press", _on_before_key_press)
+    RegisterScriptCallback("npc_on_death_callback", _set_killer)
+    RegisterScriptCallback("monster_on_death_callback", _set_killer)
+    RegisterScriptCallback("save_state", _on_leave)
+    RegisterScriptCallback("actor_on_net_destroy", _on_leave)
+    RegisterScriptCallback("main_menu_on_init", _on_leave)
+end

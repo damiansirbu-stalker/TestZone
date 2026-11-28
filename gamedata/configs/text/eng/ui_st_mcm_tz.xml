@@ -248,6 +248,26 @@ How often the open window reads every check.</text>
         <text>Notes go to one file per game run in the logs folder, geo_tool and the launch time, one tab-separated line each.</text>
     </string>
 
+    <!-- ==================== MOVIETOOL TAB ==================== -->
+    <string id="ui_mcm_menu_tz_movietool">
+        <text>MovieTool</text>
+    </string>
+    <string id="ui_mcm_tz_movietool_title">
+        <text>TestZone</text>
+    </string>
+    <string id="ui_mcm_tz_movietool_desc">
+        <text>MovieTool films the Zone. It hides the HUD and keeps every NPC from fighting you, puts the camera in the eyes of a stalker or a mutant, switches your own camera and starts the free camera.</text>
+    </string>
+    <string id="ui_mcm_tz_movietool_movie_key">
+        <text>Open key</text>
+    </string>
+    <string id="ui_mcm_tz_movietool_movie_key_desc">
+        <text>Opens the MovieTool window. Esc closes it, and a running shot keeps going.</text>
+    </string>
+    <string id="ui_mcm_tz_movietool_info">
+        <text>Notes go to one file per game run in the logs folder, movie_tool and the launch time, one tab-separated line each.</text>
+    </string>
+
     <!-- ==================== SOUNDTOOL TAB ==================== -->
     <string id="ui_mcm_menu_tz_soundtool">
         <text>SoundTool</text>
@@ -372,6 +392,12 @@ How often the open window reads every check.</text>
     </string>
     <string id="st_tz_geo_tool_help">
         <text>GeoTool shows every place check at your spot, live while the window is open.\nWhen a check reads your spot wrong, write a note, and the note keeps the spot with every reading.\n \n%c[255,200,170,120]The position\n%c[default]The top screen shows the level, the level vertex and your position as X, Y and Z in whole metres.\n \n%c[255,200,170,120]The readings\n%c[default]While the green lamp is lit, the middle screen refreshes the readings.\n%c[255,235,240,245]smart%c[default] is the nearest smart terrain, its distance, and whether it is a base or a lair.\n%c[255,235,240,245]base_owner%c[default] is the nearest trader, medic or mechanic within 80 metres.\n%c[255,235,240,245]is_indoor%c[default] is the xlibs test, a roof within 4 metres and two walls within 5.\n%c[255,235,240,245]roof%c[default] is the roof alone, from a ray up, or from a ray down when the upward ray misses.\n%c[255,235,240,245]roof_walls%c[default] is the raw roof distance and wall count behind is_indoor.\n%c[255,235,240,245]underground%c[default] tells whether the level counts as underground.\n%c[255,235,240,245]surge_cover%c[default] tells whether the emission treats your spot as cover.\n%c[255,235,240,245]safe_cover%c[default] tells whether the game flags you as sheltered.\n%c[255,235,240,245]rain%c[default] is how much rain reaches you.\n%c[255,235,240,245]sky%c[default] is how much open sky lights you, and under 0.05 the game counts you as indoor.\n \n%c[255,200,170,120]Notes\n%c[default]Type a note and press the plus key.\nThe line keeps the time, the level, your position, the vertex and every reading.\nAn empty note saves the spot alone, and the bottom screen shows your last two notes.\nYour notes go to geo_tool with the launch time, in the logs folder.\n \n%c[255,200,170,120]Keys\n%c[default]%c[255,235,240,245]Del%c[default] opens the window and %c[255,235,240,245]Esc%c[default] closes it.\nMCM sets the open key and how often the readings refresh.</text>
+    </string>
+    <string id="st_tz_movie_tool_help_title">
+        <text>MovieTool</text>
+    </string>
+    <string id="st_tz_movie_tool_help">
+        <text>MovieTool films the Zone. Every mode keeps running after you close the window, and stop ends them all.\n \n%c[255,200,170,120]Film\n%c[default]Hides the HUD and your weapon, turns on god mode, and keeps stalkers from taking you as an enemy.\n \n%c[255,200,170,120]POV\n%c[default]Look at a stalker or a mutant and press pov. The camera rides in his eyes, his head hidden, and you follow him from above so he stays in the game.\nprev and next step through his squad, and sq prev and sq next through the squads on the level. With the window closed, the arrow keys do the same.\nWith death cam lit, the camera holds on the body for five seconds, then moves to the killer or the nearest one of his kind.\nfov and smooth set the lens. More smooth gives a calmer camera that trails the head a little.\n \n%c[255,200,170,120]Your camera\n%c[default]1st, 3rd and free look switch your own camera.\nfree cam starts the free camera and turns film on, since your body stays where you stood. Esc in the free camera ends it.\n \n%c[255,200,170,120]Notes\n%c[default]Type a note and press the plus key. The line keeps the time, the level, your position, the target and the lens.\nYour notes go to movie_tool with the launch time, in the logs folder.\n \n%c[255,200,170,120]Keys\n%c[default]%c[255,235,240,245]Ins%c[default] opens the window and %c[255,235,240,245]Esc%c[default] closes it. A save, a level change or the main menu stops every mode.</text>
     </string>
     <string id="st_tz_anim_tool_help_title">
         <text>AnimationTool</text>

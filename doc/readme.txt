@@ -73,6 +73,10 @@ SoundTool:
   An MCM Mute option silences the soundscape, weapons and music while you listen; save and load with it on to silence what was already playing
   It browses any folder and opens playlists, and every note goes to the SoundTool file of this game run
   A sound trace logs every sound the soundscape plays, with its channel, distance, map and weather
+MovieTool:
+  A window on Insert for filming: film mode hides the HUD, turns on god mode and keeps stalkers from fighting you
+  POV puts the camera in a stalker's or a mutant's eyes, steps through his squad and the nearby squads, and holds on the body after a death
+  It switches your camera to first person, third person, free look or the free camera, and every note goes to the MovieTool file of this game run
 Development:
   Log level and Immediate flush for every TestZone log, and Reset to defaults
 Remote:

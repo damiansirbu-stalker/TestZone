@@ -5,11 +5,11 @@ local RegisterScriptCallback, xlog, game = RegisterScriptCallback, xlog, game
 -- Every TestZone logger, so the development tab's level and flush apply across all subsystems.
 local TZ_LOGGERS = {
     "TestZone", "TestZone.watcher", "TestZone.scanner", "TestZone.profiler",
-    "TestZone.geometry", "TestZone.fx", "TestZone.anim", "TestZone.soundtool",
+    "TestZone.geometry", "TestZone.fx", "TestZone.anim", "TestZone.soundtool", "TestZone.movie",
 }
 local KEY_LOG_LEVEL, KEY_LOG_FLUSH = "log_level", "log_flush"
--- DIK_DELETE, DIK_END, DIK_NEXT (lua_help.script:1088, 1092, 1132); DIK_keys is not loaded when this table is built.
-local GEO_KEY_DEFAULT, SOUNDTOOL_KEY_DEFAULT, ANIM_KEY_DEFAULT = 211, 207, 209
+-- DIK_DELETE, DIK_END, DIK_NEXT, DIK_INSERT (lua_help.script:1088, 1092, 1132, 1116); DIK_keys is not loaded when this table is built.
+local GEO_KEY_DEFAULT, SOUNDTOOL_KEY_DEFAULT, ANIM_KEY_DEFAULT, MOVIE_KEY_DEFAULT = 211, 207, 209, 210
 
 defaults = {
     watcher_enabled = false,
@@ -48,6 +48,7 @@ defaults = {
     sound_trace_all = false,
     remote_enabled = false,
     anim_key = ANIM_KEY_DEFAULT,
+    movie_key = MOVIE_KEY_DEFAULT,
     log_level = "WARN",
     log_flush = false,
 }
@@ -58,6 +59,7 @@ local build_path = function(key)
     elseif key:sub(1, 11) == "perception_" then tab = "perception"
     elseif key:sub(1, 4) == "geo_" then tab = "geotool"
     elseif key:sub(1, 10) == "soundtool_" then tab = "soundtool"
+    elseif key:sub(1, 6) == "movie_" then tab = "movietool"
     elseif key:sub(1, 12) == "sound_trace_" then tab = "sound_trace"
     elseif key:sub(1, 7) == "remote_" then tab = "remote"
     elseif key == KEY_LOG_LEVEL or key == KEY_LOG_FLUSH then tab = "development" end
@@ -194,6 +196,20 @@ function on_mcm_load()
 
                     { id = "div_info", type = "line" },
                     { id = "info", type = "desc", text = "ui_mcm_tz_soundtool_info", clr = {200, 200, 200, 100} },
+                },
+            },
+            {
+                id = "movietool",
+                text = "ui_mcm_menu_tz_movietool",
+                sh = true,
+                gr = {
+                    { id = "title", type = "slide", link = "tz_mcm_banner",
+                        text = "ui_mcm_tz_movietool_title", size = {512, 50}, spacing = 20 },
+                    { id = "desc", type = "desc", text = "ui_mcm_tz_movietool_desc" },
+                    { id = "movie_key", type = "key_bind", val = 2, def = MOVIE_KEY_DEFAULT },
+
+                    { id = "div_info", type = "line" },
+                    { id = "info", type = "desc", text = "ui_mcm_tz_movietool_info", clr = {200, 200, 200, 100} },
                 },
             },
             {

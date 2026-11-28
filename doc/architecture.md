@@ -73,7 +73,7 @@ Saved game state and the target mods stay as the tool found them.
 - A tool stops only the plays it started. SoundTool stops its handles and leaves every other sound playing.
 - `on_key_press` fires before the UI takes the key. `Check_UI()` guards every open path, and a key typed into a note box opens no second window.
 - A tool logs to `testzone.log` under its logger. A trace writes a separate file.
-- An MCM key carries its feature's prefix: `geo_`, `soundtool_`, `perception_`, `profiler_`, `remote_`. A key with no prefix sits on the main tab.
+- An MCM key carries its feature's prefix: `geo_`, `soundtool_`, `movie_`, `perception_`, `profiler_`, `remote_`. A key with no prefix sits on the main tab.
 - The remote runs code from a folder. It starts only with `-dbg`, a level loaded and the Remote switch on, and it never moves into xlibs.
 - A reload refuses a module that declares a class, one an unlocalizer rewrites, and any module while `lua_use_functor_cache` is on, since each would keep old code running.
 - The stroll puts back every setting it changed: the key prompt, god mode, the emission and psi storm options and the weather pause.
@@ -92,7 +92,7 @@ Layout:
   AnimationTool lists `.tsv` and `.txt` files, SoundTool `.txt` and its folders of `.ogg`.
 - A tool writes one file per game run in the logs folder through `tz_ui.write_line()`: `<tool>_<launch date>_<launch time>.txt`, every line tab-separated as time, source (the playlist, the pool or the level), what was pressed, the item, the tool's own details, the note last.
   The launch time is `os.time() - os.clock()`, since `os.clock` counts from process start, so every Lua state of one run finds the same file.
-- AnimationTool docks right and GeoTool left, and the world stays visible beside them. SoundTool fills the middle.
+- AnimationTool and MovieTool dock right and GeoTool left, and the world stays visible beside them. SoundTool fills the middle.
 
 Style, an analog Soviet device built from vanilla parts:
 
@@ -103,7 +103,7 @@ Style, an analog Soviet device built from vanilla parts:
 - A key wider than its texture draws in frame-line mode, its ends at native size and its middle repeated.
   `configs/ui/textures_descr/tz_ui.xml` names those parts as cut-outs of vanilla textures, and X-Ray stretches a plain button's texture to the button (`UI3tButton.cpp`, `CUI3tButton::DrawTexture`).
 - A screen is a gray rim, (50,50,50), with its glass 1.5 units inside, both the vanilla white rectangle tinted in the layout.
-  SoundTool's glass is dark with car-stereo orange text, AnimationTool's dark with soft cyan, and GeoTool's olive with dark text, the live readings on a lighter olive.
+  SoundTool's glass is dark with car-stereo orange text, AnimationTool's dark with soft cyan, MovieTool's dark with soft red, and GeoTool's olive with dark text, the live readings on a lighter olive.
 - Every window sits on the same opaque bevelled body, tinted rectangles named in `tz_ui.PANEL`. The note and the selected line sit on the screens' dark glass.
 - A button acts on a click. A toggle holds a state and shows it lit. A texture is never stretched: frames and screens repeat their middle.
 - Output shows on screens, lamps and lit keys. Input is the game's normal edit box.
@@ -130,5 +130,10 @@ Each MCM tab is one component, in tab order.
   `on_game_start` applies it before any bed, wind or music starts, so a save and load with it on silences what was already playing, and an option change applies it at once. A level change or a load lifts it at `actor_on_net_destroy`, so the main menu keeps its music, and the next load applies it again.
   The channel index is xsound's one walk of the channel root. The theme and thunder indexes walk `script_sound.ltx` and `thunderbolts.ltx` once per open, and the open line logs their cost.
   A file from outside the game is copied into `sounds/sound_tool_cache`, and the index rescans once per batch. The game plays only indexed names.
+- MovieTool holds its key. Film hides the HUD with `hud_draw 0` and `show_all_ui`, turns on god mode, and answers no to every `on_enemy_eval` on the player.
+  POV puts the actor's first-person camera on the target's head bone each frame through `level.set_cam_custom_position_direction`, smoothed with a short lead, the head hidden.
+  It keeps the player 10 m above the target, so the target stays online. The per-frame update runs only while POV runs.
+  On death the camera holds 5 s on the body, then moves to the killer or the nearest of the same kind. A save, a level change or the main menu stops every mode and restores what it changed.
+  `hud_draw 0` leaves a mod's custom statics and render dialogs drawn, since `CUIGameCustom::Render` draws them unconditionally (xray `UIGameCustom.cpp:90-119`).
 - Remote holds the switch for the folder spool, written to `testzone_remote.log`. `stalker-manager.sh testzone-send` is its outside half.
 - Development sets the log level and flush for every logger in `TZ_LOGGERS` and resets every option.

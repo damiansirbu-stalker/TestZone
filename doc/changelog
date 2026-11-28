@@ -41,6 +41,8 @@
       On a modded exe with the mix meter, every play line carries the mix loudness, and a loudness line follows each second.
 
   Tool windows
+    - Added MovieTool, on Insert. Film hides the HUD, turns on god mode and keeps stalkers from fighting you, and POV puts the camera in a stalker's or a mutant's eyes.
+      It steps through the squad and the nearby squads, holds on a body after a death, and switches your camera to first person, third person, free look or the free camera.
     - Changed AnimationTool, GeoTool and SoundTool into devices built from the game's textures, each with a screen color and keys that set it apart.
       Every tool has the same title row, a green lamp while it runs something, a red lamp when it stops, and an info key that opens its manual.
     - Changed the 3 windows to keep their shape on 4:3, 16:9 and 21:9 screens. AnimationTool docks right, GeoTool docks left and SoundTool sits in the middle.
